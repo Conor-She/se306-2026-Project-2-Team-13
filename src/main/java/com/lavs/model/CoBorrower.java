@@ -7,6 +7,7 @@ public class CoBorrower {
     private final String customerId;
 
     public CoBorrower(String coBorrowerId, String loanId, String customerId) {
+      // Basic structural checks only (3-co-borrower limit enforced in Business Logic Layer (LoanService))
         if (coBorrowerId == null || coBorrowerId.isBlank()) {
             throw new IllegalArgumentException("coBorrowerId must not be null or blank");
         }
@@ -17,11 +18,13 @@ public class CoBorrower {
             throw new IllegalArgumentException("customerId must not be null or blank");
         }
 
+        // Assign all fields once the co-borrower link is confirmed valid
         this.coBorrowerId = coBorrowerId;
         this.loanId = loanId;
         this.customerId = customerId;
     }
-
+    
+    // Getters for all fields
     public String getCoBorrowerId() {
         return coBorrowerId;
     }

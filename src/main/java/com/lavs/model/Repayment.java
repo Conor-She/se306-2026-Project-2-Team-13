@@ -14,6 +14,7 @@ public class Repayment {
 
     public Repayment(String repaymentId, String loanId, LocalDate dueDate, double amountDue,
             double principalComponent, double interestComponent, double remainingBalance) {
+        // Basic structural checks only (actual schedule calculation in Business Logic Layer (RepaymentCalculator))
         if (repaymentId == null || repaymentId.isBlank()) {
             throw new IllegalArgumentException("repaymentId must not be null or blank");
         }
@@ -27,6 +28,7 @@ public class Repayment {
             throw new IllegalArgumentException("remainingBalance must not be negative");
         }
 
+        // Assign all fields once the repayment row is confirmed valid
         this.repaymentId = repaymentId;
         this.loanId = loanId;
         this.dueDate = dueDate;
@@ -36,6 +38,7 @@ public class Repayment {
         this.remainingBalance = remainingBalance;
     }
 
+    // Getters for all fields
     public String getRepaymentId() {
         return repaymentId;
     }

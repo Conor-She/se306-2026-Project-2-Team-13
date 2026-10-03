@@ -4,17 +4,20 @@ import java.time.LocalDate;
 
 public class Loan {
 
+    // Status tracks the loan's progress through the workflow
     public enum Status {
         NEW,
         PENDING
     }
 
+    // Type defines the method of interest calculation and repayment
     public enum Type {
         TABLE_LOAN,
         REDUCING_BALANCE,
         INTEREST_ONLY
     }
 
+    // Frequency defines how often payments are made and how often interest is calculated
     public enum Frequency {
         WEEKLY,
         FORTNIGHTLY,
@@ -39,6 +42,7 @@ public class Loan {
             double interestRate, Type type, boolean isFloating, LocalDate startDate,
             LocalDate renewDate, double paymentAmount, Frequency paymentFrequency,
             Frequency rateFrequency, int termMonths) {
+        // Basic structural checks 
         if (loanId == null || loanId.isBlank()) {
             throw new IllegalArgumentException("loanId must not be null or blank");
         }
@@ -52,6 +56,7 @@ public class Loan {
             throw new IllegalArgumentException("termMonths must be positive");
         }
 
+        // Assign all fields once the loan is confirmed valid
         this.loanId = loanId;
         this.customerId = customerId;
         this.status = status;
@@ -67,6 +72,7 @@ public class Loan {
         this.termMonths = termMonths;
     }
 
+    // Getters for all fields
     public String getLoanId() {
         return loanId;
     }

@@ -12,6 +12,7 @@ public class Payment {
 
     public Payment(String paymentId, String loanId, String repaymentId, LocalDate paymentDate,
             double amountPaid) {
+        // Basic structural checks
         if (paymentId == null || paymentId.isBlank()) {
             throw new IllegalArgumentException("paymentId must not be null or blank");
         }
@@ -22,6 +23,7 @@ public class Payment {
             throw new IllegalArgumentException("amountPaid must be positive");
         }
 
+        // Assign all fields once the payment is confirmed valid
         this.paymentId = paymentId;
         this.loanId = loanId;
         this.repaymentId = repaymentId;
@@ -29,6 +31,7 @@ public class Payment {
         this.amountPaid = amountPaid;
     }
 
+    // Getters for all fields
     public String getPaymentId() {
         return paymentId;
     }

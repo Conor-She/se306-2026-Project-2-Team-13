@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class PaymentTest {
 
+    // Confirms a fully valid Payment (linked to a repayment) builds correctly
     @Test
     void constructsWithValidFields() {
         Payment payment = new Payment("P001", "L001", "R001", LocalDate.of(2026, 2, 1), 2500);
@@ -18,16 +19,16 @@ class PaymentTest {
         assertEquals("R001", payment.getRepaymentId());
     }
 
+    // a payment not tied to a specific scheduled repayment must still construct cleanly
     @Test
     void compilesAndConstructsWithNullRepaymentId() {
-        // this is the key acceptance criterion for this ticket -
-        // a payment not tied to a specific scheduled repayment
         Payment payment = assertDoesNotThrow(() ->
                 new Payment("P002", "L001", null, LocalDate.of(2026, 2, 1), 500));
 
         assertNull(payment.getRepaymentId());
     }
 
+    // A payment of zero (or less) must be rejected
     @Test
     void rejectsNonPositiveAmountPaid() {
         assertThrows(IllegalArgumentException.class, () ->

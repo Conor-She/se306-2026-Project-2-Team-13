@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class CoBorrowerTest {
 
+    // Confirms a fully valid CoBorrower builds and its fields are retrievable
     @Test
     void constructsWithValidFields() {
         CoBorrower coBorrower = new CoBorrower("CB001", "L001", "C002");
@@ -15,6 +16,8 @@ class CoBorrowerTest {
         assertEquals("C002", coBorrower.getCustomerId());
     }
 
+    // A co-borrower link with no customer attached isn't meaningful, so an
+    // empty customerId must be rejected
     @Test
     void rejectsBlankCustomerId() {
         assertThrows(IllegalArgumentException.class, () ->

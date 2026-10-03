@@ -14,6 +14,7 @@ class LoanTest {
                 Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, 360);
     }
 
+    // Confirms a fully valid Loan builds and its fields are retrievable
     @Test
     void constructsWithValidFields() {
         Loan loan = buildValidLoan();
@@ -22,6 +23,7 @@ class LoanTest {
         assertEquals(360, loan.getTermMonths());
     }
 
+    // An empty loanId has nothing to identify the loan by, so it must be rejected
     @Test
     void rejectsBlankLoanId() {
         assertThrows(IllegalArgumentException.class, () ->
@@ -30,6 +32,7 @@ class LoanTest {
                         Loan.Frequency.MONTHLY, 360));
     }
 
+    // A loan with no principal doesn't make sense, so zero must be rejected
     @Test
     void rejectsNonPositivePrincipal() {
         assertThrows(IllegalArgumentException.class, () ->
@@ -38,6 +41,7 @@ class LoanTest {
                         Loan.Frequency.MONTHLY, 360));
     }
 
+    // A loan with no term has no end date, so zero must be rejected
     @Test
     void rejectsNonPositiveTermMonths() {
         assertThrows(IllegalArgumentException.class, () ->
