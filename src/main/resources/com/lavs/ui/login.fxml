@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.text.Font?>
+
+<HBox fx:id="root" prefWidth="868" prefHeight="490"
+      style="-fx-background-color: white; -fx-font-family: 'Arial'; -fx-font-size: 16px;"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lavs.ui.LoginController">
+    <StackPane fx:id="colourPanel" minWidth="0" prefWidth="414"
+               style="-fx-background-color: #393A7B;">
+        <ImageView fitWidth="302" preserveRatio="true" smooth="true"
+                   accessibleText="Countrywide Bank" StackPane.alignment="CENTER">
+            <image><Image url="@images/logo.jpg" /></image>
+        </ImageView>
+    </StackPane>
+    <StackPane HBox.hgrow="ALWAYS">
+        <padding><Insets top="55" right="35" bottom="55" left="35" /></padding>
+        <VBox minWidth="260" maxWidth="290" StackPane.alignment="TOP_CENTER">
+            <Label text="Welcome back" textFill="BLACK">
+                <font><Font name="Arial Bold" size="38" /></font>
+            </Label>
+            <Label text="Please sign in to continue" textFill="#111111">
+                <font><Font name="Arial" size="15" /></font>
+                <VBox.margin><Insets top="10" bottom="34" /></VBox.margin>
+            </Label>
+            <Label text="Username" labelFor="$username" />
+            <TextField fx:id="username" accessibleText="Username" promptText="Enter username" prefHeight="41"
+                       style="-fx-background-color: white; -fx-background-radius: 7; -fx-border-color: #222222; -fx-border-radius: 7; -fx-padding: 8 10; -fx-font-size: 14px;">
+                <VBox.margin><Insets top="8" bottom="10" /></VBox.margin>
+            </TextField>
+            <Label text="Password" labelFor="$password" />
+            <StackPane>
+                <VBox.margin><Insets top="3" bottom="21" /></VBox.margin>
+                <PasswordField fx:id="password" accessibleText="Password" promptText="Enter password" prefHeight="41"
+                               style="-fx-background-color: white; -fx-background-radius: 7; -fx-border-color: #222222; -fx-border-radius: 7; -fx-padding: 8 42 8 10; -fx-font-size: 14px;" />
+                <TextField fx:id="visiblePassword" accessibleText="Password visible" promptText="Enter password" visible="false" managed="false" prefHeight="41"
+                           style="-fx-background-color: white; -fx-background-radius: 7; -fx-border-color: #222222; -fx-border-radius: 7; -fx-padding: 8 42 8 10; -fx-font-size: 14px;" />
+                <Button fx:id="toggle" accessibleText="Show password" onAction="#togglePassword"
+                        StackPane.alignment="CENTER_RIGHT"
+                        style="-fx-background-color: transparent; -fx-padding: 7 4; -fx-cursor: hand;">
+                    <StackPane.margin><Insets right="7" /></StackPane.margin>
+                    <graphic>
+                        <StackPane minWidth="20" prefWidth="20" minHeight="20" prefHeight="20">
+                            <SVGPath fx:id="closedEye" content="M 1 5 Q 10 13 19 5 M 3 7 L 2 10 M 7 9 L 6 12 M 12 9 L 13 12 M 17 7 L 18 10"
+                                     fill="TRANSPARENT" stroke="#222222" strokeWidth="1" />
+                            <ImageView fx:id="openEye" fitWidth="20" fitHeight="20" preserveRatio="true"
+                                       visible="false" managed="false">
+                                <image><Image url="@images/openeye.png" /></image>
+                            </ImageView>
+                        </StackPane>
+                    </graphic>
+                </Button>
+            </StackPane>
+            <Button fx:id="loginButton" text="Log In" defaultButton="true" onAction="#login" maxWidth="Infinity" prefHeight="36"
+                    style="-fx-background-color:  #F8F40C; -fx-background-radius: 7; -fx-text-fill: black; -fx-font-size: 18px; -fx-padding: 5 12; -fx-cursor: hand;" />
+            <Label fx:id="error" wrapText="true" minHeight="32" textFill="RED">
+                <font><Font name="Arial" size="13" /></font>
+                <VBox.margin><Insets top="12" /></VBox.margin>
+            </Label>
+        </VBox>
+    </StackPane>
+</HBox>
