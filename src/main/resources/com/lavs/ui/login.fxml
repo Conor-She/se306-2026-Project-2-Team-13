@@ -8,21 +8,25 @@
 <?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.text.Font?>
 
-<HBox fx:id="root" prefWidth="868" prefHeight="490"
-      style="-fx-background-color: white; -fx-font-family: 'Arial'; -fx-font-size: 16px;"
+<ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" prefWidth="868" prefHeight="490"
+      style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lavs.ui.LoginController">
+ <content>
+ <HBox fx:id="root" minWidth="0"
+      style="-fx-background-color: white; -fx-font-family: 'Arial'; -fx-font-size: 16px;"
+      >
     <StackPane fx:id="colourPanel" minWidth="0" prefWidth="414"
                style="-fx-background-color: #393A7B;">
-        <ImageView fitWidth="302" preserveRatio="true" smooth="true"
+        <ImageView fx:id="brandLogo" fitWidth="302" preserveRatio="true" smooth="true"
                    accessibleText="Countrywide Bank" StackPane.alignment="CENTER">
             <image><Image url="@images/logo.jpg" /></image>
         </ImageView>
     </StackPane>
-    <StackPane HBox.hgrow="ALWAYS">
-        <padding><Insets top="55" right="35" bottom="55" left="35" /></padding>
-        <VBox minWidth="260" maxWidth="290" StackPane.alignment="TOP_CENTER">
-            <Label text="Welcome back" textFill="BLACK">
+    <StackPane minWidth="0" HBox.hgrow="ALWAYS">
+        <padding><Insets top="32" right="24" bottom="32" left="24" /></padding>
+        <VBox fx:id="loginForm" minWidth="0" maxWidth="320" maxHeight="-Infinity" StackPane.alignment="CENTER">
+            <Label text="Welcome back" textFill="BLACK" wrapText="true">
                 <font><Font name="Arial Bold" size="38" /></font>
             </Label>
             <Label text="Please sign in to continue" textFill="#111111">
@@ -66,3 +70,5 @@
         </VBox>
     </StackPane>
 </HBox>
+ </content>
+</ScrollPane>

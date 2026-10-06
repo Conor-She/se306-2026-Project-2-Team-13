@@ -38,6 +38,16 @@ sh ./mvnw javafx:run
 
 To run the tests, replace `javafx:run` with `test`.
 
+### Dashboard and customer search
+
+After login, the Home screen and sidebar profile show the entered username. Home,
+Customers (search UI), and Loans share a persistent navigation sidebar. Loans
+and Add Customer currently display placeholders.
+
+Login is a UI preview that accepts a non-blank username and non-empty password.
+The Search screen includes an input and results area; customer search is not
+connected yet. These screens make no backend requests.
+
 ## Initial Repository Code
 
 This repository initially contains the code for the mainframe interface and the unit tests. The following code is supplied:

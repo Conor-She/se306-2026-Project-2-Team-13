@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lavs.ui.LoansController" spacing="18"
+      maxHeight="-Infinity" StackPane.alignment="TOP_LEFT">
+ <Label text="Loans" styleClass="heading" wrapText="true"
+        style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: black;"/>
+ <Label text="Loan management is coming soon." styleClass="subtitle" wrapText="true"
+        style="-fx-font-size: 14; -fx-text-fill: #222222;"/>
+</VBox>
