@@ -20,6 +20,24 @@ Update this readme file to contain the names of each team member and your GitHub
 
 You must also update this file to contain either the instructions for running your code or a link to the instructions.
 
+## Running the app
+
+Install JDK 17 or newer and make sure `JAVA_HOME` points to it. The Maven wrapper downloads Maven automatically on its first run, which requires an internet connection.
+
+From the project root on Windows (PowerShell):
+
+```powershell
+.\mvnw.cmd javafx:run
+```
+
+On macOS or Linux:
+
+```sh
+sh ./mvnw javafx:run
+```
+
+To run the tests, replace `javafx:run` with `test`.
+
 ## Initial Repository Code
 
 This repository initially contains the code for the mainframe interface and the unit tests. The following code is supplied:
