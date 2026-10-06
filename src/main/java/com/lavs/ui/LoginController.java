@@ -2,6 +2,7 @@ package com.lavs.ui;
 
 import java.util.function.BiConsumer;
 import javafx.fxml.FXML;
+import javafx.beans.binding.Bindings;
 import javafx.scene.image.ImageView;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.control.Button;
@@ -15,6 +16,7 @@ import javafx.scene.layout.Region;
 public class LoginController {
     @FXML private HBox root;
     @FXML private Region colourPanel;
+    @FXML private ImageView brandLogo;
     @FXML private TextField username;
     @FXML private PasswordField password;
     @FXML private TextField visiblePassword;
@@ -29,6 +31,10 @@ public class LoginController {
     @FXML
     private void initialize() {
         colourPanel.prefWidthProperty().bind(root.widthProperty().multiply(0.477));
+        colourPanel.visibleProperty().bind(root.widthProperty().greaterThanOrEqualTo(700));
+        colourPanel.managedProperty().bind(colourPanel.visibleProperty());
+        brandLogo.fitWidthProperty().bind(Bindings.max(0,
+                Bindings.min(302, colourPanel.widthProperty().subtract(48))));
         visiblePassword.textProperty().bindBidirectional(password.textProperty());
         username.textProperty().addListener((observable, oldValue, newValue) -> clearError());
         password.textProperty().addListener((observable, oldValue, newValue) -> clearError());

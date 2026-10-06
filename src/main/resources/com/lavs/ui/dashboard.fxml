@@ -1,27 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.SVGPath?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lavs.ui.DashboardController" style="-fx-font-family: 'Arial'; -fx-background-color: white;">
+ <fx:define>
+  <String fx:id="navStyle" fx:value="-fx-alignment: CENTER_LEFT; -fx-padding: 12 10; -fx-font-size: 14; -fx-background-radius: 6; -fx-background-color: transparent; -fx-text-fill: #f7f8f9;"/>
+  <String fx:id="selectedNavStyle" fx:value="-fx-alignment: CENTER_LEFT; -fx-padding: 12 10; -fx-font-size: 14; -fx-background-radius: 6; -fx-background-color: #9693ca; -fx-text-fill: white; -fx-font-weight: bold;"/>
+  <String fx:id="headingStyle" fx:value="-fx-font-size: 45; -fx-font-weight: bold; -fx-text-fill: black;"/>
+  <String fx:id="copyStyle" fx:value="-fx-font-size: 25; -fx-text-fill: #222222;"/>
+  <String fx:id="cardTitleStyle" fx:value="-fx-font-size: 35; -fx-font-weight: bold; -fx-text-fill: black;"/>
+  <String fx:id="cardIconStyle" fx:value="-fx-font-size: 28; -fx-text-fill: white; -fx-background-color: #9693ca; -fx-alignment: CENTER; -fx-background-radius: 50;"/>
+  <String fx:id="primaryStyle" fx:value="-fx-background-color: #F8F40C; -fx-text-fill: black; -fx-font-size: 14; -fx-padding: 12; -fx-background-radius: 5; -fx-border-color: black; -fx-border-radius: 5;"/>
+  <String fx:id="cardStyle" fx:value="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 22; -fx-border-color: black; -fx-border-radius: 22;"/>
+ </fx:define>
 
-<BorderPane prefWidth="868" prefHeight="490" xmlns="http://javafx.com/javafx/21"
-            xmlns:fx="http://javafx.com/fxml/1"
-            style="-fx-background-color: #F5F5FA; -fx-font-family: 'Arial';">
-    <top>
-        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #393A7B;">
-            <padding><Insets top="16" right="24" bottom="16" left="24" /></padding>
-            <Label text="Dashboard" style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;" />
-            <Region HBox.hgrow="ALWAYS" />
-            <ImageView fitWidth="150" preserveRatio="true" accessibleText="Countrywide Bank">
-                <image><Image url="@images/logo.jpg" /></image>
-            </ImageView>
-        </HBox>
-    </top>
-    <center>
-        <VBox alignment="CENTER" spacing="12">
-            <Label text="Welcome to your dashboard" style="-fx-font-size: 26px; -fx-text-fill: #393A7B;" />
-            <Label text="You have successfully signed in." style="-fx-font-size: 16px;" />
-        </VBox>
-    </center>
+ <left>
+  <VBox prefWidth="160" minWidth="160" styleClass="sidebar" spacing="6" style="-fx-background-color: #393A7B; -fx-padding: 20 8 16 8;">
+   <ImageView fitWidth="144" preserveRatio="true" accessibleText="Countrywide Bank"><image><Image url="@images/logo.jpg"/></image></ImageView>
+   <Region prefHeight="34"/>
+   <Button fx:id="homeNav" text="&#x2302;   Home" onAction="#showHome" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>
+   <Button fx:id="customersNav" text="&#x265F;  Customers" onAction="#showCustomers" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>
+   <Button fx:id="loansNav" text="&#x25A4;   Loans" onAction="#showLoans" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>
+   <Region VBox.vgrow="ALWAYS"/>
+   <Label fx:id="profileName" styleClass="profile" wrapText="true" graphicTextGap="10" maxWidth="Infinity" style="-fx-alignment: CENTER_LEFT; -fx-padding: 12 10; -fx-font-size: 14; -fx-text-fill: #f7f8f9;">
+    <graphic><SVGPath content="M 9 0 A 4 4 0 1 1 9 8 A 4 4 0 1 1 9 0 Z M 0 19 C 0 7 18 7 18 19 C 13 22 5 22 0 19 Z" fill="#f7f8f9"/></graphic>
+   </Label>
+   <Button text="&#x21E5;   Log Out" onAction="#logout" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>
+  </VBox>
+ </left>
+
+ <center>
+  <ScrollPane fx:id="dashboardScroll" fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+   <content>
+    <StackPane fx:id="content" styleClass="content" minWidth="0">
+
+     <!-- HOME -->
+     <VBox fx:id="homeView" spacing="12" minWidth="0" maxWidth="Infinity" maxHeight="-Infinity" StackPane.alignment="TOP_LEFT" style="-fx-padding: 40 0 0 0;">
+      <Label fx:id="welcomeHeading" text="Welcome" styleClass="heading" style="$headingStyle" wrapText="true"/>
+      <Label text="Manage customer information and loan applications quickly and easily." styleClass="subtitle" style="$copyStyle" wrapText="true"/>
+
+      <FlowPane fx:id="homeCards" alignment="TOP_LEFT" hgap="24" vgap="24" minWidth="0" maxWidth="Infinity">
+       <VBox.margin><Insets top="40"/></VBox.margin>
+
+       <VBox fx:id="searchCard" spacing="18" minWidth="0" prefWidth="300" minHeight="-1" prefHeight="300" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
+        <Label text="&#x2315;" minWidth="56" prefWidth="56" maxWidth="56" minHeight="56" prefHeight="56" maxHeight="56" styleClass="card-icon" style="$cardIconStyle"/>
+        <Label text="Search Customer" styleClass="card-title" minWidth="0" style="$cardTitleStyle" wrapText="true"/>
+        <Label text="Find an existing customer by ID, name or contact details" styleClass="card-copy" minWidth="0" style="$copyStyle" wrapText="true"/>
+        <Region VBox.vgrow="ALWAYS"/>
+        <Button text="Search" onAction="#showCustomers" minWidth="0" wrapText="true" maxWidth="Infinity" styleClass="primary" style="$primaryStyle"/>
+       </VBox>
+
+       <VBox fx:id="addCustomerCard" spacing="18" minWidth="0" prefWidth="300" minHeight="-1" prefHeight="300" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
+        <Label text="+" minWidth="56" prefWidth="56" maxWidth="56" minHeight="56" prefHeight="56" maxHeight="56" styleClass="card-icon" style="$cardIconStyle"/>
+        <Label text="Add New Customer" styleClass="card-title" minWidth="0" style="$cardTitleStyle" wrapText="true"/>
+        <Label text="Create a new customer record." styleClass="card-copy" minWidth="0" style="$copyStyle" wrapText="true"/>
+        <Region VBox.vgrow="ALWAYS"/>
+        <Button text="Add Customer" onAction="#showCustomers" minWidth="0" wrapText="true" maxWidth="Infinity" styleClass="primary" style="$primaryStyle"/>
+       </VBox>
+      </FlowPane>
+     </VBox>
+
+     <!-- Independent customer and loan pages -->
+     <fx:include fx:id="customersView" source="customers.fxml" visible="false" managed="false"/>
+     <fx:include fx:id="loansView" source="loans.fxml" visible="false" managed="false"/>
+
+    </StackPane>
+   </content>
+  </ScrollPane>
+ </center>
 </BorderPane>
