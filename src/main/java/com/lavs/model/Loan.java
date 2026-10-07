@@ -42,7 +42,7 @@ public class Loan {
             double interestRate, Type type, boolean isFloating, LocalDate startDate,
             LocalDate renewDate, double paymentAmount, Frequency paymentFrequency,
             Frequency rateFrequency, int termMonths) {
-        // Basic structural checks 
+        // Basic structural checks
         if (loanId == null || loanId.isBlank()) {
             throw new IllegalArgumentException("loanId must not be null or blank");
         }
