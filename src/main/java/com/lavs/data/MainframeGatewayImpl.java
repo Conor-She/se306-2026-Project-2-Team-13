@@ -34,9 +34,11 @@ import java.util.List;
 public class MainframeGatewayImpl implements MainframeGateway {
 
     private final Connection connection;
+    private final String organisationName;
 
-    public MainframeGatewayImpl(Connection connection) {
+    public MainframeGatewayImpl(Connection connection, String organisationName) {
         this.connection = connection;
+        this.organisationName = organisationName;
     }
 
     @Override
@@ -55,17 +57,14 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Customer createCustomer(Customer customer) {
-        // TODO: 'organisation' is required by the mainframe but its source
-        // is still unconfirmed - see OrganisationTests / the organisation
-        // package for how to retrieve our team's assigned organisation ID
-        long organisation = 0L;
+        long organisationId = findOrganisationId(organisationName);
 
         Create message = new Create(
                 customer.getDateOfBirth() == null ? null : customer.getDateOfBirth().toString(),
                 customer.getLastName(),
                 customer.getFirstName(),
                 customer.getNationality(),
-                organisation,
+                organisationId,
                 customer.getTitle());
 
         sendOrThrow(message);
@@ -313,15 +312,16 @@ public class MainframeGatewayImpl implements MainframeGateway {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs constantCategory/constantItem messages");
     }
-        private void sendOrThrow(Message message) {
+
+    private void sendOrThrow(Message message) {
             try {
                 throwIfFailed(message.send(connection));
             } catch (IOException e) {
                 throw unavailable(e);
             }
-        }
+    }
 
-        private void throwIfFailed(Status status) {
+    private void throwIfFailed(Status status) {
             if (!status.getWasSuccessful()) {
                 boolean isUnavailable = status.getErrorCode()
                         == StatusMessage.NETWORK_FAILURE_UNAVAILABLE.getCode();
@@ -330,10 +330,25 @@ public class MainframeGatewayImpl implements MainframeGateway {
                         : MainframeException.Type.BUSINESS_ERROR;
                 throw new MainframeException(type, status.getErrorCode(), status.getErrorMessage());
             }
-        }
+    }
 
-        private MainframeException unavailable(IOException cause) {
+    private MainframeException unavailable(IOException cause) {
             return new MainframeException(MainframeException.Type.UNAVAILABLE,
                     StatusMessage.NETWORK_FAILURE_UNAVAILABLE.getCode(), cause.getMessage());
+    }
+
+    private long findOrganisationId(String organisationName) {
+        mainframe.client.messages.organisation.List message =
+                new mainframe.client.messages.organisation.List(1, 100);
+        sendOrThrow(message);
+
+        for (mainframe.client.messages.organisation.List.Item item : message.getItems()) {
+            if (organisationName.equals(item.getName())) {
+                return item.getId();
+            }
         }
+
+        throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
+                "Organisation '" + organisationName + "' not found on the mainframe");
+    }
 }
