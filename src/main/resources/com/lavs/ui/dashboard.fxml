@@ -33,7 +33,8 @@
  </left>
 
  <center>
-  <ScrollPane fx:id="dashboardScroll" fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+  <!-- fitToHeight removed: it stretched content to the viewport and fed the sizing loop -->
+  <ScrollPane fx:id="dashboardScroll" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
    <content>
     <StackPane fx:id="content" styleClass="content" minWidth="0">
 
@@ -42,10 +43,11 @@
       <Label fx:id="welcomeHeading" text="Welcome" styleClass="heading" style="$headingStyle" wrapText="true"/>
       <Label text="Manage customer information and loan applications quickly and easily." styleClass="subtitle" style="$copyStyle" wrapText="true"/>
 
-      <FlowPane fx:id="homeCards" alignment="TOP_LEFT" hgap="24" vgap="24" minWidth="0" maxWidth="Infinity">
+      <FlowPane fx:id="homeCards" alignment="TOP_LEFT" rowValignment="TOP" hgap="24" vgap="24" minWidth="0" maxWidth="Infinity">
        <VBox.margin><Insets top="40"/></VBox.margin>
 
-       <VBox fx:id="searchCard" spacing="18" minWidth="0" prefWidth="300" minHeight="-1" prefHeight="300" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
+       <!-- minHeight 300, prefHeight computed from content: no dependency on the viewport -->
+       <VBox fx:id="searchCard" spacing="18" minWidth="0" prefWidth="300" minHeight="340" prefHeight="340" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
         <Label text="&#x2315;" minWidth="56" prefWidth="56" maxWidth="56" minHeight="56" prefHeight="56" maxHeight="56" styleClass="card-icon" style="$cardIconStyle"/>
         <Label text="Search Customer" styleClass="card-title" minWidth="0" style="$cardTitleStyle" wrapText="true"/>
         <Label text="Find an existing customer by ID, name or contact details" styleClass="card-copy" minWidth="0" style="$copyStyle" wrapText="true"/>
@@ -53,7 +55,7 @@
         <Button text="Search" onAction="#showCustomers" minWidth="0" wrapText="true" maxWidth="Infinity" styleClass="primary" style="$primaryStyle"/>
        </VBox>
 
-       <VBox fx:id="addCustomerCard" spacing="18" minWidth="0" prefWidth="300" minHeight="-1" prefHeight="300" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
+       <VBox fx:id="addCustomerCard" spacing="18" minWidth="0" prefWidth="300" minHeight="340" prefHeight="340" maxHeight="-Infinity" styleClass="card" style="$cardStyle">
         <Label text="+" minWidth="56" prefWidth="56" maxWidth="56" minHeight="56" prefHeight="56" maxHeight="56" styleClass="card-icon" style="$cardIconStyle"/>
         <Label text="Add New Customer" styleClass="card-title" minWidth="0" style="$cardTitleStyle" wrapText="true"/>
         <Label text="Create a new customer record." styleClass="card-copy" minWidth="0" style="$copyStyle" wrapText="true"/>
