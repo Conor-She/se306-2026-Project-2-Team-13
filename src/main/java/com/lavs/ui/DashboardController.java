@@ -1,19 +1,26 @@
 package com.lavs.ui;
 
 import java.util.List;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.layout.StackPane;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.layout.FlowPane;
-import javafx.beans.binding.Bindings;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
 /** Handles dashboard navigation and user interactions. */
 public class DashboardController {
+    // Hysteresis: switch to 2 columns above 650px, back to 1 column below 600px.
+    // The gap is wider than a scrollbar (~15px), so a scrollbar appearing can't flip the layout.
+    private static final double TWO_COL_ON = 650;
+    private static final double TWO_COL_OFF = 600;
+
     @FXML private Label profileName, welcomeHeading;
     @FXML private Button homeNav, customersNav, loansNav;
     @FXML private VBox homeView, customersView, loansView;
@@ -24,37 +31,43 @@ public class DashboardController {
     @FXML private String navStyle, selectedNavStyle;
     private Runnable onLogout;
 
+    private final BooleanProperty twoColumns = new SimpleBooleanProperty(false);
+
     @FXML private void initialize() {
         content.paddingProperty().bind(Bindings.createObjectBinding(() -> {
-            double padding = Math.max(12, Math.min(36, content.getWidth() * 0.06));
+            double padding = Math.round(Math.max(12, Math.min(36, content.getWidth() * 0.06)));
             return new Insets(padding);
         }, content.widthProperty()));
+
+        homeCards.widthProperty().addListener((obs, oldW, newW) -> {
+            double w = newW.doubleValue();
+            if (w >= TWO_COL_ON) {
+                twoColumns.set(true);
+            } else if (w <= TWO_COL_OFF) {
+                twoColumns.set(false);
+            }
+        });
+
         responsiveText(welcomeHeading, homeView, 32, 60, 0.048);
         for (javafx.scene.Node node : homeView.getChildren()) {
             if (node instanceof Label label && label != welcomeHeading) {
                 responsiveText(label, homeView, 14, 25, 0.020);
             }
         }
+
         for (VBox card : List.of(searchCard, addCustomerCard)) {
-            // Use two columns when each card has at least 300px; otherwise fill one row per card.
-            card.prefWidthProperty().bind(Bindings.when(homeCards.widthProperty().greaterThanOrEqualTo(624))
+            // Width only. Height is minHeight 300 + computed content (set in the FXML),
+            // so it no longer depends on the viewport or on layoutY.
+            card.prefWidthProperty().bind(Bindings.when(twoColumns)
                     .then(homeCards.widthProperty().subtract(homeCards.getHgap() + 1).divide(2))
                     .otherwise(Bindings.max(0, homeCards.widthProperty())));
-            // Fill the viewport below the introduction, keeping the outer padding as a bottom margin.
-            card.prefHeightProperty().bind(Bindings.createDoubleBinding(() -> {
-                int rows = homeCards.getWidth() >= 624 ? 1 : 2;
-                double available = dashboardScroll.getViewportBounds().getHeight()
-                        - content.getInsets().getTop() - content.getInsets().getBottom()
-                        - homeCards.getLayoutY();
-                return Math.max(300, (available - (rows - 1) * homeCards.getVgap()) / rows);
-            }, dashboardScroll.viewportBoundsProperty(), content.paddingProperty(),
-                    homeCards.layoutYProperty(), homeCards.widthProperty()));
+
             for (javafx.scene.Node node : card.getChildren()) {
                 if (node instanceof Labeled text) {
                     if (text.getStyleClass().contains("card-title")) {
                         responsiveText(text, card, 24, 44, 0.065);
                     } else if (text.getStyleClass().contains("card-copy")) {
-                        responsiveText(text, card, 17, 30, 0.044);
+                        responsiveText(text, card, 13, 20, 0.032);
                     } else if (text.getStyleClass().contains("card-icon")) {
                         responsiveText(text, card, 36, 48, 0.070);
                         var iconSize = Bindings.max(64, Bindings.min(88, card.widthProperty().multiply(0.13)));
@@ -78,7 +91,7 @@ public class DashboardController {
         String baseStyle = text.getStyle();
         text.styleProperty().bind(Bindings.createStringBinding(() ->
                 baseStyle + " -fx-font-size: "
-                        + Math.max(minimum, Math.min(maximum, container.getWidth() * ratio)) + "px;",
+                        + Math.round(Math.max(minimum, Math.min(maximum, container.getWidth() * ratio))) + "px;",
                 container.widthProperty()));
     }
 
