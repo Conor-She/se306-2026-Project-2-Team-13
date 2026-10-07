@@ -1,5 +1,91 @@
 package com.lavs.ui;
 
-/** Controller for the customers page; functionality will be added here. */
+import java.util.List;
+import java.util.Locale;
+import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+
+/** Searchable customer list with a details placeholder. */
 public class CustomersController {
+    public record CustomerSummary(String customerId, String name, String phone, String email) {
+        boolean matches(String query) {
+            return List.of(customerId, name, phone, email).stream()
+                    .anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(query));
+        }
+    }
+    @FXML private TextField searchField;
+    @FXML private Label resultsHeading;
+    @FXML private TableView<CustomerSummary> customerTable;
+    @FXML private TableColumn<CustomerSummary, String> idColumn, nameColumn, phoneColumn, emailColumn;
+    @FXML private VBox listView, detailsView;
+    @FXML private CustomerDetailsController detailsViewController;
+
+    @FXML private void initialize() {
+        idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
+        nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
+        phoneColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().phone()));
+        emailColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().email()));
+        var filtered = new FilteredList<>(FXCollections.observableArrayList(loadCustomers()));
+        var sorted = new SortedList<>(filtered);
+        sorted.comparatorProperty().bind(customerTable.comparatorProperty());
+        customerTable.setItems(sorted);
+        customerTable.getSortOrder().add(nameColumn);
+        customerTable.setPlaceholder(new Label("No customers found"));
+        resultsHeading.setText("All customers (" + filtered.size() + ")");
+        searchField.textProperty().addListener((obs, oldValue, value) -> {
+            String query = value.strip().toLowerCase(Locale.ROOT);
+            filtered.setPredicate(customer -> customer.matches(query));
+            resultsHeading.setText((query.isEmpty() ? "All customers (" : "Search results (") + filtered.size() + ")");
+        });
+        customerTable.setRowFactory(table -> {
+            TableRow<CustomerSummary> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY && !row.isEmpty()) {
+                    detailsViewController.setCustomer(row.getItem());
+                    showList(false);
+                }
+            });
+            return row;
+        });
+        detailsViewController.setOnBack(() -> { showList(true); focusSearch(); });
+    }
+
+    /** Replace this method with the backend customer-summary call when available. */
+    protected List<CustomerSummary> loadCustomers() {
+        return List.of(
+            new CustomerSummary("C008", "Sophie Wilson", "021 555 0108", "sophie.wilson@example.com"),
+            new CustomerSummary("C003", "Charlotte Brown", "021 555 0103", "charlotte.brown@example.com"),
+            new CustomerSummary("C001", "Amelia Adams", "021 555 0101", "amelia.adams@example.com"),
+            new CustomerSummary("C006", "Liam Patel", "021 555 0106", "liam.patel@example.com"),
+            new CustomerSummary("C004", "Ethan Chen", "021 555 0104", "ethan.chen@example.com"),
+            new CustomerSummary("C010", "Zoe Williams", "021 555 0110", "zoe.williams@example.com"),
+            new CustomerSummary("C002", "Benjamin Baker", "021 555 0102", "benjamin.baker@example.com"),
+            new CustomerSummary("C009", "William Wong", "021 555 0109", "william.wong@example.com"),
+            new CustomerSummary("C005", "Isla Jones", "021 555 0105", "isla.jones@example.com"),
+            new CustomerSummary("C007", "Oliver Smith", "021 555 0107", "oliver.smith@example.com"));
+    }
+
+    public void onShown() {
+        showList(true);
+        searchField.clear();
+        nameColumn.setSortType(TableColumn.SortType.ASCENDING);
+        customerTable.getSortOrder().setAll(List.of(nameColumn));
+        customerTable.sort();
+        focusSearch();
+    }
+    private void focusSearch() {
+        Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
+    }
+    private void showList(boolean visible) {
+        listView.setVisible(visible);
+        listView.setManaged(visible);
+        detailsView.setVisible(!visible);
+        detailsView.setManaged(!visible);
+    }
 }
