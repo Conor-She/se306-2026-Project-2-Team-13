@@ -24,6 +24,7 @@ public class DashboardController {
     @FXML private Label profileName, welcomeHeading;
     @FXML private Button homeNav, customersNav, loansNav;
     @FXML private VBox homeView, customersView, loansView;
+    @FXML private CustomersController customersViewController;
     @FXML private VBox searchCard, addCustomerCard;
     @FXML private FlowPane homeCards;
     @FXML private StackPane content;
@@ -103,6 +104,7 @@ public class DashboardController {
     }
 
     private void navigate(Button selected, VBox view) {
+        dashboardScroll.setFitToHeight(view == customersView);
         for (Button button : List.of(homeNav, customersNav, loansNav)) {
             button.getStyleClass().remove("selected");
             button.setStyle(navStyle);
@@ -117,7 +119,10 @@ public class DashboardController {
 
     @FXML private void showHome() { navigate(homeNav, homeView); }
 
-    @FXML private void showCustomers() { navigate(customersNav, customersView); }
+    @FXML private void showCustomers() {
+        navigate(customersNav, customersView);
+        customersViewController.onShown();
+    }
 
     @FXML private void showLoans() { navigate(loansNav, loansView); }
 

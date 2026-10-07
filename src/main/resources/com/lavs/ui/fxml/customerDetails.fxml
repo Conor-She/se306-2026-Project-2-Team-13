@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lavs.ui.CustomerDetailsController" spacing="18" minWidth="0">
+ <Button text="Back to customers" onAction="#back"/>
+ <Label text="Customer details" style="-fx-font-size: 28; -fx-font-weight: bold;"/>
+ <Label fx:id="customerHeading" wrapText="true" style="-fx-font-size: 18;"/>
+ <Label text="Customer details are coming soon." wrapText="true"/>
+</VBox>
