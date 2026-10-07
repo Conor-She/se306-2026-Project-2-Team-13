@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.StackPane?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.lavs.ui.LoansController" spacing="18"
-      maxHeight="-Infinity" StackPane.alignment="TOP_LEFT">
- <Label text="Loans" styleClass="heading" wrapText="true"
-        style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: black;"/>
- <Label text="Loan management is coming soon." styleClass="subtitle" wrapText="true"
-        style="-fx-font-size: 14; -fx-text-fill: #222222;"/>
+      fx:controller="com.lavs.ui.LoansController" minWidth="0" minHeight="0">
+ <VBox fx:id="listView" spacing="18" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS">
+  <Label text="Search Loans" styleClass="heading" style="-fx-font-size: 28; -fx-font-weight: bold;"/>
+  <TextField fx:id="searchField" promptText="Search by loan ID, customer ID, status or amount"
+             accessibleText="Search by loan ID, customer ID, status or amount"
+             minHeight="56" prefHeight="56" maxHeight="56"
+             style="-fx-font-size: 20; -fx-padding: 12 16;"/>
+  <Label fx:id="resultsHeading" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
+  <TableView fx:id="loanTable" minWidth="0" minHeight="0" fixedCellSize="50" style="-fx-font-size: 18px;" VBox.vgrow="ALWAYS">
+   <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/></columnResizePolicy>
+   <columns>
+    <TableColumn fx:id="idColumn" text="Loan ID" prefWidth="150" minWidth="100"/>
+    <TableColumn fx:id="customerIdColumn" text="Customer ID" prefWidth="170" minWidth="120"/>
+    <TableColumn fx:id="statusColumn" text="Status" prefWidth="170" minWidth="110"/>
+    <TableColumn fx:id="amountColumn" text="Amount" prefWidth="170" minWidth="110"/>
+   </columns>
+  </TableView>
+ </VBox>
+ <fx:include fx:id="detailsView" source="loanDetails.fxml" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
 </VBox>
