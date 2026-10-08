@@ -4,24 +4,37 @@ import java.time.LocalDate;
 
 public class Loan {
 
-    // Status tracks the loan's progress through the workflow
     public enum Status {
         NEW,
-        PENDING
+        PENDING,
+        ACTIVE,
+        DEFAULTED,
+        CANCELLED
     }
 
-    // Type defines the method of interest calculation and repayment
     public enum Type {
         TABLE_LOAN,
         REDUCING_BALANCE,
         INTEREST_ONLY
     }
 
-    // Frequency defines how often payments are made and how often interest is calculated
-    public enum Frequency {
+    // How often interest is calculated (matches the mainframe's options)
+    public enum RateFrequency {
+        DAILY,
         WEEKLY,
         FORTNIGHTLY,
-        MONTHLY
+        MONTHLY,
+        YEARLY
+    }
+
+    // How often the customer pays. Separate from RateFrequency because
+    // ON_RENEWAL only makes sense for payments
+    public enum PaymentFrequency {
+        WEEKLY,
+        FORTNIGHTLY,
+        MONTHLY,
+        YEARLY,
+        ON_RENEWAL
     }
 
     private final String loanId;
@@ -34,17 +47,17 @@ public class Loan {
     private final LocalDate startDate;
     private final LocalDate renewDate;
     private final double paymentAmount;
-    private final Frequency paymentFrequency;
-    private final Frequency rateFrequency;
-    private final int termMonths;
+    private final PaymentFrequency paymentFrequency;
+    private final RateFrequency rateFrequency;
+    private final Integer termMonths;
 
     public Loan(String loanId, String customerId, Status status, double principal,
             double interestRate, Type type, boolean isFloating, LocalDate startDate,
-            LocalDate renewDate, double paymentAmount, Frequency paymentFrequency,
-            Frequency rateFrequency, int termMonths) {
-        // Basic structural checks
-        if (loanId == null || loanId.isBlank()) {
-            throw new IllegalArgumentException("loanId must not be null or blank");
+            LocalDate renewDate, double paymentAmount, PaymentFrequency paymentFrequency,
+            RateFrequency rateFrequency, Integer termMonths) {
+        // Basic structural checks only 
+        if (loanId != null && loanId.isBlank()) {
+            throw new IllegalArgumentException("loanId must not be blank");
         }
         if (customerId == null || customerId.isBlank()) {
             throw new IllegalArgumentException("customerId must not be null or blank");
@@ -52,8 +65,8 @@ public class Loan {
         if (principal <= 0) {
             throw new IllegalArgumentException("principal must be positive");
         }
-        if (termMonths <= 0) {
-            throw new IllegalArgumentException("termMonths must be positive");
+        if (termMonths != null && termMonths <= 0) {
+            throw new IllegalArgumentException("termMonths must be positive when known");
         }
 
         // Assign all fields once the loan is confirmed valid
@@ -72,7 +85,7 @@ public class Loan {
         this.termMonths = termMonths;
     }
 
-    // Getters for all fields
+    // Getters
     public String getLoanId() {
         return loanId;
     }
@@ -113,15 +126,15 @@ public class Loan {
         return paymentAmount;
     }
 
-    public Frequency getPaymentFrequency() {
+    public PaymentFrequency getPaymentFrequency() {
         return paymentFrequency;
     }
 
-    public Frequency getRateFrequency() {
+    public RateFrequency getRateFrequency() {
         return rateFrequency;
     }
 
-    public int getTermMonths() {
+    public Integer getTermMonths() {
         return termMonths;
     }
 }

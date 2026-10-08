@@ -30,6 +30,7 @@ public class FakeMainframeGateway implements MainframeGateway {
 
     private boolean unavailable = false;
     private MainframeException nextFailure = null;
+    private int nextLoanNumber = 1;
 
     // Configures this fake to act as though the mainframe cannot be
     // reached, for every call, until reset
@@ -222,9 +223,15 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Loan createLoan(Loan loan) {
         checkAvailability();
-        loans.put(loan.getLoanId(), loan);
-        coBorrowerCounts.put(loan.getLoanId(), 0);
-        return loan;
+        // The real mainframe assigns the loan number and starts every loan as
+        // New, so the fake does too
+        String loanId = loan.getLoanId() != null
+                ? loan.getLoanId()
+                : "FAKE-LOAN-" + nextLoanNumber++;
+        Loan created = copyWith(loan, loanId, Loan.Status.NEW);
+        loans.put(loanId, created);
+        coBorrowerCounts.put(loanId, 0);
+        return created;
     }
 
     @Override
@@ -243,7 +250,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Loan updateLoanStatus(String loanId, Loan.Status newStatus) {
         checkAvailability();
-        return loans.get(loanId);
+        Loan existing = loans.get(loanId);
+        if (existing == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Loan '" + loanId + "' not found");
+        }
+        Loan updated = copyWith(existing, loanId, newStatus);
+        loans.put(loanId, updated);
+        return updated;
     }
 
     @Override
@@ -309,5 +323,13 @@ public class FakeMainframeGateway implements MainframeGateway {
     public List<String> getCategoryValues(String categoryType) {
         checkAvailability();
         return categoryValues.getOrDefault(categoryType, new ArrayList<>());
+    }
+
+    // Loan is immutable, so "changing" a field means building a new Loan
+    private Loan copyWith(Loan loan, String loanId, Loan.Status status) {
+        return new Loan(loanId, loan.getCustomerId(), status, loan.getPrincipal(),
+                loan.getInterestRate(), loan.getType(), loan.isFloating(), loan.getStartDate(),
+                loan.getRenewDate(), loan.getPaymentAmount(), loan.getPaymentFrequency(),
+                loan.getRateFrequency(), loan.getTermMonths());
     }
 }

@@ -11,6 +11,8 @@ import mainframe.client.messages.customer.Create;
 import mainframe.client.messages.customer.Search;
 import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Update;
+import mainframe.client.messages.loan.UpdateStatus;
+
 import java.util.ArrayList;
 
 import java.io.IOException;
@@ -25,7 +27,6 @@ import com.lavs.model.Payment;
 import com.lavs.model.Phone;
 import com.lavs.model.Repayment;
 
-import java.util.ArrayList;
 import java.util.List;
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
@@ -239,23 +240,64 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Loan createLoan(Loan loan) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loan.Create");
+        mainframe.client.messages.loan.Create message = new mainframe.client.messages.loan.Create(
+                loan.getCustomerId(), loan.getPaymentAmount(),
+                toMainframePaymentFrequency(loan.getPaymentFrequency()), loan.getPrincipal(),
+                loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
+                toMainframeRateType(loan), loan.getRenewDate().toString(),
+                loan.getStartDate().toString());
+
+        sendOrThrow(message);
+
+        // The mainframe doesn't store Type or TermMonths, so carry them over
+        // from the loan the MMM just entered
+        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
+                message.getPrincipal(), message.getRateAmount(), message.getRateType(),
+                message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
+                message.getPaymentFrequency(), message.getRateFrequency(), loan.getType(),
+                loan.getTermMonths());
     }
 
     @Override
     public Loan getLoan(String loanId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loan.Retrieve");
+        mainframe.client.messages.loan.Retrieve message =
+                new mainframe.client.messages.loan.Retrieve(loanId);
+        sendOrThrow(message);
+
+        // Type (except Interest-Only) and TermMonths can't be recovered from
+        // the mainframe, so they come back as null
+        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
+                message.getPrincipal(), message.getRateAmount(), message.getRateType(),
+                message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
+                message.getPaymentFrequency(), message.getRateFrequency(), null, null);
     }
 
     @Override
     public Loan updateLoan(Loan loan) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loan.Update");
+        mainframe.client.messages.loan.Update message = new mainframe.client.messages.loan.Update(
+                loan.getCustomerId(), loan.getLoanId(), loan.getPaymentAmount(),
+                toMainframePaymentFrequency(loan.getPaymentFrequency()), loan.getPrincipal(),
+                loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
+                toMainframeRateType(loan), loan.getRenewDate().toString(),
+                loan.getStartDate().toString());
+
+        sendOrThrow(message);
+
+        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
+                message.getPrincipal(), message.getRateAmount(), message.getRateType(),
+                message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
+                message.getPaymentFrequency(), message.getRateFrequency(), loan.getType(),
+                loan.getTermMonths());
     }
 
     @Override
     public Loan updateLoanStatus(String loanId, Loan.Status newStatus) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateStatus or loan equivalent");
+        UpdateStatus message = new UpdateStatus(loanId, toMainframeStatus(newStatus));
+        sendOrThrow(message);
+
+        // UpdateStatus only returns loanNumber and status, not the full loan,
+        // so we re-fetch to return a complete Loan matching the other methods
+        return getLoan(message.getLoanNumber());
     }
 
     @Override
@@ -350,5 +392,105 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
         throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
                 "Organisation '" + organisationName + "' not found on the mainframe");
+    }
+
+
+    // Interest-Only is the one loan type the mainframe can represent. Table
+    // Loan vs Reducing Balance is not stored by the mainframe (team decision),
+    // so both are sent as Fixed or Floating
+    private String toMainframeRateType(Loan loan) {
+        if (loan.getType() == Loan.Type.INTEREST_ONLY) {
+            return mainframe.client.messages.loan.Create.RATETYPE_INTERESTONLY;
+        }
+        return loan.isFloating()
+                ? mainframe.client.messages.loan.Create.RATETYPE_FLOATING
+                : mainframe.client.messages.loan.Create.RATETYPE_FIXED;
+    }
+
+    private String toMainframeRateFrequency(Loan.RateFrequency frequency) {
+        return switch (frequency) {
+            case DAILY -> mainframe.client.messages.loan.Create.RATEFREQUENCY_DAILY;
+            case WEEKLY -> mainframe.client.messages.loan.Create.RATEFREQUENCY_WEEKLY;
+            case FORTNIGHTLY -> mainframe.client.messages.loan.Create.RATEFREQUENCY_FORTNIGHTLY;
+            case MONTHLY -> mainframe.client.messages.loan.Create.RATEFREQUENCY_MONTHLY;
+            case YEARLY -> mainframe.client.messages.loan.Create.RATEFREQUENCY_YEARLY;
+        };
+    }
+
+    private String toMainframePaymentFrequency(Loan.PaymentFrequency frequency) {
+        return switch (frequency) {
+            case WEEKLY -> mainframe.client.messages.loan.Create.PAYMENTFREQUENCY_WEEKLY;
+            case FORTNIGHTLY -> mainframe.client.messages.loan.Create.PAYMENTFREQUENCY_FORTNIGHTLY;
+            case MONTHLY -> mainframe.client.messages.loan.Create.PAYMENTFREQUENCY_MONTHLY;
+            case YEARLY -> mainframe.client.messages.loan.Create.PAYMENTFREQUENCY_YEARLY;
+            case ON_RENEWAL -> mainframe.client.messages.loan.Create.PAYMENTFREQUENCY_ONRENEWAL;
+        };
+    }
+
+    private String toMainframeStatus(Loan.Status status) {
+        return switch (status) {
+            case NEW -> UpdateStatus.STATUS_NEW;
+            case PENDING -> UpdateStatus.STATUS_PENDING;
+            case ACTIVE -> UpdateStatus.STATUS_ACTIVE;
+            case DEFAULTED -> UpdateStatus.STATUS_DEFAULTED;
+            case CANCELLED -> UpdateStatus.STATUS_CANCELLED;
+        };
+    }
+
+    // Shared by createLoan/getLoan/updateLoan, since all three return the same
+    // shape of data. knownType and knownTermMonths are what the caller already
+    // has (they are null when re-fetching), because the mainframe can't supply
+    // them.
+    private Loan toLoan(String loanNumber, String customerNumber, String status, double principal,
+            double rateAmount, String rateType, String startDate, String renewalDate,
+            double paymentAmount, String paymentFrequency, String rateFrequency,
+            Loan.Type knownType, Integer knownTermMonths) {
+        // Interest-Only is the one type the mainframe does report back
+        boolean isInterestOnly =
+                mainframe.client.messages.loan.Create.RATETYPE_INTERESTONLY.equals(rateType);
+        Loan.Type type = isInterestOnly ? Loan.Type.INTEREST_ONLY : knownType;
+        boolean isFloating =
+                mainframe.client.messages.loan.Create.RATETYPE_FLOATING.equals(rateType);
+
+        return new Loan(loanNumber, customerNumber, parseStatus(status), principal, rateAmount,
+                type, isFloating, java.time.LocalDate.parse(startDate),
+                java.time.LocalDate.parse(renewalDate), paymentAmount,
+                parsePaymentFrequency(paymentFrequency), parseRateFrequency(rateFrequency),
+                knownTermMonths);
+    }
+
+    private Loan.Status parseStatus(String status) {
+        return switch (status) {
+            case "New" -> Loan.Status.NEW;
+            case "Pending" -> Loan.Status.PENDING;
+            case "Active" -> Loan.Status.ACTIVE;
+            case "Defaulted" -> Loan.Status.DEFAULTED;
+            case "Cancelled" -> Loan.Status.CANCELLED;
+            default -> throw new IllegalArgumentException("Unrecognised loan status: " + status);
+        };
+    }
+
+    private Loan.RateFrequency parseRateFrequency(String frequency) {
+        return switch (frequency) {
+            case "Daily" -> Loan.RateFrequency.DAILY;
+            case "Weekly" -> Loan.RateFrequency.WEEKLY;
+            case "Fortnightly" -> Loan.RateFrequency.FORTNIGHTLY;
+            case "Monthly" -> Loan.RateFrequency.MONTHLY;
+            case "Yearly" -> Loan.RateFrequency.YEARLY;
+            default -> throw new IllegalArgumentException(
+                    "Unrecognised rate frequency: " + frequency);
+        };
+    }
+
+    private Loan.PaymentFrequency parsePaymentFrequency(String frequency) {
+        return switch (frequency) {
+            case "Weekly" -> Loan.PaymentFrequency.WEEKLY;
+            case "Fortnightly" -> Loan.PaymentFrequency.FORTNIGHTLY;
+            case "Monthly" -> Loan.PaymentFrequency.MONTHLY;
+            case "Yearly" -> Loan.PaymentFrequency.YEARLY;
+            case "Onrenewal" -> Loan.PaymentFrequency.ON_RENEWAL;
+            default -> throw new IllegalArgumentException(
+                    "Unrecognised payment frequency: " + frequency);
+        };
     }
 }
