@@ -9,7 +9,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws java.io.IOException {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("login.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("fxml/login.fxml"));
         Parent root = loader.load();
         Scene scene = new Scene(root, 868, 490);
         LoginController controller = loader.getController();
@@ -20,7 +20,7 @@ public class Main extends Application {
             controller.loginSucceeded();
         }, () -> {
             try {
-                FXMLLoader dashboardLoader = new FXMLLoader(Main.class.getResource("dashboard.fxml"));
+                FXMLLoader dashboardLoader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
                 Parent dashboard = dashboardLoader.load();
                 DashboardController dashboardController = dashboardLoader.getController();
                 dashboardController.configure(loginName[0], () -> scene.setRoot(root));

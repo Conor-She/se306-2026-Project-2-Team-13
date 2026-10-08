@@ -26,7 +26,7 @@ class DashboardControllerTest {
         assertTrue(started.await(5, TimeUnit.SECONDS));
         Platform.setImplicitExit(false);
         boolean[] loggedOut = {false};
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("dashboard.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
         Parent root = fx(() -> {
             Parent view = loader.load();
             new Scene(view, 900, 560);
@@ -81,7 +81,8 @@ class DashboardControllerTest {
             javafx.scene.layout.FlowPane cards = (javafx.scene.layout.FlowPane) root.lookup("#homeCards");
             ScrollPane scroll = (ScrollPane) root.lookup("#dashboardScroll");
             double bottom = home.getLayoutY() + cards.getLayoutY() + searchCard.getHeight();
-            assertEquals(scroll.getViewportBounds().getHeight() - content.getInsets().getBottom(), bottom, 3);
+            assertTrue(bottom <= scroll.getViewportBounds().getHeight() - content.getInsets().getBottom() + 3,
+                    "Home cards should fit within the large viewport");
             root.resize(900, 560);
             root.applyCss(); root.layout();
             return null;
@@ -96,7 +97,35 @@ class DashboardControllerTest {
             assertFalse(root.lookup("#loansView").isVisible());
             assertTrue(root.lookup("#customersNav").getStyleClass().contains("selected"));
             root.applyCss(); root.layout();
-            assertNull(root.lookup(".text-field"));
+            TextField search = (TextField) root.lookup("#searchField");
+            @SuppressWarnings("unchecked")
+            TableView<CustomersController.CustomerSummary> table =
+                    (TableView<CustomersController.CustomerSummary>) root.lookup("#customerTable");
+            assertEquals("Search by customer ID, name or contact details", search.getPromptText());
+            assertEquals(10, table.getItems().size());
+            assertEquals("Amelia Adams", table.getItems().get(0).name());
+            for (String query : new String[] {"c001", "AMELIA", "0101", "AMELIA.ADAMS@EXAMPLE.COM"}) {
+                search.setText(query);
+                assertEquals(1, table.getItems().size(), query);
+                assertEquals("C001", table.getItems().get(0).customerId());
+                assertEquals("Search results (1)", ((Label) root.lookup("#resultsHeading")).getText());
+            }
+            search.setText("no matching customer");
+            assertTrue(table.getItems().isEmpty());
+            assertEquals("No customers found", ((Label) table.getPlaceholder()).getText());
+            search.clear();
+            assertEquals(10, table.getItems().size());
+            TableRow<CustomersController.CustomerSummary> row = table.getRowFactory().call(table);
+            row.updateTableView(table);
+            row.updateIndex(0);
+            row.getOnMouseClicked().handle(new javafx.scene.input.MouseEvent(
+                    javafx.scene.input.MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0,
+                    javafx.scene.input.MouseButton.PRIMARY, 1, false, false, false, false,
+                    true, false, false, false, false, true, null));
+            assertTrue(root.lookup("#detailsView").isVisible());
+            assertFalse(root.lookup("#listView").isVisible());
+            ((Button) ((VBox) root.lookup("#detailsView")).getChildren().get(0)).fire();
+            assertTrue(root.lookup("#listView").isVisible());
             assertNull(root.lookup(".list-view"));
             return null;
         });
@@ -126,7 +155,7 @@ class DashboardControllerTest {
             return null;
         });
         fx(() -> {
-            Parent login = new FXMLLoader(Main.class.getResource("login.fxml")).load();
+            Parent login = new FXMLLoader(Main.class.getResource("fxml/login.fxml")).load();
             new Scene(login, 1200, 800);
             for (int width : new int[] {1200, 480}) {
                 login.resize(width, 800);

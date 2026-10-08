@@ -19,7 +19,7 @@
 
  <left>
   <VBox prefWidth="160" minWidth="160" styleClass="sidebar" spacing="6" style="-fx-background-color: #393A7B; -fx-padding: 20 8 16 8;">
-   <ImageView fitWidth="144" preserveRatio="true" accessibleText="Countrywide Bank"><image><Image url="@images/logo.jpg"/></image></ImageView>
+   <ImageView fitWidth="144" preserveRatio="true" accessibleText="Countrywide Bank"><image><Image url="@../images/logo.jpg"/></image></ImageView>
    <Region prefHeight="34"/>
    <Button fx:id="homeNav" text="&#x2302;   Home" onAction="#showHome" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>
    <Button fx:id="customersNav" text="&#x265F;  Customers" onAction="#showCustomers" styleClass="nav" style="$navStyle" maxWidth="Infinity"/>

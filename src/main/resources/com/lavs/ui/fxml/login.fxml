@@ -20,7 +20,7 @@
                style="-fx-background-color: #393A7B;">
         <ImageView fx:id="brandLogo" fitWidth="302" preserveRatio="true" smooth="true"
                    accessibleText="Countrywide Bank" StackPane.alignment="CENTER">
-            <image><Image url="@images/logo.jpg" /></image>
+            <image><Image url="@../images/logo.jpg" /></image>
         </ImageView>
     </StackPane>
     <StackPane minWidth="0" HBox.hgrow="ALWAYS">
@@ -55,7 +55,7 @@
                                      fill="TRANSPARENT" stroke="#222222" strokeWidth="1" />
                             <ImageView fx:id="openEye" fitWidth="20" fitHeight="20" preserveRatio="true"
                                        visible="false" managed="false">
-                                <image><Image url="@images/openeye.png" /></image>
+                                <image><Image url="@../images/openeye.png" /></image>
                             </ImageView>
                         </StackPane>
                     </graphic>
