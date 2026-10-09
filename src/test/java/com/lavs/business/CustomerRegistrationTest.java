@@ -156,6 +156,38 @@ class CustomerRegistrationTest {
         assertTrue(notesOnly.hasData());
     }
 
+    @Test void documentsAreOptionalAndIncompleteDocumentsBelongToDocumentsStep() {
+        CustomerDraft draft = validDraft();
+        assertTrue(service.validate(draft).isEmpty());
+        draft.documents.add(Map.of("documentType", "Payslip"));
+        var errors = service.validate(draft);
+        assertEquals(java.util.Set.of("documents.0.fileName", "documents.0.filePath"),
+                errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
+        assertTrue(errors.stream().allMatch(error -> error.step() == 4));
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
+    }
+
+    @Test void multipleDocumentsCanBeRemovedAndSavedIndependently() throws Exception {
+        CustomerDraft draft = validDraft();
+        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "payslip.pdf", "filePath", "C:/documents/payslip.pdf", "documentType", "Payslip")));
+        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "id.pdf", "filePath", "C:/documents/id.pdf")));
+        draft.documents.add(Map.of("fileName", "remove.pdf", "filePath", "C:/documents/remove.pdf"));
+        draft.documents.remove(2);
+        String id = service.save(draft);
+        draft.documents.get(0).put("fileName", "changed.pdf");
+        draft.documents.clear();
+        CustomerDraft saved = service.savedCustomers().get(id);
+        assertEquals(2, saved.documents.size());
+        assertEquals("payslip.pdf", saved.documents.get(0).get("fileName"));
+        assertEquals("id.pdf", saved.documents.get(1).get("fileName"));
+        saved.documents.clear();
+        assertEquals(2, service.savedCustomers().get(id).documents.size());
+        CustomerDraft documentsOnly = new CustomerDraft();
+        documentsOnly.documents.add(Map.of("fileName", "id.pdf", "filePath", "C:/documents/id.pdf"));
+        assertTrue(documentsOnly.hasData());
+        assertTrue(CustomerDraft.hasEntryDetails("documents", documentsOnly.documents.get(0)));
+    }
+
     @Test void saveValidatesAndKeepsAnIndependentSnapshot() throws Exception {
         assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(new CustomerDraft()));
         CustomerDraft draft = validDraft();
