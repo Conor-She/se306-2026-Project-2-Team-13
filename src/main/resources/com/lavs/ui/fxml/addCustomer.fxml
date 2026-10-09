@@ -23,8 +23,8 @@
       <Label text="Personal details" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
       <TextFlow><Text text="Fields marked "/><Text text="*" fill="#b42318"/><Text text=" are required. Customer ID is assigned when saved."/></TextFlow>
       <FlowPane hgap="20" vgap="16"><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Title" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="title" accessibleText="Title" promptText="Title" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Title "/><Text text="*" fill="#b42318"/></TextFlow>
+      <ComboBox fx:id="title" accessibleText="Title *" promptText="Title" editable="false" maxWidth="Infinity" style="-fx-padding: 0; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="titleError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
       <TextFlow style="-fx-font-weight: bold;"><Text text="First name "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
@@ -39,8 +39,8 @@
       <TextField fx:id="dateOfBirth" accessibleText="Date of birth * (dd-mm-yyyy)" promptText="14-03-1990" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="dateOfBirthError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Nationality" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="nationality" accessibleText="Nationality" promptText="Nationality" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Nationality "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="nationality" accessibleText="Nationality *" promptText="Nationality" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="nationalityError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox></FlowPane>
     </VBox>

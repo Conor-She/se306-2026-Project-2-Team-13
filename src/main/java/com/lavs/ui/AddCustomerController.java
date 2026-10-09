@@ -31,7 +31,8 @@ public class AddCustomerController {
     @FXML private FlowPane footer;
     @FXML private Label message, reviewNotice, guarantorNote;
     @FXML private Label marker0, marker1, marker2, marker3, stepName0, stepName1, stepName2, stepName3;
-    @FXML private TextField title, firstName, lastName, dateOfBirth, nationality;
+    @FXML private ComboBox<String> title;
+    @FXML private TextField firstName, lastName, dateOfBirth, nationality;
     @FXML private Label titleError, firstNameError, lastNameError, dateOfBirthError, nationalityError;
     @FXML private String markerStyle, activeMarkerStyle, stepNameStyle, activeStepNameStyle, inputStyle, invalidInputStyle;
     @FXML private ScrollPane customerScroll;
@@ -51,7 +52,17 @@ public class AddCustomerController {
 
     @FXML private void initialize() {
         ScrollPaneAppearance.install(customerScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
-        bindField("title", title, titleError, draft.personal, "title");
+        title.getItems().setAll("Mr", "Mrs", "Ms", "Miss");
+        title.minHeightProperty().bind(firstName.heightProperty());
+        title.prefHeightProperty().bind(firstName.heightProperty());
+        title.maxHeightProperty().bind(firstName.heightProperty());
+        fields.put("title", title);
+        fieldErrors.put("title", titleError);
+        title.setValue(draft.personal.get("title"));
+        title.valueProperty().addListener((obs, old, value) -> {
+            draft.personal.put("title", value == null ? "" : value);
+            refreshValidation();
+        });
         bindField("firstName", firstName, firstNameError, draft.personal, "firstName");
         bindField("lastName", lastName, lastNameError, draft.personal, "lastName");
         dateOfBirth.setTextFormatter(new TextFormatter<>(AddCustomerController::formatDateOfBirth));
@@ -290,7 +301,12 @@ public class AddCustomerController {
                 } else if (kind.equals("employers")) {
                     @SuppressWarnings("unchecked") ComboBox<String> type = (ComboBox<String>) editorNodes.get("employmentType");
                     type.setValue(value.get("employmentType"));
-                    type.valueProperty().addListener((o, a, b) -> value.put("employmentType", b == null ? "" : b));
+                    fields.put(path + ".employmentType", type);
+                    fieldErrors.put(path + ".employmentType", (Label) editorNodes.get("employmentTypeError"));
+                    type.valueProperty().addListener((o, a, b) -> {
+                        value.put("employmentType", b == null ? "" : b);
+                        refreshValidation();
+                    });
                 }
                 ((VBox) nodes.get("editorContainer")).getChildren().add(editor.getRoot());
             }
@@ -310,7 +326,7 @@ public class AddCustomerController {
     private void review() {
         personalReview.getChildren().setAll(
             reviewValue("Title", draft.personal.get("title")),
-            reviewValue("Name", join(draft.personal.get("title"), draft.personal.get("firstName"), draft.personal.get("lastName"))),
+            reviewValue("Name", join(draft.personal.get("firstName"), draft.personal.get("lastName"))),
             reviewValue("Date of birth", draft.personal.get("dateOfBirth")),
             reviewValue("Nationality", draft.personal.get("nationality")),
             reviewValue("Customer ID", "Assigned on save"));
@@ -374,7 +390,10 @@ public class AddCustomerController {
             label.setText(text);
             label.setVisible(!text.isEmpty());
             label.setManaged(!text.isEmpty());
-            fields.get(path).setStyle(text.isEmpty() ? inputStyle : invalidInputStyle);
+            Control input = fields.get(path);
+            String style = text.isEmpty() ? inputStyle : invalidInputStyle;
+            // ComboBox cells provide their own padding inside the matched field height.
+            input.setStyle(input instanceof ComboBox<?> ? style + " -fx-padding: 0;" : style);
         });
         next.setDisable(step == 3 && !errors.isEmpty());
         List<String> top = errors.stream().filter(e -> step == 3 || (e.step() == step && e.field().isBlank()))

@@ -10,19 +10,32 @@ class CustomerRegistrationTest {
 
     private CustomerDraft validDraft() {
         CustomerDraft draft = new CustomerDraft();
-        draft.personal.putAll(Map.of("firstName", "Amelia", "lastName", "Adams", "dateOfBirth", "14-03-1990"));
+        draft.personal.putAll(Map.of("title", "Ms", "firstName", "Amelia", "lastName", "Adams",
+                "dateOfBirth", "14-03-1990", "nationality", "New Zealand"));
         return draft;
     }
 
     @Test void missingAndInvalidPersonalFieldsBelongToFirstStep() {
         CustomerDraft draft = new CustomerDraft();
-        assertEquals(3, service.validate(draft).size());
+        assertEquals(5, service.validate(draft).size());
         assertTrue(service.validate(draft).stream().allMatch(e -> e.step() == 0));
         draft = validDraft();
         draft.personal.put("dateOfBirth", "01-01-2099");
         assertEquals("dateOfBirth", service.validate(draft).get(0).field());
         draft.personal.put("dateOfBirth", "invalid");
         assertEquals("Enter a valid date in dd-mm-yyyy format.", service.validate(draft).get(0).message());
+    }
+
+    @Test void everyPersonalFieldIsRequiredBeforeSaving() {
+        for (String field : java.util.List.of("title", "firstName", "lastName", "dateOfBirth", "nationality")) {
+            CustomerDraft draft = validDraft();
+            draft.personal.put(field, "   ");
+            var errors = service.validate(draft);
+            assertEquals(1, errors.size(), field);
+            assertEquals(field, errors.get(0).field());
+            assertEquals(0, errors.get(0).step());
+            assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft), field);
+        }
     }
 
     @Test void dateOfBirthUsesStrictDayMonthYearFormat() {
@@ -43,9 +56,10 @@ class CustomerRegistrationTest {
         draft.emails.add(Map.of("email", "invalid"));
         var errors = service.validate(draft);
         assertTrue(errors.stream().allMatch(error -> error.step() == 1));
-        assertEquals(java.util.Set.of("addresses.0.city", "phones.0.number", "emails.0.email"),
+        assertEquals(java.util.Set.of("addresses.0.suburb", "addresses.0.city", "addresses.0.postcode",
+                "addresses.0.country", "phones.0.number", "emails.0.email"),
             errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
-        draft.addresses.set(0, Map.of("street", "12 Queen St", "city", "Auckland"));
+        draft.addresses.set(0, validAddress());
         draft.phones.set(0, Map.of("number", "+64 21 555 0101"));
         draft.emails.set(0, Map.of("email", "amelia@example.com"));
         assertTrue(service.validate(draft).isEmpty());
@@ -56,24 +70,50 @@ class CustomerRegistrationTest {
         draft.employers.add(Map.of("income", "-1"));
         var errors = service.validate(draft);
         assertTrue(errors.stream().allMatch(error -> error.step() == 2));
-        assertEquals(java.util.Set.of("employers.0.name", "employers.0.income"),
+        assertEquals(java.util.Set.of("employers.0.name", "employers.0.role", "employers.0.employmentType", "employers.0.income"),
             errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
         for (String income : new String[] {"abc", "12.345"}) {
-            draft.employers.set(0, Map.of("name", "Acme", "income", income));
+            draft.employers.set(0, validEmployer(income));
             assertFalse(service.validate(draft).isEmpty());
         }
-        for (String income : new String[] {"", "0", "50000.00"}) {
-            draft.employers.set(0, Map.of("name", "Acme", "income", income));
+        for (String income : new String[] {"0", "50000.00"}) {
+            draft.employers.set(0, validEmployer(income));
             assertTrue(service.validate(draft).isEmpty());
         }
         assertFalse(CustomerDraft.hasEntryDetails("employers", Map.of("name", "   ")));
         assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("income", "0")));
     }
+    private Map<String, String> validAddress() {
+        return Map.of("street", "12 Queen St", "suburb", "Central", "city", "Auckland",
+                "postcode", "1010", "country", "New Zealand");
+    }
+
+    private Map<String, String> validEmployer(String income) {
+        return Map.of("name", "Acme", "role", "Engineer", "employmentType", "Full-time", "income", income);
+    }
+
+    @Test void everyAddressAndEmployerFieldIsRequiredBeforeSaving() {
+        for (String kind : java.util.List.of("addresses", "employers")) {
+            Map<String, String> valid = kind.equals("addresses") ? validAddress() : validEmployer("50000.00");
+            for (String field : valid.keySet()) {
+                CustomerDraft draft = validDraft();
+                Map<String, String> entry = new java.util.LinkedHashMap<>(valid);
+                entry.put(field, "   ");
+                (kind.equals("addresses") ? draft.addresses : draft.employers).add(entry);
+                var errors = service.validate(draft);
+                assertEquals(1, errors.size(), kind + "." + field);
+                assertEquals(kind + ".0." + field, errors.get(0).field());
+                assertEquals(kind.equals("addresses") ? 1 : 2, errors.get(0).step());
+                assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
+            }
+        }
+    }
+
     @Test void saveValidatesAndKeepsAnIndependentSnapshot() throws Exception {
         assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(new CustomerDraft()));
         CustomerDraft draft = validDraft();
         draft.emails.add(new java.util.LinkedHashMap<>(Map.of("email", "amelia@example.com")));
-        draft.employers.add(new java.util.LinkedHashMap<>(Map.of("name", "Acme", "income", "50000.00")));
+        draft.employers.add(new java.util.LinkedHashMap<>(validEmployer("50000.00")));
         String id = service.save(draft);
         assertEquals("C011", id);
         draft.personal.put("firstName", "Changed");

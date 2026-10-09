@@ -20,7 +20,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
 
     @Override public List<ValidationError> validate(CustomerDraft draft) {
         List<ValidationError> errors = new ArrayList<>();
-        for (String key : List.of("firstName", "lastName", "dateOfBirth")) {
+        for (String key : List.of("title", "firstName", "lastName", "dateOfBirth", "nationality")) {
             if (draft.personal.getOrDefault(key, "").isBlank())
                 errors.add(new ValidationError(0, key, "This field is required."));
         }
@@ -56,10 +56,10 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         List<ValidationError> errors = new ArrayList<>();
         int step = kind.equals("employers") ? 2 : 1;
         List<String> required = switch (kind) {
-            case "addresses" -> List.of("street", "city");
+            case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
-            case "employers" -> List.of("name");
+            case "employers" -> List.of("name", "role", "employmentType", "income");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         for (String key : required)

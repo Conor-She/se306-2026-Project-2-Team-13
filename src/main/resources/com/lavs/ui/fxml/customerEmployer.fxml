@@ -9,22 +9,23 @@
       <TextField fx:id="name" accessibleText="Employer name *" promptText="Employer name" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="nameError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Job title" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="role" accessibleText="Job title" promptText="Job title" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Job title "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="role" accessibleText="Job title *" promptText="Job title" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="roleError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox>
     <VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Employment type" style="-fx-font-weight: bold;"/>
-      <ComboBox fx:id="employmentType" prefHeight="${name.height}" minHeight="${name.height}" maxHeight="${name.height}" accessibleText="Employment type" promptText="Select employment type" maxWidth="Infinity" style="-fx-padding: 0 6; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Employment type "/><Text text="*" fill="#b42318"/></TextFlow>
+      <ComboBox fx:id="employmentType" prefHeight="${name.height}" minHeight="${name.height}" maxHeight="${name.height}" accessibleText="Employment type *" promptText="Select employment type" maxWidth="Infinity" style="-fx-padding: 0 6; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;">
         <items><FXCollections fx:factory="observableArrayList">
           <String fx:value="Full-time"/><String fx:value="Part-time"/><String fx:value="Casual"/>
           <String fx:value="Contract"/><String fx:value="Self-employed"/><String fx:value="Other"/>
         </FXCollections></items>
       </ComboBox>
+      <Label fx:id="employmentTypeError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox>
     <VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Annual income (NZD)" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="income" accessibleText="Annual income (NZD)" promptText="e.g. 50000.00" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Annual income (NZD) "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="income" accessibleText="Annual income (NZD) *" promptText="e.g. 50000.00" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="incomeError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox>
   </FlowPane>

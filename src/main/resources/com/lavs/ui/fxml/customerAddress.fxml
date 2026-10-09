@@ -8,19 +8,19 @@
       <TextField fx:id="street" accessibleText="Street address *" promptText="Street address" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="streetError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Suburb" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="suburb" accessibleText="Suburb" promptText="Suburb" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Suburb "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="suburb" accessibleText="Suburb *" promptText="Suburb" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="suburbError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
       <TextFlow style="-fx-font-weight: bold;"><Text text="City "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
       <TextField fx:id="city" accessibleText="City *" promptText="City" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="cityError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Postcode" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="postcode" accessibleText="Postcode" promptText="Postcode" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Postcode "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="postcode" accessibleText="Postcode *" promptText="Postcode" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="postcodeError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
-      <Label text="Country" style="-fx-font-weight: bold;"/>
-      <TextField fx:id="country" accessibleText="Country" promptText="Country" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Country "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="country" accessibleText="Country *" promptText="Country" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="countryError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><CheckBox fx:id="mailing" text="Mailing address"/></FlowPane>
