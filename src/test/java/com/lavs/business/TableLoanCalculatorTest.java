@@ -26,7 +26,7 @@ class TableLoanCalculatorTest {
         LocalDate startDate = LocalDate.of(2026, 1, 1);
         Loan loan = tableLoan(
                 "L001", 500_000.00, 5.5, 360,
-                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, startDate);
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, startDate);
 
         List<Repayment> schedule = calculator.calculateSchedule(loan);
 
@@ -53,7 +53,7 @@ class TableLoanCalculatorTest {
         LocalDate startDate = LocalDate.of(2026, 1, 1);
         Loan loan = tableLoan(
                 "L002", 12_000.00, 12.0, 12,
-                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, startDate);
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, startDate);
 
         List<Repayment> schedule = calculator.calculateSchedule(loan);
 
@@ -79,8 +79,8 @@ class TableLoanCalculatorTest {
     void supportsZeroInterest() {
         Loan loan = tableLoan(
                 "L003", 12_000.00, 0.0, 12,
-                Loan.Frequency.MONTHLY,
-                Loan.Frequency.MONTHLY,
+                Loan.PaymentFrequency.MONTHLY,
+                Loan.RateFrequency.MONTHLY,
                 LocalDate.of(2026, 1, 31));
 
         List<Repayment> schedule = calculator.calculateSchedule(loan);
@@ -101,13 +101,13 @@ class TableLoanCalculatorTest {
     void supportsWeeklyAndFortnightlySchedules() {
         Loan weeklyLoan = tableLoan(
                 "L004", 5_200.00, 4.0, 12,
-                Loan.Frequency.WEEKLY,
-                Loan.Frequency.WEEKLY,
+                Loan.PaymentFrequency.WEEKLY,
+                Loan.RateFrequency.WEEKLY,
                 LocalDate.of(2026, 1, 1));
         Loan fortnightlyLoan = tableLoan(
                 "L005", 5_200.00, 4.0, 12,
-                Loan.Frequency.FORTNIGHTLY,
-                Loan.Frequency.MONTHLY,
+                Loan.PaymentFrequency.FORTNIGHTLY,
+                Loan.RateFrequency.MONTHLY,
                 LocalDate.of(2026, 1, 1));
 
         List<Repayment> weeklySchedule = calculator.calculateSchedule(weeklyLoan);
@@ -137,37 +137,47 @@ class TableLoanCalculatorTest {
                         () -> calculator.calculateSchedule(new Loan(
                                 "L006", "C001", Loan.Status.NEW, 10_000.00, 5.0,
                                 Loan.Type.INTEREST_ONLY, false, startDate, null, 0.0,
-                                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, 12))),
+                                Loan.PaymentFrequency.MONTHLY,
+                                Loan.RateFrequency.MONTHLY,
+                                12))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L007", 10_000.00, -1.0, 12,
-                                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, startDate))),
+                                Loan.PaymentFrequency.MONTHLY,
+                                Loan.RateFrequency.MONTHLY,
+                                startDate))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L008", 10_000.00, Double.NaN, 12,
-                                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, startDate))),
+                                Loan.PaymentFrequency.MONTHLY,
+                                Loan.RateFrequency.MONTHLY,
+                                startDate))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L009", 10_000.00, 5.0, 12,
-                                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, null))),
+                                Loan.PaymentFrequency.MONTHLY,
+                                Loan.RateFrequency.MONTHLY,
+                                null))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L010", 10_000.00, 5.0, 12,
-                                null, Loan.Frequency.MONTHLY, startDate))),
+                                null, Loan.RateFrequency.MONTHLY, startDate))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L011", 10_000.00, 5.0, 12,
-                                Loan.Frequency.MONTHLY, null, startDate))),
+                                Loan.PaymentFrequency.MONTHLY, null, startDate))),
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> calculator.calculateSchedule(tableLoan(
                                 "L012", 10_000.00, 5.0, 1,
-                                Loan.Frequency.WEEKLY, Loan.Frequency.WEEKLY, startDate))));
+                                Loan.PaymentFrequency.WEEKLY,
+                                Loan.RateFrequency.WEEKLY,
+                                startDate))));
     }
 
     private Loan tableLoan(
@@ -175,8 +185,8 @@ class TableLoanCalculatorTest {
             double principal,
             double annualInterestRate,
             int termMonths,
-            Loan.Frequency paymentFrequency,
-            Loan.Frequency rateFrequency,
+            Loan.PaymentFrequency paymentFrequency,
+            Loan.RateFrequency rateFrequency,
             LocalDate startDate) {
         return new Loan(
                 loanId,

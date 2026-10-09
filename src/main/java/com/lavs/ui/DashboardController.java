@@ -25,6 +25,7 @@ public class DashboardController {
     @FXML private Button homeNav, customersNav, loansNav;
     @FXML private VBox homeView, customersView, loansView;
     @FXML private CustomersController customersViewController;
+    @FXML private LoansController loansViewController;
     @FXML private VBox searchCard, addCustomerCard;
     @FXML private FlowPane homeCards;
     @FXML private StackPane content;
@@ -104,7 +105,7 @@ public class DashboardController {
     }
 
     private void navigate(Button selected, VBox view) {
-        dashboardScroll.setFitToHeight(view == customersView);
+        dashboardScroll.setFitToHeight(view == customersView || view == loansView);
         for (Button button : List.of(homeNav, customersNav, loansNav)) {
             button.getStyleClass().remove("selected");
             button.setStyle(navStyle);
