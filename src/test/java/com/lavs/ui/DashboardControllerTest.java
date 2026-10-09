@@ -132,7 +132,11 @@ class DashboardControllerTest {
         fx(() -> {
             ((VBox) root.lookup("#addCustomerCard")).getChildren().stream()
                 .filter(Button.class::isInstance).map(Button.class::cast).findFirst().orElseThrow().fire();
+            return null;
+        });
+        fx(() -> {
             root.applyCss(); root.layout();
+            assertSame(root.lookup("#title"), root.getScene().getFocusOwner());
             VBox wizard = (VBox) root.lookup(".customer-wizard");
             assertNotNull(wizard);
             ScrollPane customerScroll = (ScrollPane) wizard.lookup("#customerScroll");

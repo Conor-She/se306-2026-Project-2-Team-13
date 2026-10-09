@@ -91,6 +91,15 @@ public class AddCustomerController {
         return change;
     }
 
+    public void focusTitle() {
+        javafx.application.Platform.runLater(() -> {
+            if (view.getScene() == null || step != 0) return;
+            view.applyCss();
+            view.layout();
+            title.requestFocus();
+        });
+    }
+
     public boolean confirmLeave() {
         if (!draft.hasData()) return true;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,

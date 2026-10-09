@@ -131,6 +131,7 @@ public class CustomersController {
         }
         VBox.setVgrow(addCustomerView, javafx.scene.layout.Priority.ALWAYS);
         root.getChildren().add(addCustomerView);
+        addCustomerController.focusTitle();
     }
 
     private static String primaryContact(List<java.util.Map<String, String>> entries, String key) {
