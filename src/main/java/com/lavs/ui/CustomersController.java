@@ -13,6 +13,18 @@ import javafx.scene.layout.VBox;
 
 /** Searchable customer list with a details placeholder. */
 public class CustomersController {
+    private final com.lavs.business.CustomerRegistrationService registrationService;
+    private final javafx.collections.ObservableList<CustomerSummary> customers = FXCollections.observableArrayList();
+    private VBox addCustomerView;
+    private AddCustomerController addCustomerController;
+    private VBox root;
+    public CustomersController() {
+        this(new com.lavs.business.StubCustomerRegistrationService());
+    }
+
+    public CustomersController(com.lavs.business.CustomerRegistrationService registrationService) {
+        this.registrationService = java.util.Objects.requireNonNull(registrationService);
+    }
     public record CustomerSummary(String customerId, String name, String phone, String email) {
         boolean matches(String query) {
             return List.of(customerId, name, phone, email).stream()
@@ -27,17 +39,21 @@ public class CustomersController {
     @FXML private CustomerDetailsController detailsViewController;
 
     @FXML private void initialize() {
+        root = (VBox) listView.getParent();
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
         phoneColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().phone()));
         emailColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().email()));
-        var filtered = new FilteredList<>(FXCollections.observableArrayList(loadCustomers()));
+        customers.setAll(loadCustomers());
+        var filtered = new FilteredList<>(customers);
         var sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(customerTable.comparatorProperty());
         customerTable.setItems(sorted);
         customerTable.getSortOrder().add(nameColumn);
         customerTable.setPlaceholder(new Label("No customers found"));
         resultsHeading.setText("All customers (" + filtered.size() + ")");
+        filtered.addListener((javafx.collections.ListChangeListener<CustomerSummary>) change ->
+            resultsHeading.setText((searchField.getText().isBlank() ? "All customers (" : "Search results (") + filtered.size() + ")"));
         searchField.textProperty().addListener((obs, oldValue, value) -> {
             String query = value.strip().toLowerCase(Locale.ROOT);
             filtered.setPredicate(customer -> customer.matches(query));
@@ -79,10 +95,60 @@ public class CustomersController {
         customerTable.sort();
         focusSearch();
     }
+    public boolean confirmLeave() {
+        return addCustomerController == null || addCustomerController.confirmLeave();
+    }
+
+    @FXML public void openAddCustomer() {
+        if (addCustomerView != null && !confirmLeave()) return;
+        closeEditor();
+        listView.setVisible(false);
+        listView.setManaged(false);
+        detailsView.setVisible(false);
+        detailsView.setManaged(false);
+        addCustomerController = new AddCustomerController(registrationService, this::onShown, (id, draft) -> {
+            customers.add(new CustomerSummary(id,
+                draft.personal.getOrDefault("firstName", "") + " " + draft.personal.getOrDefault("lastName", ""),
+                primaryContact(draft.phones, "number"),
+                primaryContact(draft.emails, "email")));
+            onShown();
+            Alert confirmation = new Alert(Alert.AlertType.INFORMATION, "Customer " + id + " has been saved.", ButtonType.OK);
+            confirmation.setHeaderText("Customer added successfully");
+            if (root.getScene() != null) confirmation.initOwner(root.getScene().getWindow());
+            confirmation.showAndWait();
+        });
+        javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addCustomer.fxml"));
+        loader.setControllerFactory(type -> addCustomerController);
+        try {
+            addCustomerView = loader.load();
+        } catch (java.io.IOException exception) {
+            onShown();
+            Alert error = new Alert(Alert.AlertType.ERROR, "Unable to open Add Customer. Please try again.", ButtonType.OK);
+            error.setHeaderText("Customer form could not be opened");
+            if (root.getScene() != null) error.initOwner(root.getScene().getWindow());
+            error.showAndWait();
+            return;
+        }
+        VBox.setVgrow(addCustomerView, javafx.scene.layout.Priority.ALWAYS);
+        root.getChildren().add(addCustomerView);
+        addCustomerController.focusTitle();
+    }
+
+    private static String primaryContact(List<java.util.Map<String, String>> entries, String key) {
+        return entries.stream().filter(entry -> "true".equals(entry.get("primary"))).findFirst()
+            .or(() -> entries.stream().findFirst()).map(entry -> entry.getOrDefault(key, "")).orElse("");
+    }
+
+    private void closeEditor() {
+        if (addCustomerView != null) root.getChildren().remove(addCustomerView);
+        addCustomerView = null;
+        addCustomerController = null;
+    }
     private void focusSearch() {
         Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
     }
     private void showList(boolean visible) {
+        closeEditor();
         listView.setVisible(visible);
         listView.setManaged(visible);
         detailsView.setVisible(!visible);

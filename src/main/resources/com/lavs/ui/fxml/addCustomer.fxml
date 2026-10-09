@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.layout.*?>
+<!-- Layout and styling live here; AddCustomerController handles draft state and navigation. -->
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="com.lavs.ui.AddCustomerController" fx:id="view" spacing="22" minWidth="0"
+         styleClass="customer-wizard"
+         style="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 20; -fx-font-family: 'Arial'; -fx-font-size: 16px;">
+  <fx:define>
+    <String fx:id="scrollBarStyle" fx:value="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-pref-width: 10;"/>
+    <String fx:id="scrollTrackStyle" fx:value="-fx-background-color: transparent; -fx-border-color: transparent; -fx-background-insets: 0;"/>
+    <String fx:id="scrollThumbStyle" fx:value="-fx-background-color: #9693ca; -fx-background-radius: 8; -fx-background-insets: 2;"/>
+    <String fx:id="scrollButtonStyle" fx:value="-fx-background-color: transparent; -fx-padding: 0; -fx-min-width: 0; -fx-pref-width: 0; -fx-max-width: 0; -fx-min-height: 0; -fx-pref-height: 0; -fx-max-height: 0; -fx-opacity: 0;"/>
+    <String fx:id="markerStyle" fx:value="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b; -fx-text-fill: #393a7b;"/>
+    <String fx:id="activeMarkerStyle" fx:value="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b; -fx-background-color: #393a7b; -fx-text-fill: white;"/>
+    <String fx:id="stepNameStyle" fx:value="-fx-text-fill: #242438;"/>
+    <String fx:id="activeStepNameStyle" fx:value="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+    <String fx:id="inputStyle" fx:value="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+    <String fx:id="invalidInputStyle" fx:value="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-border-color: #b42318;"/>
+    <VBox fx:id="personalPane" spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Personal details" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <TextFlow><Text text="Fields marked "/><Text text="*" fill="#b42318"/><Text text=" are required. Customer ID is assigned when saved."/></TextFlow>
+      <FlowPane hgap="20" vgap="16"><VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Title "/><Text text="*" fill="#b42318"/></TextFlow>
+      <ComboBox fx:id="title" accessibleText="Title *" promptText="Title" editable="false" maxWidth="Infinity" style="-fx-padding: 0; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="titleError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="First name "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
+      <TextField fx:id="firstName" accessibleText="First name *" promptText="First name" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="firstNameError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Last name "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
+      <TextField fx:id="lastName" accessibleText="Last name *" promptText="Last name" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="lastNameError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Date of birth "/><Text text="*" fill="#b42318"/><Text text=" (dd-mm-yyyy)"/></TextFlow>
+      <TextField fx:id="dateOfBirth" accessibleText="Date of birth * (dd-mm-yyyy)" promptText="14-03-1990" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="dateOfBirthError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Nationality "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="nationality" accessibleText="Nationality *" promptText="Nationality" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="nationalityError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox></FlowPane>
+    </VBox>
+    <VBox fx:id="contactPane" spacing="18" minWidth="0">
+      <VBox spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Addresses" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <VBox fx:id="addressRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add address" onAction="#addAddress" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+      <VBox spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Phone numbers" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <VBox fx:id="phoneRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add phone" onAction="#addPhone" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+      <VBox spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Emails" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <VBox fx:id="emailRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add email" onAction="#addEmail" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+    </VBox>
+    <VBox fx:id="employmentPane" spacing="18" minWidth="0">
+      <VBox spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Employers" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <VBox fx:id="employerRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add employer" onAction="#addEmployer" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+      <Label fx:id="guarantorNote" text="A guarantor will be needed when a loan is started." wrapText="true"/>
+    </VBox>
+    <VBox fx:id="notesPane" spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Notes" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <Label text="Add any notes about the customer. Notes are optional." wrapText="true"/>
+      <VBox fx:id="noteRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add note" onAction="#addNote" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+    <VBox fx:id="documentsPane" spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <Label text="Documents" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+      <Label text="Select one or more customer documents. Documents are optional." wrapText="true"/>
+      <VBox fx:id="documentRows" spacing="12" minWidth="0"/>
+      <Button text="+ Add documents" onAction="#addDocuments" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    </VBox>
+    <VBox fx:id="reviewPane" spacing="18" minWidth="0">
+      <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="Personal details" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/><Region HBox.hgrow="ALWAYS"/><Button text="Edit" onAction="#editPersonal" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+      </HBox>
+      <FlowPane fx:id="personalReview" hgap="30" vgap="16" minWidth="0"/>
+    </VBox>
+      <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="Contact" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/><Region HBox.hgrow="ALWAYS"/><Button text="Edit" onAction="#editContact" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+      </HBox>
+      <FlowPane fx:id="contactReview" hgap="30" vgap="16" minWidth="0"/>
+    </VBox>
+      <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+      <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="Employment" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/><Region HBox.hgrow="ALWAYS"/><Button text="Edit" onAction="#editEmployment" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+      </HBox>
+      <VBox fx:id="employmentReview" spacing="14" minWidth="0"/>
+    </VBox>
+      <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+        <HBox spacing="12" alignment="CENTER_LEFT">
+          <Label text="Notes" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+          <Region HBox.hgrow="ALWAYS"/>
+          <Button text="Edit" onAction="#editNotes" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+        </HBox>
+        <VBox fx:id="notesReview" spacing="14" minWidth="0"/>
+      </VBox>
+      <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
+        <HBox spacing="12" alignment="CENTER_LEFT">
+          <Label text="Documents" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+          <Region HBox.hgrow="ALWAYS"/>
+          <Button text="Edit" onAction="#editDocuments" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+        </HBox>
+        <VBox fx:id="documentsReview" spacing="14" minWidth="0"/>
+      </VBox>
+    </VBox>
+  </fx:define>
+  <Label text="Add New Customer" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
+  <FlowPane hgap="14" vgap="10" rowValignment="CENTER"><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker0" text="1" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName0" text="Personal Details"/></HBox><Region minWidth="36" prefWidth="36" maxWidth="36" minHeight="2" prefHeight="2" maxHeight="2" style="-fx-background-color: #9693ca;"/><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker1" text="2" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName1" text="Contact"/></HBox><Region minWidth="36" prefWidth="36" maxWidth="36" minHeight="2" prefHeight="2" maxHeight="2" style="-fx-background-color: #9693ca;"/><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker2" text="3" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName2" text="Employment"/></HBox><Region minWidth="36" prefWidth="36" maxWidth="36" minHeight="2" prefHeight="2" maxHeight="2" style="-fx-background-color: #9693ca;"/><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker3" text="4" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName3" text="Notes"/></HBox><Region minWidth="36" prefWidth="36" maxWidth="36" minHeight="2" prefHeight="2" maxHeight="2" style="-fx-background-color: #9693ca;"/><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker4" text="5" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName4" text="Documents"/></HBox><Region minWidth="36" prefWidth="36" maxWidth="36" minHeight="2" prefHeight="2" maxHeight="2" style="-fx-background-color: #9693ca;"/><HBox spacing="8" alignment="CENTER_LEFT"><Label fx:id="marker5" text="6" style="-fx-min-width: 30; -fx-min-height: 30; -fx-alignment: center; -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: #393a7b;"/><Label fx:id="stepName5" text="Review"/></HBox></FlowPane>
+  <Label fx:id="message" wrapText="true" visible="false" managed="false"
+         style="-fx-background-color: #fff1ef; -fx-text-fill: #9b241c; -fx-padding: 12; -fx-background-radius: 8;"/>
+  <Label fx:id="reviewNotice" text="Editing from Review. Your other details are kept." wrapText="true" visible="false" managed="false"
+         style="-fx-background-color: #efedf9; -fx-text-fill: #393a7b; -fx-padding: 12; -fx-background-radius: 8;"/>
+  <ScrollPane fx:id="customerScroll" fitToWidth="true" hbarPolicy="NEVER" minHeight="180" VBox.vgrow="ALWAYS" style="-fx-background: white; -fx-background-color: white; -fx-border-width: 0; -fx-padding: 0; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;">
+    <content><VBox fx:id="body" spacing="18" minWidth="0"/></content>
+  </ScrollPane>
+  <HBox spacing="12" alignment="CENTER_LEFT" minWidth="0">
+    <Button text="Cancel" fx:id="cancel" onAction="#cancel" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+    <FlowPane HBox.hgrow="ALWAYS" minWidth="0" fx:id="footer" hgap="12" vgap="10" alignment="CENTER_RIGHT">
+    <Button text="Back" fx:id="back" onAction="#back" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/><Button text="Skip" fx:id="skip" onAction="#skip" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/><Button text="Next" fx:id="next" onAction="#next" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: #f8f40c; -fx-text-fill: black; -fx-border-color: #b6b309; -fx-font-weight: bold;"/>
+    </FlowPane>
+  </HBox>
+</VBox>

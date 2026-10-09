@@ -33,11 +33,24 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         }
     }
 
-    protected final int periodsPerYear(Loan.Frequency frequency) {
+    protected final int periodsPerYear(Loan.PaymentFrequency frequency) {
         return switch (frequency) {
             case WEEKLY -> 52;
             case FORTNIGHTLY -> 26;
             case MONTHLY -> 12;
+            case YEARLY -> 1;
+            case ON_RENEWAL -> throw new IllegalArgumentException(
+                    "ON_RENEWAL has no fixed number of payments per year");
+        };
+    }
+
+    protected final int periodsPerYear(Loan.RateFrequency frequency) {
+        return switch (frequency) {
+            case DAILY -> 365;
+            case WEEKLY -> 52;
+            case FORTNIGHTLY -> 26;
+            case MONTHLY -> 12;
+            case YEARLY -> 1;
         };
     }
 
@@ -95,12 +108,15 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
 
     private LocalDate dueDate(
             LocalDate startDate,
-            Loan.Frequency paymentFrequency,
+            Loan.PaymentFrequency paymentFrequency,
             int paymentNumber) {
         return switch (paymentFrequency) {
             case WEEKLY -> startDate.plusWeeks(paymentNumber);
             case FORTNIGHTLY -> startDate.plusWeeks(2L * paymentNumber);
             case MONTHLY -> startDate.plusMonths(paymentNumber);
+            case YEARLY -> startDate.plusYears(paymentNumber);
+            case ON_RENEWAL -> throw new IllegalArgumentException(
+                    "ON_RENEWAL requires a renewal date");
         };
     }
 }

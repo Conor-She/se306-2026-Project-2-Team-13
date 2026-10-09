@@ -60,7 +60,7 @@
         <Label text="Add New Customer" styleClass="card-title" minWidth="0" style="$cardTitleStyle" wrapText="true"/>
         <Label text="Create a new customer record." styleClass="card-copy" minWidth="0" style="$copyStyle" wrapText="true"/>
         <Region VBox.vgrow="ALWAYS"/>
-        <Button text="Add Customer" onAction="#showCustomers" minWidth="0" wrapText="true" maxWidth="Infinity" styleClass="primary" style="$primaryStyle"/>
+        <Button text="Add Customer" onAction="#showAddCustomer" minWidth="0" wrapText="true" maxWidth="Infinity" styleClass="primary" style="$primaryStyle"/>
        </VBox>
       </FlowPane>
      </VBox>

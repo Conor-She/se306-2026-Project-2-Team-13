@@ -129,6 +129,199 @@ class DashboardControllerTest {
             assertNull(root.lookup(".list-view"));
             return null;
         });
+        fx(() -> {
+            ((VBox) root.lookup("#addCustomerCard")).getChildren().stream()
+                .filter(Button.class::isInstance).map(Button.class::cast).findFirst().orElseThrow().fire();
+            return null;
+        });
+        fx(() -> {
+            root.applyCss(); root.layout();
+            assertSame(root.lookup("#title"), root.getScene().getFocusOwner());
+            VBox wizard = (VBox) root.lookup(".customer-wizard");
+            assertNotNull(wizard);
+            ScrollPane customerScroll = (ScrollPane) wizard.lookup("#customerScroll");
+            assertTrue(customerScroll.lookupAll(".thumb").stream().anyMatch(node -> node.getStyle().contains("#9693ca")));
+            assertTrue(customerScroll.lookupAll(".increment-button").stream().allMatch(node -> node.getStyle().contains("-fx-opacity: 0")));
+            assertTrue(wizard.lookupAll(".button").stream().map(Button.class::cast).noneMatch(b -> b.getText().equals("Skip")));
+            wizardButton(wizard, "Next").fire();
+            wizard.applyCss(); wizard.layout();
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "First name *").setText("Amelia");
+            wizardField(wizard, "Last name *").setText("Adams");
+            TextField dob = wizardField(wizard, "Date of birth * (dd-mm-yyyy)");
+            dob.appendText("1");
+            dob.appendText("4");
+            assertEquals("14-", dob.getText());
+            dob.appendText("0");
+            dob.appendText("3");
+            assertEquals("14-03-", dob.getText());
+            dob.appendText("1990");
+            assertEquals("14-03-1990", dob.getText());
+            dob.positionCaret(6);
+            dob.deletePreviousChar();
+            assertEquals("14-01-990", dob.getText());
+            dob.selectAll();
+            dob.replaceSelection("14031990");
+            assertEquals("14-03-1990", dob.getText());
+            dob.appendText("1");
+            assertEquals("14-03-1990", dob.getText());
+            dob.setText("14-03-1990");
+            assertEquals("14-03-1990", dob.getText());
+            wizardButton(wizard, "Next").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+            for (String kind : new String[] {"address", "phone", "email"}) {
+                wizardButton(wizard, "+ Add " + kind).fire();
+                wizardButton(wizard, "Done").fire();
+                wizard.applyCss(); wizard.layout();
+                assertTrue(((Parent) wizard.lookup("#" + (kind.equals("address") ? "address" : kind) + "Rows"))
+                    .lookupAll(".button").isEmpty());
+            }
+            // Empty editors are discarded automatically by either navigation action.
+            for (String action : new String[] {"Next", "Skip"}) {
+                for (String kind : new String[] {"address", "phone", "email"}) {
+                    wizardButton(wizard, "+ Add " + kind).fire();
+                    for (String other : new String[] {"address", "phone", "email"}) {
+                        wizardButton(wizard, "+ Add " + other).fire();
+                        assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                            .filter(button -> button.getText().equals("Done")).count());
+                    }
+                    wizardButton(wizard, action).fire();
+                    assertNotNull(wizard.lookup("#employmentPane"));
+                    wizardButton(wizard, "Back").fire();
+                    assertTrue(wizard.lookupAll(".text-field").isEmpty());
+                }
+            }
+            wizardButton(wizard, "+ Add address").fire();
+            wizardField(wizard, "Street address *").setText("12 Queen St");
+            wizardButton(wizard, "+ Add email").fire();
+            assertEquals(1, ((Parent) wizard.lookup("#addressRows")).lookupAll(".text-field").stream()
+                .map(TextField.class::cast).filter(field -> field.getText().equals("12 Queen St")).count());
+            assertTrue(((Parent) wizard.lookup("#emailRows")).lookupAll(".text-field").isEmpty());
+            wizardButton(wizard, "Done").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+
+            wizardField(wizard, "City *").setText("Auckland");
+            wizardButton(wizard, "+ Add phone").fire();
+            assertTrue(((Parent) wizard.lookup("#phoneRows")).lookupAll(".text-field").isEmpty());
+            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Click Done"));
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "+ Add phone").fire();
+            TextField phone = wizardField(wizard, "Phone number *");
+            phone.appendText("abc");
+            assertEquals("", phone.getText());
+            phone.appendText("+64 (21) 555-0101");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.appendText("letters");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.selectAll();
+            phone.replaceSelection("021abc5550101");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.selectAll();
+            phone.replaceSelection("021 555 0101");
+            phone.positionCaret(3);
+            phone.insertText(3, "+");
+            assertEquals("021 555 0101", phone.getText());
+            phone.clear();
+            assertEquals("", phone.getText());
+            phone.setText("021 555 0101");
+            wizardButton(wizard, "+ Add email").fire();
+            assertTrue(((Parent) wizard.lookup("#emailRows")).lookupAll(".text-field").isEmpty());
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "+ Add email").fire();
+            wizardField(wizard, "Email address *").setText("invalid");
+            wizardButton(wizard, "Next").fire();
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "Email address *").setText("amelia@example.com");
+            wizardButton(wizard, "Back").fire();
+            assertEquals("Amelia", wizardField(wizard, "First name *").getText());
+            wizardButton(wizard, "Next").fire();
+            assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
+            assertTrue(((Parent) wizard.lookup("#addressRows")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("12 Queen St")));
+            assertTrue(((Parent) wizard.lookup("#phoneRows")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("021 555 0101")));
+            wizardButton(wizard, "Next").fire();
+            assertNotNull(wizard.lookup("#employmentPane"));
+            assertTrue(wizard.lookup("#guarantorNote").isVisible());
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardButton(wizard, "+ Add employer").fire();
+            assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                .filter(button -> button.getText().equals("Done")).count());
+            wizardButton(wizard, "Next").fire();
+            assertNotNull(wizard.lookup("#reviewPane"));
+            wizardButton(wizard, "Back").fire();
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardButton(wizard, "Done").fire();
+            assertTrue(((Parent) wizard.lookup("#employerRows")).lookupAll(".button").isEmpty());
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardField(wizard, "Employer name *").setText("Acme");
+            wizard.applyCss(); wizard.layout();
+            wizard.requestLayout(); wizard.layout();
+            TextField employerName = wizardField(wizard, "Employer name *");
+            ComboBox<?> employmentType = (ComboBox<?>) wizard.lookup("#employmentType");
+            assertEquals(employerName.getWidth(), employmentType.getWidth(), 1);
+            assertEquals(employerName.getHeight(), employmentType.getHeight(), 1);
+            assertNull(wizard.lookup("#address"));
+            assertNull(wizard.lookup("#phone"));
+            wizardField(wizard, "Annual income (NZD)").setText("-1");
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#employmentPane"));
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
+            ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Part-time");
+            wizardButton(wizard, "+ Add employer").fire();
+            assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                .filter(button -> button.getText().equals("Done")).count());
+            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Click Done"));
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "Back").fire();
+            assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
+            wizardButton(wizard, "Next").fire();
+            wizardButton(wizard, "Edit").fire();
+            assertEquals("Acme", wizardField(wizard, "Employer name *").getText());
+            assertEquals("50000.00", wizardField(wizard, "Annual income (NZD)").getText());
+            assertEquals("Part-time", ((ComboBox<?>) wizard.lookup("#employmentType")).getValue());
+            wizardButton(wizard, "Remove").fire();
+            assertTrue(wizard.lookup("#guarantorNote").isVisible());
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#reviewPane"));
+            assertFalse(wizardButton(wizard, "Save customer").isDisabled());
+            assertTrue(((Parent) wizard.lookup("#personalReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Amelia Adams")));
+            assertTrue(((Parent) wizard.lookup("#contactReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("amelia@example.com")));
+            Parent review = (Parent) wizard.lookup("#reviewPane");
+            wizardButton((Parent) review.getChildrenUnmodifiable().get(0), "Edit").fire();
+            wizardField(wizard, "First name *").setText("Amy");
+            wizardButton(wizard, "Save and return to Review").fire();
+            assertTrue(((Parent) wizard.lookup("#personalReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Amy Adams")));
+            review = (Parent) wizard.lookup("#reviewPane");
+            wizardButton((Parent) review.getChildrenUnmodifiable().get(1), "Edit").fire();
+            wizardField(wizard, "Email address *").setText("invalid");
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+            assertNull(wizard.lookup("#reviewPane"));
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "Email address *").setText("amy@example.com");
+            wizardButton(wizard, "Save and return to Review").fire();
+            assertFalse(wizardButton(wizard, "Save customer").isDisabled());
+            wizardButton(wizard, "Back").fire();
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardField(wizard, "Employer name *").setText("Acme");
+            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
+            wizardButton(wizard, "Next").fire();
+            assertTrue(((Parent) wizard.lookup("#employmentReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Acme") && label.getText().contains("50000.00")));
+
+
+            // End this draft without opening a modal confirmation in the test.
+            ((CustomersController) loader.getNamespace().get("customersViewController")).onShown();
+            return null;
+        });
         fx(() -> { ((Button) root.lookup("#homeNav")).fire(); return null; });
         assertTrue(fx(() -> root.lookupAll(".heading").stream().anyMatch(node -> ((Label) node).getText().equals("Welcome, Alyza"))));
         fx(() -> {
@@ -173,5 +366,17 @@ class DashboardControllerTest {
             }
             return null;
         });
+    }
+
+    private static Button wizardButton(Parent wizard, String text) {
+        wizard.applyCss(); wizard.layout();
+        return wizard.lookupAll(".button").stream().map(Button.class::cast)
+            .filter(button -> button.getText().equals(text)).findFirst().orElseThrow();
+    }
+
+    private static TextField wizardField(Parent wizard, String label) {
+        wizard.applyCss(); wizard.layout();
+        return wizard.lookupAll(".text-field").stream().map(TextField.class::cast)
+            .filter(field -> label.equals(field.getAccessibleText())).findFirst().orElseThrow();
     }
 }
