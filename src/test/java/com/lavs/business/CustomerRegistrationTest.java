@@ -50,4 +50,23 @@ class CustomerRegistrationTest {
         draft.emails.set(0, Map.of("email", "amelia@example.com"));
         assertTrue(service.validate(draft).isEmpty());
     }
+    @Test void employmentIsOptionalAndValidatesPartialEntries() {
+        CustomerDraft draft = validDraft();
+        assertTrue(service.validate(draft).isEmpty());
+        draft.employers.add(Map.of("income", "-1", "phone", "abc"));
+        var errors = service.validate(draft);
+        assertTrue(errors.stream().allMatch(error -> error.step() == 2));
+        assertEquals(java.util.Set.of("employers.0.name", "employers.0.income", "employers.0.phone"),
+            errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
+        for (String income : new String[] {"abc", "12.345"}) {
+            draft.employers.set(0, Map.of("name", "Acme", "income", income));
+            assertFalse(service.validate(draft).isEmpty());
+        }
+        for (String income : new String[] {"", "0", "50000.00"}) {
+            draft.employers.set(0, Map.of("name", "Acme", "income", income, "phone", "+64 21 555 0101"));
+            assertTrue(service.validate(draft).isEmpty());
+        }
+        assertFalse(CustomerDraft.hasEntryDetails("employers", Map.of("name", "   ")));
+        assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("income", "0")));
+    }
 }

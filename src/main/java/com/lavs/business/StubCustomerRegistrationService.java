@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Personal-details validation until the real registration service is available. */
+/** Registration validation until the real registration service is available. */
 public class StubCustomerRegistrationService implements CustomerRegistrationService {
     private static final DateTimeFormatter DATE_OF_BIRTH_FORMAT =
             DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
@@ -31,6 +31,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         validateEntries("addresses", draft.addresses, errors);
         validateEntries("phones", draft.phones, errors);
         validateEntries("emails", draft.emails, errors);
+        validateEntries("employers", draft.employers, errors);
         for (String kind : List.of("addresses", "phones", "emails")) {
             var entries = kind.equals("addresses") ? draft.addresses : kind.equals("phones") ? draft.phones : draft.emails;
             String flag = kind.equals("addresses") ? "mailing" : "primary";
@@ -48,11 +49,12 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
 
     private List<ValidationError> validateEntry(String kind, Map<String, String> entry) {
         List<ValidationError> errors = new ArrayList<>();
-        int step = 1;
+        int step = kind.equals("employers") ? 2 : 1;
         List<String> required = switch (kind) {
             case "addresses" -> List.of("street", "city");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
+            case "employers" -> List.of("name");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         for (String key : required)
@@ -60,9 +62,12 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         String email = entry.getOrDefault("email", "");
         if (!email.isBlank() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
             errors.add(new ValidationError(step, "email", "Enter a valid email address."));
-        String number = entry.getOrDefault("number", "");
+        String income = entry.getOrDefault("income", "");
+        if (kind.equals("employers") && !income.isBlank() && !income.matches("[0-9]+(\\.[0-9]{1,2})?"))
+            errors.add(new ValidationError(step, "income", "Enter a non-negative annual income with up to two decimal places."));
+        String number = entry.getOrDefault(kind.equals("employers") ? "phone" : "number", "");
         if (!number.isBlank() && !number.matches("\\+?[0-9 ()-]{7,20}"))
-            errors.add(new ValidationError(step, "number", "Enter a valid phone number."));
+            errors.add(new ValidationError(step, kind.equals("employers") ? "phone" : "number", "Enter a valid phone number."));
         return List.copyOf(errors);
     }
 

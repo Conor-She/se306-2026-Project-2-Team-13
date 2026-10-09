@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
-/** Unsaved personal details. */
+/** Unsaved customer registration details. */
 public class CustomerDraft {
     /** Options such as phone type or primary status alone are not contact details. */
     public static boolean hasEntryDetails(String kind, Map<String, String> entry) {
@@ -13,6 +13,7 @@ public class CustomerDraft {
             case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
+            case "employers" -> List.of("name", "role", "address", "phone", "employmentType", "income");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         return keys.stream().anyMatch(key -> !entry.getOrDefault(key, "").isBlank());
@@ -23,8 +24,10 @@ public class CustomerDraft {
     public final List<Map<String, String>> phones = new ArrayList<>();
     public final List<Map<String, String>> emails = new ArrayList<>();
 
+    public final List<Map<String, String>> employers = new ArrayList<>();
+
     public boolean hasData() {
         return personal.values().stream().anyMatch(value -> !value.isBlank())
-                || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty();
+                || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty() || !employers.isEmpty();
     }
 }

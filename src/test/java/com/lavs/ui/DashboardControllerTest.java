@@ -171,8 +171,31 @@ class DashboardControllerTest {
             assertEquals("12 Queen St", wizardField(wizard, "Street address *").getText());
             assertEquals("021 555 0101", wizardField(wizard, "Phone number *").getText());
             wizardButton(wizard, "Next").fire();
-            assertTrue(wizard.lookupAll(".label").stream().map(Label.class::cast)
-                .anyMatch(label -> label.getText().contains("next stage is not implemented")));
+            assertNotNull(wizard.lookup("#employmentPane"));
+            assertTrue(wizard.lookup("#guarantorNote").isVisible());
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardButton(wizard, "Done").fire();
+            assertTrue(((Parent) wizard.lookup("#employerRows")).lookupAll(".button").isEmpty());
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardField(wizard, "Employer name *").setText("Acme");
+            wizardField(wizard, "Annual income (NZD)").setText("-1");
+            wizardButton(wizard, "Next").fire();
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
+            ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Part-time");
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "Back").fire();
+            assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
+            wizardButton(wizard, "Next").fire();
+            wizardButton(wizard, "Edit").fire();
+            assertEquals("Acme", wizardField(wizard, "Employer name *").getText());
+            assertEquals("50000.00", wizardField(wizard, "Annual income (NZD)").getText());
+            assertEquals("Part-time", ((ComboBox<?>) wizard.lookup("#employmentType")).getValue());
+            wizardButton(wizard, "Remove").fire();
+            assertTrue(wizard.lookup("#guarantorNote").isVisible());
+            wizardButton(wizard, "Skip").fire();
+            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Review stage is not implemented"));
+
             // End this draft without opening a modal confirmation in the test.
             ((CustomersController) loader.getNamespace().get("customersViewController")).onShown();
             return null;

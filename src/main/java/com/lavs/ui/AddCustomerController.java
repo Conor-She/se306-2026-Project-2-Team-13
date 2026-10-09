@@ -12,7 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-/** Personal-details stage of customer registration. */
+/** Customer registration stages and draft navigation. */
 public class AddCustomerController {
     private final CustomerRegistrationService service;
     private final Runnable onCancel;
@@ -21,11 +21,11 @@ public class AddCustomerController {
     private final Map<String, Control> fields = new LinkedHashMap<>();
     private int step;
     private final Set<String> expanded = new HashSet<>();
-    @FXML private VBox view, body, personalPane, contactPane, addressRows, phoneRows, emailRows;
+    @FXML private VBox view, body, personalPane, contactPane, employmentPane, addressRows, phoneRows, emailRows, employerRows;
     @FXML private FlowPane footer;
     @FXML private Button back, skip, next;
-    @FXML private Label message;
-    @FXML private Label marker0, marker1, stepName0, stepName1;
+    @FXML private Label message, guarantorNote;
+    @FXML private Label marker0, marker1, marker2, stepName0, stepName1, stepName2;
     @FXML private TextField title, firstName, lastName, dateOfBirth, nationality;
     @FXML private Label titleError, firstNameError, lastNameError, dateOfBirthError, nationalityError;
     @FXML private String markerStyle, stepNameStyle, activeMarkerStyle, activeStepNameStyle, inputStyle, invalidInputStyle;
@@ -66,12 +66,12 @@ public class AddCustomerController {
         if (!errors.isEmpty()) {
             Control field = fields.get(errors.get(0).field());
             if (field != null) field.requestFocus();
-        } else if (step == 0) {
-            step = 1;
+        } else if (step < 2) {
+            step++;
             showErrors = false;
             render();
         } else {
-            message.setText("Contact details are valid. The next stage is not implemented yet.");
+            message.setText("Employment details are valid. The Review stage is not implemented yet.");
             message.setVisible(true);
             message.setManaged(true);
         }
@@ -110,28 +110,43 @@ public class AddCustomerController {
     }
     private void render() {
         marker0.setStyle(activeMarkerStyle);
-        marker1.setStyle(step == 1 ? activeMarkerStyle : markerStyle);
+        marker1.setStyle(step >= 1 ? activeMarkerStyle : markerStyle);
         stepName0.setStyle(step == 0 ? activeStepNameStyle : stepNameStyle);
         stepName1.setStyle(step == 1 ? activeStepNameStyle : stepNameStyle);
+        marker2.setStyle(step == 2 ? activeMarkerStyle : markerStyle);
+        stepName2.setStyle(step == 2 ? activeStepNameStyle : stepNameStyle);
         if (step == 0) body.getChildren().setAll(personalPane);
-        else {
+        else if (step == 1) {
             entries(addressRows, "addresses", draft.addresses);
             entries(phoneRows, "phones", draft.phones);
             entries(emailRows, "emails", draft.emails);
             body.getChildren().setAll(contactPane);
         }
+        else {
+            entries(employerRows, "employers", draft.employers);
+            guarantorNote.setVisible(draft.employers.isEmpty());
+            guarantorNote.setManaged(draft.employers.isEmpty());
+            body.getChildren().setAll(employmentPane);
+        }
         footer.getChildren().setAll(next);
-        if (step == 1) footer.getChildren().setAll(back, skip, next);
+        if (step > 0) footer.getChildren().setAll(back, skip, next);
         customerScroll.setVvalue(0);
         refreshValidation();
     }
 
-    @FXML private void back() { step = 0; showErrors = false; render(); }
+    @FXML private void back() { step--; showErrors = false; render(); }
     @FXML private void skip() {
-        message.setText("The next stage is not implemented yet. Your contact details are kept.");
-        message.setVisible(true);
-        message.setManaged(true);
+        if (step == 1) {
+            step = 2;
+            showErrors = false;
+            render();
+        } else {
+            message.setText("The Review stage is not implemented yet. Your employment details are kept.");
+            message.setVisible(true);
+            message.setManaged(true);
+        }
     }
+    @FXML private void addEmployer() { addEntry("employers", draft.employers); }
     @FXML private void addAddress() { addEntry("addresses", draft.addresses); }
     @FXML private void addPhone() { addEntry("phones", draft.phones); }
     @FXML private void addEmail() { addEntry("emails", draft.emails); }
@@ -183,7 +198,8 @@ public class AddCustomerController {
                     case "addresses" -> "customerAddress.fxml";
                     case "phones" -> "customerPhone.fxml";
                     case "emails" -> "customerEmail.fxml";
-                    default -> throw new IllegalArgumentException("Unknown contact kind: " + kind);
+                    case "employers" -> "customerEmployer.fxml";
+                    default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
                 });
                 Map<String, Object> editorNodes = editor.getNamespace();
                 for (var entry : editorNodes.entrySet()) {
@@ -202,7 +218,10 @@ public class AddCustomerController {
                     bindFlag((CheckBox) editorNodes.get("mailing"), "mailing", value, values);
                 } else if (kind.equals("emails")) {
                     bindFlag((CheckBox) editorNodes.get("primary"), "primary", value, values);
-
+                } else if (kind.equals("employers")) {
+                    @SuppressWarnings("unchecked") ComboBox<String> type = (ComboBox<String>) editorNodes.get("employmentType");
+                    type.setValue(value.get("employmentType"));
+                    type.valueProperty().addListener((o, a, b) -> value.put("employmentType", b == null ? "" : b));
                 }
                 ((VBox) nodes.get("editorContainer")).getChildren().add(editor.getRoot());
             }
@@ -240,6 +259,8 @@ public class AddCustomerController {
             case "addresses" -> join(value.get("street"), value.get("suburb"), value.get("city"), value.get("postcode"), value.get("country")) + ("true".equals(value.get("mailing")) ? "  • Mailing" : "");
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");
+            case "employers" -> join(value.get("name"), value.get("role"), value.get("employmentType"), value.get("address"), value.get("phone"))
+                    + (value.getOrDefault("income", "").isBlank() ? "" : "  ? Annual income: NZD " + value.get("income"));
             default -> "";
         };
         return result.isBlank() ? "New entry — enter details" : result;
