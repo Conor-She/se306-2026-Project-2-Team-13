@@ -72,6 +72,9 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         if (!email.isBlank() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
             errors.add(new ValidationError(step, "email", "Enter a valid email address."));
         String income = entry.getOrDefault("income", "");
+        String postcode = kind.equals("addresses") ? entry.getOrDefault("postcode", "") : "";
+        if (!postcode.isBlank() && !postcode.matches("[0-9]+"))
+            errors.add(new ValidationError(step, "postcode", "Enter a postcode using digits only."));
         if (kind.equals("employers") && !income.isBlank() && !income.matches("[0-9]+(\\.[0-9]{1,2})?"))
             errors.add(new ValidationError(step, "income", "Enter a non-negative annual income with up to two decimal places."));
         String number = kind.equals("phones") ? entry.getOrDefault("number", "") : "";

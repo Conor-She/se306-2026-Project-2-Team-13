@@ -252,6 +252,12 @@ public class AddCustomerController {
         if (key.equals("number") || key.equals("phone")) {
             input.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\+?[0-9 ()-]*") ? change : null));
+        } else if (key.equals("postcode")) {
+            input.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("[0-9]*") ? change : null));
+        } else if (key.equals("income")) {
+            input.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("[0-9]*(\\.[0-9]{0,2})?") ? change : null));
         }
         input.setText(values.getOrDefault(key, ""));
         input.textProperty().addListener((obs, old, value) -> {
