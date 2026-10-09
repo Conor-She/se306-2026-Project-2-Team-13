@@ -117,14 +117,32 @@ public class DashboardController {
         }
     }
 
-    @FXML private void showHome() { navigate(homeNav, homeView); }
+    @FXML private void showHome() {
+        if (customersViewController != null && !customersViewController.confirmLeave()) return;
+        if (customersViewController != null) customersViewController.onShown();
+        navigate(homeNav, homeView);
+    }
 
     @FXML private void showCustomers() {
+        if (!customersViewController.confirmLeave()) return;
         navigate(customersNav, customersView);
         customersViewController.onShown();
     }
 
-    @FXML private void showLoans() { navigate(loansNav, loansView); }
+    @FXML private void showAddCustomer() {
+        navigate(customersNav, customersView);
+        customersViewController.openAddCustomer();
+    }
 
-    @FXML private void logout() { onLogout.run(); }
+    @FXML private void showLoans() {
+        if (!customersViewController.confirmLeave()) return;
+        customersViewController.onShown();
+        navigate(loansNav, loansView);
+    }
+
+    @FXML private void logout() {
+        if (!customersViewController.confirmLeave()) return;
+        customersViewController.onShown();
+        onLogout.run();
+    }
 }

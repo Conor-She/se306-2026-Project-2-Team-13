@@ -129,6 +129,31 @@ class DashboardControllerTest {
             assertNull(root.lookup(".list-view"));
             return null;
         });
+        fx(() -> {
+            ((VBox) root.lookup("#addCustomerCard")).getChildren().stream()
+                .filter(Button.class::isInstance).map(Button.class::cast).findFirst().orElseThrow().fire();
+            root.applyCss(); root.layout();
+            VBox wizard = (VBox) root.lookup(".customer-wizard");
+            assertNotNull(wizard);
+            ScrollPane customerScroll = (ScrollPane) wizard.lookup("#customerScroll");
+            assertTrue(customerScroll.lookupAll(".thumb").stream().anyMatch(node -> node.getStyle().contains("#9693ca")));
+            assertTrue(customerScroll.lookupAll(".increment-button").stream().allMatch(node -> node.getStyle().contains("-fx-opacity: 0")));
+            assertTrue(wizard.lookupAll(".button").stream().map(Button.class::cast).noneMatch(b -> b.getText().equals("Skip")));
+            wizardButton(wizard, "Next").fire();
+            wizard.applyCss(); wizard.layout();
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "First name *").setText("Amelia");
+            wizardField(wizard, "Last name *").setText("Adams");
+            wizardField(wizard, "Date of birth * (dd-mm-yyyy)").setText("14-03-1990");
+            wizardButton(wizard, "Next").fire();
+            assertNotNull(wizard.lookup("#firstName"));
+            assertNull(wizard.lookup("#contactPane"));
+            assertTrue(wizard.lookupAll(".label").stream().map(Label.class::cast)
+                .anyMatch(label -> label.getText().contains("next stage is not implemented")));
+            // End this draft without opening a modal confirmation in the test.
+            ((CustomersController) loader.getNamespace().get("customersViewController")).onShown();
+            return null;
+        });
         fx(() -> { ((Button) root.lookup("#homeNav")).fire(); return null; });
         assertTrue(fx(() -> root.lookupAll(".heading").stream().anyMatch(node -> ((Label) node).getText().equals("Welcome, Alyza"))));
         fx(() -> {
@@ -173,5 +198,17 @@ class DashboardControllerTest {
             }
             return null;
         });
+    }
+
+    private static Button wizardButton(Parent wizard, String text) {
+        wizard.applyCss(); wizard.layout();
+        return wizard.lookupAll(".button").stream().map(Button.class::cast)
+            .filter(button -> button.getText().equals(text)).findFirst().orElseThrow();
+    }
+
+    private static TextField wizardField(Parent wizard, String label) {
+        wizard.applyCss(); wizard.layout();
+        return wizard.lookupAll(".text-field").stream().map(TextField.class::cast)
+            .filter(field -> label.equals(field.getAccessibleText())).findFirst().orElseThrow();
     }
 }
