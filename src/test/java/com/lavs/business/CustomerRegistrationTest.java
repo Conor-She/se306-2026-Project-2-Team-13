@@ -53,17 +53,17 @@ class CustomerRegistrationTest {
     @Test void employmentIsOptionalAndValidatesPartialEntries() {
         CustomerDraft draft = validDraft();
         assertTrue(service.validate(draft).isEmpty());
-        draft.employers.add(Map.of("income", "-1", "phone", "abc"));
+        draft.employers.add(Map.of("income", "-1"));
         var errors = service.validate(draft);
         assertTrue(errors.stream().allMatch(error -> error.step() == 2));
-        assertEquals(java.util.Set.of("employers.0.name", "employers.0.income", "employers.0.phone"),
+        assertEquals(java.util.Set.of("employers.0.name", "employers.0.income"),
             errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
         for (String income : new String[] {"abc", "12.345"}) {
             draft.employers.set(0, Map.of("name", "Acme", "income", income));
             assertFalse(service.validate(draft).isEmpty());
         }
         for (String income : new String[] {"", "0", "50000.00"}) {
-            draft.employers.set(0, Map.of("name", "Acme", "income", income, "phone", "+64 21 555 0101"));
+            draft.employers.set(0, Map.of("name", "Acme", "income", income));
             assertTrue(service.validate(draft).isEmpty());
         }
         assertFalse(CustomerDraft.hasEntryDetails("employers", Map.of("name", "   ")));

@@ -209,7 +209,7 @@ public class AddCustomerController {
     private void bindField(String path, TextField input, Label error, Map<String, String> values, String key) {
         fields.put(path, input);
         fieldErrors.put(path, error);
-        if (key.equals("number") || key.equals("phone")) {
+        if (key.equals("number")) {
             input.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\+?[0-9 ()-]*") ? change : null));
         }
@@ -348,7 +348,7 @@ public class AddCustomerController {
             case "addresses" -> join(value.get("street"), value.get("suburb"), value.get("city"), value.get("postcode"), value.get("country")) + ("true".equals(value.get("mailing")) ? "  • Mailing" : "");
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");
-            case "employers" -> join(value.get("name"), value.get("role"), value.get("employmentType"), value.get("address"), value.get("phone"))
+            case "employers" -> join(value.get("name"), value.get("role"), value.get("employmentType"))
                     + (value.getOrDefault("income", "").isBlank() ? "" : "  • Annual income: NZD " + value.get("income"));
             default -> "";
         };

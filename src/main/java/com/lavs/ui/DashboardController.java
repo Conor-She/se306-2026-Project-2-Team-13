@@ -137,8 +137,8 @@ public class DashboardController {
 
     @FXML private void showLoans() {
         if (!customersViewController.confirmLeave()) return;
-        customersViewController.onShown();
         navigate(loansNav, loansView);
+        loansViewController.onShown();
     }
 
     @FXML private void logout() {

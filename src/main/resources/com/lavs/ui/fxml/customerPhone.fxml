@@ -3,8 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.text.*?>
 <?import javafx.scene.layout.*?>
-<FlowPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" hgap="16" vgap="12" minWidth="0"><VBox spacing="6"><Label text="Type" style="-fx-font-weight: bold;"/>
-          <ComboBox fx:id="type" accessibleText="Phone type" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;">
+<FlowPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" hgap="16" vgap="12" minWidth="0"><VBox spacing="6" minWidth="0" prefWidth="260"><Label text="Type" style="-fx-font-weight: bold;"/>
+          <ComboBox fx:id="type" prefHeight="${number.height}" minHeight="${number.height}" maxHeight="${number.height}" maxWidth="Infinity" accessibleText="Phone type" style="-fx-padding: 0 6; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;">
             <items><?import javafx.collections.FXCollections?><FXCollections fx:factory="observableArrayList"><String fx:value="Mobile"/><String fx:value="Home"/><String fx:value="Work"/><String fx:value="Other"/></FXCollections></items>
           </ComboBox></VBox><VBox spacing="6" minWidth="0" prefWidth="260">
       <TextFlow style="-fx-font-weight: bold;"><Text text="Phone number "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>

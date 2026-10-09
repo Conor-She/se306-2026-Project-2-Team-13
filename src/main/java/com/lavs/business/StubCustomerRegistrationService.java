@@ -70,9 +70,9 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         String income = entry.getOrDefault("income", "");
         if (kind.equals("employers") && !income.isBlank() && !income.matches("[0-9]+(\\.[0-9]{1,2})?"))
             errors.add(new ValidationError(step, "income", "Enter a non-negative annual income with up to two decimal places."));
-        String number = entry.getOrDefault(kind.equals("employers") ? "phone" : "number", "");
+        String number = kind.equals("phones") ? entry.getOrDefault("number", "") : "";
         if (!number.isBlank() && !number.matches("\\+?[0-9 ()-]{7,20}"))
-            errors.add(new ValidationError(step, kind.equals("employers") ? "phone" : "number", "Enter a valid phone number."));
+            errors.add(new ValidationError(step, "number", "Enter a valid phone number."));
         return List.copyOf(errors);
     }
 
