@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="6" minWidth="0">
+  <Label text="Note" style="-fx-font-weight: bold;"/>
+  <TextArea fx:id="text" accessibleText="Note" promptText="Enter a customer note" wrapText="true" prefRowCount="4" maxWidth="Infinity"
+            style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+  <Label fx:id="textError" wrapText="true" visible="false" managed="false" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+</VBox>

@@ -14,6 +14,7 @@ public class CustomerDraft {
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
             case "employers" -> List.of("name", "role", "employmentType", "income", "address", "phone");
+            case "notes" -> List.of("text");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         return keys.stream().anyMatch(key -> !entry.getOrDefault(key, "").isBlank());
@@ -25,10 +26,11 @@ public class CustomerDraft {
     public final List<Map<String, String>> emails = new ArrayList<>();
 
     public final List<Map<String, String>> employers = new ArrayList<>();
+    public final List<Map<String, String>> notes = new ArrayList<>();
 
     public boolean hasData() {
         return personal.values().stream().anyMatch(value -> !value.isBlank())
-                || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty() || !employers.isEmpty();
+                || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty() || !employers.isEmpty() || !notes.isEmpty();
     }
     public CustomerDraft copy() {
         CustomerDraft copy = new CustomerDraft();
@@ -37,6 +39,7 @@ public class CustomerDraft {
         copyEntries(phones, copy.phones);
         copyEntries(emails, copy.emails);
         copyEntries(employers, copy.employers);
+        copyEntries(notes, copy.notes);
         return copy;
     }
 

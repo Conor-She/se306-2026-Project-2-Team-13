@@ -37,6 +37,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         validateEntries("phones", draft.phones, errors);
         validateEntries("emails", draft.emails, errors);
         validateEntries("employers", draft.employers, errors);
+        validateEntries("notes", draft.notes, errors);
         for (String kind : List.of("addresses", "phones", "emails")) {
             var entries = kind.equals("addresses") ? draft.addresses : kind.equals("phones") ? draft.phones : draft.emails;
             String flag = kind.equals("addresses") ? "mailing" : "primary";
@@ -54,12 +55,13 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
 
     private List<ValidationError> validateEntry(String kind, Map<String, String> entry) {
         List<ValidationError> errors = new ArrayList<>();
-        int step = kind.equals("employers") ? 2 : 1;
+        int step = kind.equals("notes") ? 3 : kind.equals("employers") ? 2 : 1;
         List<String> required = switch (kind) {
             case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
             case "employers" -> List.of("name", "role", "employmentType", "income", "phone");
+            case "notes" -> List.of("text");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         for (String key : required)

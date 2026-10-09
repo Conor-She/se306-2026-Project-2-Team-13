@@ -126,6 +126,36 @@ class CustomerRegistrationTest {
         assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("phone", "095550101")));
     }
 
+    @Test void notesAreOptionalAndBlankNotesBelongToNotesStep() {
+        CustomerDraft draft = validDraft();
+        assertTrue(service.validate(draft).isEmpty());
+        draft.notes.add(Map.of("text", "   "));
+        var errors = service.validate(draft);
+        assertEquals(1, errors.size());
+        assertEquals(3, errors.get(0).step());
+        assertEquals("notes.0.text", errors.get(0).field());
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
+        assertFalse(CustomerDraft.hasEntryDetails("notes", Map.of("text", "   ")));
+    }
+
+    @Test void multipleNotesAreSavedInOrderAndCopiedIndependently() throws Exception {
+        CustomerDraft draft = validDraft();
+        draft.notes.add(new java.util.LinkedHashMap<>(Map.of("text", "First note\nSecond line")));
+        draft.notes.add(new java.util.LinkedHashMap<>(Map.of("text", "Another note")));
+        String id = service.save(draft);
+        draft.notes.get(0).put("text", "Changed");
+        draft.notes.remove(1);
+        CustomerDraft saved = service.savedCustomers().get(id);
+        assertEquals(2, saved.notes.size());
+        assertEquals("First note\nSecond line", saved.notes.get(0).get("text"));
+        assertEquals("Another note", saved.notes.get(1).get("text"));
+        saved.notes.get(0).put("text", "Changed again");
+        assertEquals("First note\nSecond line", service.savedCustomers().get(id).notes.get(0).get("text"));
+        CustomerDraft notesOnly = new CustomerDraft();
+        notesOnly.notes.add(Map.of("text", "Unsaved note"));
+        assertTrue(notesOnly.hasData());
+    }
+
     @Test void saveValidatesAndKeepsAnIndependentSnapshot() throws Exception {
         assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(new CustomerDraft()));
         CustomerDraft draft = validDraft();

@@ -13,9 +13,10 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-/** Resizable four-step editor. Business rules are supplied by the registration service. */
+/** Resizable five-step editor. Business rules are supplied by the registration service. */
 public class AddCustomerController {
-    private static final String[] STEPS = {"Personal Details", "Contact", "Employment", "Review"};
+    private static final String[] STEPS = {"Personal Details", "Contact", "Employment", "Notes", "Review"};
+    private static final int REVIEW_STEP = 4;
     private final CustomerRegistrationService service;
     private final Runnable onCancel;
     private final BiConsumer<String, CustomerDraft> onSaved;
@@ -23,14 +24,14 @@ public class AddCustomerController {
     private final Map<String, Label> fieldErrors = new LinkedHashMap<>();
     private final Map<String, Control> fields = new LinkedHashMap<>();
     private final Set<String> expanded = new HashSet<>();
-    private final boolean[] completed = new boolean[4];
-    @FXML private VBox view, body, personalPane, contactPane, employmentPane, reviewPane;
-    @FXML private VBox addressRows, phoneRows, emailRows, employerRows;
-    @FXML private VBox employmentReview;
+    private final boolean[] completed = new boolean[STEPS.length];
+    @FXML private VBox view, body, personalPane, contactPane, employmentPane, notesPane, reviewPane;
+    @FXML private VBox addressRows, phoneRows, emailRows, employerRows, noteRows;
+    @FXML private VBox employmentReview, notesReview;
     @FXML private FlowPane personalReview, contactReview;
     @FXML private FlowPane footer;
     @FXML private Label message, reviewNotice, guarantorNote;
-    @FXML private Label marker0, marker1, marker2, marker3, stepName0, stepName1, stepName2, stepName3;
+    @FXML private Label marker0, marker1, marker2, marker3, marker4, stepName0, stepName1, stepName2, stepName3, stepName4;
     @FXML private ComboBox<String> title;
     @FXML private TextField firstName, lastName, dateOfBirth, nationality;
     @FXML private Label titleError, firstNameError, lastNameError, dateOfBirthError, nationalityError;
@@ -123,8 +124,8 @@ public class AddCustomerController {
 
     private void render() {
         // The FXML defines every step; only the current one is attached to the scroll body.
-        Label[] markers = {marker0, marker1, marker2, marker3};
-        Label[] names = {stepName0, stepName1, stepName2, stepName3};
+        Label[] markers = {marker0, marker1, marker2, marker3, marker4};
+        Label[] names = {stepName0, stepName1, stepName2, stepName3, stepName4};
         for (int i = 0; i < STEPS.length; i++) {
             markers[i].setText(completed[i] && i != step ? "✓" : String.valueOf(i + 1));
             markers[i].setStyle(i == step || completed[i] ? activeMarkerStyle : markerStyle);
@@ -146,7 +147,11 @@ public class AddCustomerController {
                 guarantorNote.setManaged(draft.employers.isEmpty());
                 body.getChildren().setAll(employmentPane);
             }
-            case 3 -> { review(); body.getChildren().setAll(reviewPane); }
+            case 3 -> {
+                entries(noteRows, "notes", draft.notes);
+                body.getChildren().setAll(notesPane);
+            }
+            case REVIEW_STEP -> { review(); body.getChildren().setAll(reviewPane); }
             default -> throw new IllegalStateException("Unknown step");
         }
         if (renderedStep != step) {
@@ -155,8 +160,8 @@ public class AddCustomerController {
         }
         footer.getChildren().clear();
         if (step > 0 && !editingReview) footer.getChildren().add(back);
-        if (step == 1 || step == 2) footer.getChildren().add(skip);
-        next.setText(step == 3 ? "Save customer" : editingReview ? "Save and return to Review" : "Next");
+        if (step == 1 || step == 2 || step == 3) footer.getChildren().add(skip);
+        next.setText(step == REVIEW_STEP ? "Save customer" : editingReview ? "Save and return to Review" : "Next");
         footer.getChildren().add(next);
         refreshValidation();
     }
@@ -164,14 +169,16 @@ public class AddCustomerController {
     @FXML private void cancel() { if (confirmLeave()) onCancel.run(); }
     @FXML private void back() { step--; showErrors = false; render(); }
     @FXML private void skip() { advance(); }
-    @FXML private void next() { if (step == 3) save(); else advance(); }
+    @FXML private void next() { if (step == REVIEW_STEP) save(); else advance(); }
     @FXML private void addAddress() { addEntry("addresses", draft.addresses); }
     @FXML private void addPhone() { addEntry("phones", draft.phones); }
     @FXML private void addEmail() { addEntry("emails", draft.emails); }
     @FXML private void addEmployer() { addEntry("employers", draft.employers); }
+    @FXML private void addNote() { addEntry("notes", draft.notes); }
     @FXML private void editPersonal() { editStep(0); }
     @FXML private void editContact() { editStep(1); }
     @FXML private void editEmployment() { editStep(2); }
+    @FXML private void editNotes() { editStep(3); }
 
     private void editStep(int target) {
         step = target;
@@ -190,7 +197,8 @@ public class AddCustomerController {
             focusFirst(errors);
             return;
         }
-        Optional<String> openEntry = expanded.stream().filter(path -> step == 2
+        Optional<String> openEntry = expanded.stream().filter(path -> step == 3
+            ? path.startsWith("notes.") : step == 2
             ? path.startsWith("employers.")
             : path.startsWith("addresses.") || path.startsWith("phones.") || path.startsWith("emails."))
             .findFirst();
@@ -212,12 +220,13 @@ public class AddCustomerController {
             case "phones" -> "number";
             case "emails" -> "email";
             case "employers" -> "name";
+            case "notes" -> "text";
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         fields.get(path + "." + firstField).requestFocus();
     }
 
-    private void bindField(String path, TextField input, Label error, Map<String, String> values, String key) {
+    private void bindField(String path, TextInputControl input, Label error, Map<String, String> values, String key) {
         fields.put(path, input);
         fieldErrors.put(path, error);
         if (key.equals("number") || key.equals("phone")) {
@@ -279,11 +288,12 @@ public class AddCustomerController {
                     case "phones" -> "customerPhone.fxml";
                     case "emails" -> "customerEmail.fxml";
                     case "employers" -> "customerEmployer.fxml";
+                    case "notes" -> "customerNote.fxml";
                     default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
                 });
                 Map<String, Object> editorNodes = editor.getNamespace();
                 for (var entry : editorNodes.entrySet()) {
-                    if (entry.getValue() instanceof TextField input) {
+                    if (entry.getValue() instanceof TextInputControl input) {
                         String key = entry.getKey();
                         bindField(path + "." + key, input, (Label) editorNodes.get(key + "Error"), value, key);
                     }
@@ -335,6 +345,11 @@ public class AddCustomerController {
             reviewValue("Phone numbers", reviewEntries("phones", draft.phones)),
             reviewValue("Emails", reviewEntries("emails", draft.emails)));
         employmentReview.getChildren().setAll(reviewValue("Employers", reviewEntries("employers", draft.employers)));
+        notesReview.getChildren().clear();
+        if (draft.notes.isEmpty()) notesReview.getChildren().add(reviewValue("", "None added"));
+        for (int i = 0; i < draft.notes.size(); i++) {
+            notesReview.getChildren().add(reviewValue("Note " + (i + 1), draft.notes.get(i).get("text")));
+        }
         if (draft.employers.isEmpty()) employmentReview.getChildren().add(
             reviewValue("", "A guarantor will be needed when a loan is started."));
     }
@@ -361,6 +376,7 @@ public class AddCustomerController {
 
     private static String describe(String kind, Map<String, String> value) {
         String result = switch (kind) {
+            case "notes" -> value.getOrDefault("text", "");
             case "addresses" -> join(value.get("street"), value.get("suburb"), value.get("city"), value.get("postcode"), value.get("country")) + ("true".equals(value.get("mailing")) ? "  • Mailing" : "");
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");
@@ -397,10 +413,10 @@ public class AddCustomerController {
             // ComboBox cells provide their own padding inside the matched field height.
             input.setStyle(input instanceof ComboBox<?> ? style + " -fx-padding: 0;" : style);
         });
-        next.setDisable(step == 3 && !errors.isEmpty());
-        List<String> top = errors.stream().filter(e -> step == 3 || (e.step() == step && e.field().isBlank()))
+        next.setDisable(step == REVIEW_STEP && !errors.isEmpty());
+        List<String> top = errors.stream().filter(e -> step == REVIEW_STEP || (e.step() == step && e.field().isBlank()))
                 .map(e -> (e.field().isBlank() ? "" : STEPS[e.step()] + ": ") + e.message()).distinct().toList();
-        if (step == 3 && !top.isEmpty()) setMessage("Please edit the listed sections before saving.\n" + String.join("\n", top));
+        if (step == REVIEW_STEP && !top.isEmpty()) setMessage("Please edit the listed sections before saving.\n" + String.join("\n", top));
         else if (showErrors && !top.isEmpty()) setMessage(String.join("\n", top));
         else { message.setVisible(false); message.setManaged(false); }
     }
@@ -421,6 +437,8 @@ public class AddCustomerController {
             removeEmptyEntries("emails", draft.emails);
         } else if (step == 2) {
             removeEmptyEntries("employers", draft.employers);
+        } else if (step == 3) {
+            removeEmptyEntries("notes", draft.notes);
         }
         List<ValidationError> errors = validate().stream().filter(error -> error.step() == step).toList();
         if (!errors.isEmpty()) {
@@ -430,9 +448,9 @@ public class AddCustomerController {
             return;
         }
         completed[step] = true;
-        step = editingReview ? 3 : step + 1;
+        step = editingReview ? REVIEW_STEP : step + 1;
         editingReview = false;
-        showErrors = step == 3;
+        showErrors = step == REVIEW_STEP;
         render();
     }
 
@@ -456,8 +474,8 @@ public class AddCustomerController {
             int lastDot = error.field().lastIndexOf('.');
             if (lastDot > 0) expanded.add(error.field().substring(0, lastDot));
         }
-        step = Math.max(0, Math.min(2, errors.get(0).step()));
-        editingReview = step < 3;
+        step = Math.max(0, Math.min(REVIEW_STEP - 1, errors.get(0).step()));
+        editingReview = step < REVIEW_STEP;
         showErrors = true;
         render();
         for (ValidationError error : errors) {
