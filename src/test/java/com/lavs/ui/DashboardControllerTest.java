@@ -144,7 +144,25 @@ class DashboardControllerTest {
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
             wizardField(wizard, "First name *").setText("Amelia");
             wizardField(wizard, "Last name *").setText("Adams");
-            wizardField(wizard, "Date of birth * (dd-mm-yyyy)").setText("14-03-1990");
+            TextField dob = wizardField(wizard, "Date of birth * (dd-mm-yyyy)");
+            dob.appendText("1");
+            dob.appendText("4");
+            assertEquals("14-", dob.getText());
+            dob.appendText("0");
+            dob.appendText("3");
+            assertEquals("14-03-", dob.getText());
+            dob.appendText("1990");
+            assertEquals("14-03-1990", dob.getText());
+            dob.positionCaret(6);
+            dob.deletePreviousChar();
+            assertEquals("14-01-990", dob.getText());
+            dob.selectAll();
+            dob.replaceSelection("14031990");
+            assertEquals("14-03-1990", dob.getText());
+            dob.appendText("1");
+            assertEquals("14-03-1990", dob.getText());
+            dob.setText("14-03-1990");
+            assertEquals("14-03-1990", dob.getText());
             wizardButton(wizard, "Next").fire();
             assertNotNull(wizard.lookup("#contactPane"));
             for (String kind : new String[] {"address", "phone", "email"}) {
@@ -154,8 +172,23 @@ class DashboardControllerTest {
                 assertTrue(((Parent) wizard.lookup("#" + (kind.equals("address") ? "address" : kind) + "Rows"))
                     .lookupAll(".button").isEmpty());
             }
+            // Empty editors are discarded automatically by either navigation action.
+            for (String action : new String[] {"Next", "Skip"}) {
+                for (String kind : new String[] {"address", "phone", "email"})
+                    wizardButton(wizard, "+ Add " + kind).fire();
+                wizardButton(wizard, action).fire();
+                assertNotNull(wizard.lookup("#employmentPane"));
+                wizardButton(wizard, "Back").fire();
+                assertTrue(wizard.lookupAll(".text-field").isEmpty());
+            }
             wizardButton(wizard, "+ Add address").fire();
             wizardField(wizard, "Street address *").setText("12 Queen St");
+            wizardButton(wizard, "Done").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+
             wizardField(wizard, "City *").setText("Auckland");
             wizardButton(wizard, "+ Add phone").fire();
             wizardField(wizard, "Phone number *").setText("021 555 0101");
@@ -174,12 +207,17 @@ class DashboardControllerTest {
             assertNotNull(wizard.lookup("#employmentPane"));
             assertTrue(wizard.lookup("#guarantorNote").isVisible());
             wizardButton(wizard, "+ Add employer").fire();
+            wizardButton(wizard, "Next").fire();
+            assertNotNull(wizard.lookup("#reviewPane"));
+            wizardButton(wizard, "Back").fire();
+            wizardButton(wizard, "+ Add employer").fire();
             wizardButton(wizard, "Done").fire();
             assertTrue(((Parent) wizard.lookup("#employerRows")).lookupAll(".button").isEmpty());
             wizardButton(wizard, "+ Add employer").fire();
             wizardField(wizard, "Employer name *").setText("Acme");
             wizardField(wizard, "Annual income (NZD)").setText("-1");
-            wizardButton(wizard, "Next").fire();
+            wizardButton(wizard, "Skip").fire();
+            assertNotNull(wizard.lookup("#employmentPane"));
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
             wizardField(wizard, "Annual income (NZD)").setText("50000.00");
             ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Part-time");
@@ -210,9 +248,9 @@ class DashboardControllerTest {
             wizardButton((Parent) review.getChildrenUnmodifiable().get(1), "Edit").fire();
             wizardField(wizard, "Email address *").setText("invalid");
             wizardButton(wizard, "Skip").fire();
-            assertTrue(wizardButton(wizard, "Save customer").isDisabled());
-            review = (Parent) wizard.lookup("#reviewPane");
-            wizardButton((Parent) review.getChildrenUnmodifiable().get(1), "Edit").fire();
+            assertNotNull(wizard.lookup("#contactPane"));
+            assertNull(wizard.lookup("#reviewPane"));
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
             wizardField(wizard, "Email address *").setText("amy@example.com");
             wizardButton(wizard, "Save and return to Review").fire();
             assertFalse(wizardButton(wizard, "Save customer").isDisabled());

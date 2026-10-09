@@ -38,6 +38,7 @@ public class AddCustomerController {
     @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
     @FXML private Button cancel, back, skip, next;
     private int step;
+    private int renderedStep = -1;
     private boolean editingReview;
     private boolean showErrors;
 
@@ -53,9 +54,41 @@ public class AddCustomerController {
         bindField("title", title, titleError, draft.personal, "title");
         bindField("firstName", firstName, firstNameError, draft.personal, "firstName");
         bindField("lastName", lastName, lastNameError, draft.personal, "lastName");
+        dateOfBirth.setTextFormatter(new TextFormatter<>(AddCustomerController::formatDateOfBirth));
         bindField("dateOfBirth", dateOfBirth, dateOfBirthError, draft.personal, "dateOfBirth");
         bindField("nationality", nationality, nationalityError, draft.personal, "nationality");
         render();
+    }
+
+    private static TextFormatter.Change formatDateOfBirth(TextFormatter.Change change) {
+        if (!change.isContentChange()) return change;
+        String proposed = change.getControlNewText();
+        if (!proposed.matches("[0-9-]*")) return null;
+
+        // Deleting a generated dash should delete the adjacent digit as well.
+        if (change.isDeleted() && change.getText().isEmpty()
+                && change.getControlText().substring(change.getRangeStart(), change.getRangeEnd()).equals("-")) {
+            int start = change.getRangeStart();
+            int end = change.getRangeEnd();
+            if (change.getControlCaretPosition() == end && start > 0) start--;
+            else if (end < change.getControlText().length()) end++;
+            change.setRange(start, end);
+            proposed = change.getControlNewText();
+        }
+        String digits = proposed.replace("-", "");
+        if (digits.length() > 8) return null;
+        int rawCaret = Math.min(change.getRangeStart() + change.getText().length(), proposed.length());
+        int digitsBeforeCaret = proposed.substring(0, rawCaret).replace("-", "").length();
+        StringBuilder formatted = new StringBuilder();
+        for (int i = 0; i < digits.length(); i++) {
+            formatted.append(digits.charAt(i));
+            if (i == 1 || i == 3) formatted.append('-');
+        }
+        int caret = digitsBeforeCaret + (digitsBeforeCaret >= 2 ? 1 : 0) + (digitsBeforeCaret >= 4 ? 1 : 0);
+        change.setRange(0, change.getControlText().length());
+        change.setText(formatted.toString());
+        change.selectRange(Math.min(caret, formatted.length()), Math.min(caret, formatted.length()));
+        return change;
     }
 
     public boolean confirmLeave() {
@@ -96,7 +129,10 @@ public class AddCustomerController {
             case 3 -> { review(); body.getChildren().setAll(reviewPane); }
             default -> throw new IllegalStateException("Unknown step");
         }
-        customerScroll.setVvalue(0);
+        if (renderedStep != step) {
+            customerScroll.setVvalue(0);
+            renderedStep = step;
+        }
         footer.getChildren().clear();
         if (step > 0 && !editingReview) footer.getChildren().add(back);
         if (step == 1 || step == 2) footer.getChildren().add(skip);
@@ -107,8 +143,8 @@ public class AddCustomerController {
 
     @FXML private void cancel() { if (confirmLeave()) onCancel.run(); }
     @FXML private void back() { step--; showErrors = false; render(); }
-    @FXML private void skip() { advance(false); }
-    @FXML private void next() { if (step == 3) save(); else advance(true); }
+    @FXML private void skip() { advance(); }
+    @FXML private void next() { if (step == 3) save(); else advance(); }
     @FXML private void addAddress() { addEntry("addresses", draft.addresses); }
     @FXML private void addPhone() { addEntry("phones", draft.phones); }
     @FXML private void addEmail() { addEntry("emails", draft.emails); }
@@ -164,6 +200,14 @@ public class AddCustomerController {
                         values.remove(index);
                         expanded.removeIf(key -> key.startsWith(kind + "."));
                     } else {
+                        List<ValidationError> errors = validate().stream()
+                            .filter(error -> error.field().startsWith(path + ".")).toList();
+                        if (!errors.isEmpty()) {
+                            showErrors = true;
+                            render();
+                            focusFirst(errors);
+                            return;
+                        }
                         expanded.remove(path);
                     }
                 } else {
@@ -298,10 +342,29 @@ public class AddCustomerController {
         else { message.setVisible(false); message.setManaged(false); }
     }
 
-    private void advance(boolean validateCurrent) {
-        if (validateCurrent) {
-            List<ValidationError> errors = validate().stream().filter(e -> e.step() == step).toList();
-            if (!errors.isEmpty()) { showErrors = true; render(); focusFirst(errors); return; }
+    private void removeEmptyEntries(String kind, List<Map<String, String>> values) {
+        if (values.removeIf(value -> !CustomerDraft.hasEntryDetails(kind, value))) {
+            // Removing rows changes their indexes; rebuild editor and error bindings.
+            expanded.removeIf(path -> path.startsWith(kind + "."));
+            fields.keySet().removeIf(path -> path.startsWith(kind + "."));
+            fieldErrors.keySet().removeIf(path -> path.startsWith(kind + "."));
+        }
+    }
+
+    private void advance() {
+        if (step == 1) {
+            removeEmptyEntries("addresses", draft.addresses);
+            removeEmptyEntries("phones", draft.phones);
+            removeEmptyEntries("emails", draft.emails);
+        } else if (step == 2) {
+            removeEmptyEntries("employers", draft.employers);
+        }
+        List<ValidationError> errors = validate().stream().filter(error -> error.step() == step).toList();
+        if (!errors.isEmpty()) {
+            showErrors = true;
+            render();
+            focusFirst(errors);
+            return;
         }
         completed[step] = true;
         step = editingReview ? 3 : step + 1;
