@@ -191,7 +191,24 @@ class DashboardControllerTest {
 
             wizardField(wizard, "City *").setText("Auckland");
             wizardButton(wizard, "+ Add phone").fire();
-            wizardField(wizard, "Phone number *").setText("021 555 0101");
+            TextField phone = wizardField(wizard, "Phone number *");
+            phone.appendText("abc");
+            assertEquals("", phone.getText());
+            phone.appendText("+64 (21) 555-0101");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.appendText("letters");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.selectAll();
+            phone.replaceSelection("021abc5550101");
+            assertEquals("+64 (21) 555-0101", phone.getText());
+            phone.selectAll();
+            phone.replaceSelection("021 555 0101");
+            phone.positionCaret(3);
+            phone.insertText(3, "+");
+            assertEquals("021 555 0101", phone.getText());
+            phone.clear();
+            assertEquals("", phone.getText());
+            phone.setText("021 555 0101");
             wizardButton(wizard, "+ Add email").fire();
             wizardField(wizard, "Email address *").setText("invalid");
             wizardButton(wizard, "Next").fire();
@@ -215,6 +232,11 @@ class DashboardControllerTest {
             assertTrue(((Parent) wizard.lookup("#employerRows")).lookupAll(".button").isEmpty());
             wizardButton(wizard, "+ Add employer").fire();
             wizardField(wizard, "Employer name *").setText("Acme");
+            TextField employerPhone = wizardField(wizard, "Employer phone");
+            employerPhone.appendText("abc");
+            assertEquals("", employerPhone.getText());
+            employerPhone.setText("09 555 0101");
+            assertEquals("09 555 0101", employerPhone.getText());
             wizardField(wizard, "Annual income (NZD)").setText("-1");
             wizardButton(wizard, "Skip").fire();
             assertNotNull(wizard.lookup("#employmentPane"));

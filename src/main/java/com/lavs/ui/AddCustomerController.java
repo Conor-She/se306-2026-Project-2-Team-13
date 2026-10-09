@@ -164,13 +164,26 @@ public class AddCustomerController {
         Map<String, String> value = new LinkedHashMap<>();
         if (kind.equals("phones")) value.put("type", "Mobile");
         values.add(value);
-        expanded.add(kind + "." + (values.size() - 1));
+        String path = kind + "." + (values.size() - 1);
+        expanded.add(path);
         render();
+        String firstField = switch (kind) {
+            case "addresses" -> "street";
+            case "phones" -> "number";
+            case "emails" -> "email";
+            case "employers" -> "name";
+            default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
+        };
+        fields.get(path + "." + firstField).requestFocus();
     }
 
     private void bindField(String path, TextField input, Label error, Map<String, String> values, String key) {
         fields.put(path, input);
         fieldErrors.put(path, error);
+        if (key.equals("number") || key.equals("phone")) {
+            input.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("\\+?[0-9 ()-]*") ? change : null));
+        }
         input.setText(values.getOrDefault(key, ""));
         input.textProperty().addListener((obs, old, value) -> {
             values.put(key, value.strip());
