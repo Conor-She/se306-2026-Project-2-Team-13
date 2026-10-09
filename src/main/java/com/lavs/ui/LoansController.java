@@ -2,6 +2,7 @@ package com.lavs.ui;
 
 import java.util.List;
 import java.util.Locale;
+
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -18,16 +19,17 @@ import javafx.scene.layout.VBox;
 
 /** Searchable loan list and navigation to the selected loan's details. */
 public class LoansController {
-    public record LoanSummary(String loanId, String customerId, String status, String amount) {
+    public record LoanSummary(String loanId, String customerId, String customerName,
+            String status, String amount, String type) {
         boolean matches(String query) {
-            return List.of(loanId, customerId, status, amount).stream()
+            return List.of(loanId, customerId, customerName, status, amount, type).stream()
                     .anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(query));
         }
     }
     @FXML private TextField searchField;
     @FXML private Label resultsHeading;
     @FXML private TableView<LoanSummary> loanTable;
-    @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn;
+    @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
 
@@ -36,6 +38,7 @@ public class LoansController {
         customerIdColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));
         amountColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().amount()));
+        typeColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().type()));
         var filtered = new FilteredList<>(FXCollections.observableArrayList(loadLoans()));
         var sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(loanTable.comparatorProperty());
@@ -61,16 +64,16 @@ public class LoansController {
     /** Replace this method with the backend loan-summary call when available. */
     protected List<LoanSummary> loadLoans() {
         return List.of(
-            new LoanSummary("L008", "C008", "Approved", "$10,000"),
-            new LoanSummary("L003", "C003", "Pending", "$5,000"),
-            new LoanSummary("L001", "C001", "Approved", "$15,000"),
-            new LoanSummary("L006", "C006", "Rejected", "$8,000"),
-            new LoanSummary("L004", "C004", "Pending", "$12,000"),
-            new LoanSummary("L010", "C010", "Approved", "$20,000"),
-            new LoanSummary("L002", "C002", "Rejected", "$6,000"),
-            new LoanSummary("L009", "C009", "Approved", "$18,000"),
-            new LoanSummary("L005", "C005", "Pending", "$9,000"),
-            new LoanSummary("L007", "C007", "Approved", "$14,000"));
+            new LoanSummary("L008", "C008", "Sophie Wilson", "Approved", "$10,000", "Table Loan"),
+            new LoanSummary("L003", "C003", "Charlotte Brown", "Pending", "$5,000", "Interest Only"),
+            new LoanSummary("L001", "C001", "Amelia Adams", "Approved", "$15,000", "Table Loan"),
+            new LoanSummary("L006", "C006", "Liam Patel", "Rejected", "$8,000", "Reducing Balance"),
+            new LoanSummary("L004", "C004", "Ethan Chen", "Pending", "$12,000", "Interest Only"),
+            new LoanSummary("L010", "C010", "Zoe Williams", "Approved", "$20,000", "Reducing Balance"),
+            new LoanSummary("L002", "C002", "Benjamin Baker", "Rejected", "$6,000", "Interest Only"),
+            new LoanSummary("L009", "C009", "William Wong", "Approved", "$18,000", "Reducing Balance"),
+            new LoanSummary("L005", "C005", "Isla Jones", "Pending", "$9,000", "Table Loan"),
+            new LoanSummary("L007", "C007", "Oliver Smith", "Approved", "$14,000", "Table Loan"));
     }
 
     public void onShown() {
