@@ -82,11 +82,11 @@ class InterestOnlyCalculatorTest {
         Loan reducingLoan = new Loan(
                 "IO005", "C001", Loan.Status.NEW, 12_000.00, 12.0,
                 Loan.Type.REDUCING_BALANCE, false, LocalDate.of(2026, 1, 1), null, 0.0,
-                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, 12);
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12);
         Loan unusableRateLoan = new Loan(
                 "IO006", "C001", Loan.Status.NEW, 12_000.00, Double.MAX_VALUE,
                 Loan.Type.INTEREST_ONLY, false, LocalDate.of(2026, 1, 1), null, 0.0,
-                Loan.Frequency.MONTHLY, Loan.Frequency.WEEKLY, 12);
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.WEEKLY, 12);
 
         assertAll(
                 () -> assertThrows(
@@ -109,8 +109,8 @@ class InterestOnlyCalculatorTest {
                 LocalDate.of(2026, 1, 1),
                 null,
                 0.0,
-                Loan.Frequency.MONTHLY,
-                Loan.Frequency.MONTHLY,
+                Loan.PaymentFrequency.MONTHLY,
+                Loan.RateFrequency.MONTHLY,
                 12);
     }
 

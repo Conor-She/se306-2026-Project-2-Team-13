@@ -81,7 +81,7 @@ class ReducingBalanceCalculatorTest {
         Loan tableLoan = new Loan(
                 "RB005", "C001", Loan.Status.NEW, 12_000.00, 12.0,
                 Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), null, 0.0,
-                Loan.Frequency.MONTHLY, Loan.Frequency.MONTHLY, 12);
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12);
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -100,8 +100,8 @@ class ReducingBalanceCalculatorTest {
                 LocalDate.of(2026, 1, 1),
                 null,
                 0.0,
-                Loan.Frequency.MONTHLY,
-                Loan.Frequency.MONTHLY,
+                Loan.PaymentFrequency.MONTHLY,
+                Loan.RateFrequency.MONTHLY,
                 12);
     }
 
