@@ -8,11 +8,16 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Registration validation until the real registration service is available. */
 public class StubCustomerRegistrationService implements CustomerRegistrationService {
     private static final DateTimeFormatter DATE_OF_BIRTH_FORMAT =
             DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
+    private final AtomicInteger sequence = new AtomicInteger(11);
+    private final Map<String, CustomerDraft> saved = new LinkedHashMap<>();
+
     @Override public List<ValidationError> validate(CustomerDraft draft) {
         List<ValidationError> errors = new ArrayList<>();
         for (String key : List.of("firstName", "lastName", "dateOfBirth")) {
@@ -71,4 +76,17 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         return List.copyOf(errors);
     }
 
+    @Override public synchronized String save(CustomerDraft draft) throws RegistrationException {
+        List<ValidationError> errors = validate(draft);
+        if (!errors.isEmpty()) throw new RegistrationException(errors);
+        String id = "C%03d".formatted(sequence.getAndIncrement());
+        saved.put(id, draft.copy());
+        return id;
+    }
+
+    public synchronized Map<String, CustomerDraft> savedCustomers() {
+        Map<String, CustomerDraft> copy = new LinkedHashMap<>();
+        saved.forEach((id, draft) -> copy.put(id, draft.copy()));
+        return copy;
+    }
 }

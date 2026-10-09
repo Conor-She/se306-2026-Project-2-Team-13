@@ -194,7 +194,36 @@ class DashboardControllerTest {
             wizardButton(wizard, "Remove").fire();
             assertTrue(wizard.lookup("#guarantorNote").isVisible());
             wizardButton(wizard, "Skip").fire();
-            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Review stage is not implemented"));
+            assertNotNull(wizard.lookup("#reviewPane"));
+            assertFalse(wizardButton(wizard, "Save customer").isDisabled());
+            assertTrue(((Parent) wizard.lookup("#personalReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Amelia Adams")));
+            assertTrue(((Parent) wizard.lookup("#contactReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("amelia@example.com")));
+            Parent review = (Parent) wizard.lookup("#reviewPane");
+            wizardButton((Parent) review.getChildrenUnmodifiable().get(0), "Edit").fire();
+            wizardField(wizard, "First name *").setText("Amy");
+            wizardButton(wizard, "Save and return to Review").fire();
+            assertTrue(((Parent) wizard.lookup("#personalReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Amy Adams")));
+            review = (Parent) wizard.lookup("#reviewPane");
+            wizardButton((Parent) review.getChildrenUnmodifiable().get(1), "Edit").fire();
+            wizardField(wizard, "Email address *").setText("invalid");
+            wizardButton(wizard, "Skip").fire();
+            assertTrue(wizardButton(wizard, "Save customer").isDisabled());
+            review = (Parent) wizard.lookup("#reviewPane");
+            wizardButton((Parent) review.getChildrenUnmodifiable().get(1), "Edit").fire();
+            wizardField(wizard, "Email address *").setText("amy@example.com");
+            wizardButton(wizard, "Save and return to Review").fire();
+            assertFalse(wizardButton(wizard, "Save customer").isDisabled());
+            wizardButton(wizard, "Back").fire();
+            wizardButton(wizard, "+ Add employer").fire();
+            wizardField(wizard, "Employer name *").setText("Acme");
+            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
+            wizardButton(wizard, "Next").fire();
+            assertTrue(((Parent) wizard.lookup("#employmentReview")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("Acme") && label.getText().contains("50000.00")));
+
 
             // End this draft without opening a modal confirmation in the test.
             ((CustomersController) loader.getNamespace().get("customersViewController")).onShown();

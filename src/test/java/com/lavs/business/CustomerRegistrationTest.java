@@ -69,4 +69,21 @@ class CustomerRegistrationTest {
         assertFalse(CustomerDraft.hasEntryDetails("employers", Map.of("name", "   ")));
         assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("income", "0")));
     }
+    @Test void saveValidatesAndKeepsAnIndependentSnapshot() throws Exception {
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(new CustomerDraft()));
+        CustomerDraft draft = validDraft();
+        draft.emails.add(new java.util.LinkedHashMap<>(Map.of("email", "amelia@example.com")));
+        draft.employers.add(new java.util.LinkedHashMap<>(Map.of("name", "Acme", "income", "50000.00")));
+        String id = service.save(draft);
+        assertEquals("C011", id);
+        draft.personal.put("firstName", "Changed");
+        draft.emails.get(0).put("email", "changed@example.com");
+        draft.employers.get(0).put("name", "Changed");
+        CustomerDraft saved = service.savedCustomers().get(id);
+        assertEquals("Amelia", saved.personal.get("firstName"));
+        assertEquals("amelia@example.com", saved.emails.get(0).get("email"));
+        assertEquals("Acme", saved.employers.get(0).get("name"));
+        saved.personal.clear();
+        assertEquals("Amelia", service.savedCustomers().get(id).personal.get("firstName"));
+    }
 }

@@ -14,6 +14,7 @@ import javafx.scene.layout.VBox;
 /** Searchable customer list with a details placeholder. */
 public class CustomersController {
     private final com.lavs.business.CustomerRegistrationService registrationService;
+    private final javafx.collections.ObservableList<CustomerSummary> customers = FXCollections.observableArrayList();
     private VBox addCustomerView;
     private AddCustomerController addCustomerController;
     private VBox root;
@@ -43,13 +44,16 @@ public class CustomersController {
         nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
         phoneColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().phone()));
         emailColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().email()));
-        var filtered = new FilteredList<>(FXCollections.observableArrayList(loadCustomers()));
+        customers.setAll(loadCustomers());
+        var filtered = new FilteredList<>(customers);
         var sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(customerTable.comparatorProperty());
         customerTable.setItems(sorted);
         customerTable.getSortOrder().add(nameColumn);
         customerTable.setPlaceholder(new Label("No customers found"));
         resultsHeading.setText("All customers (" + filtered.size() + ")");
+        filtered.addListener((javafx.collections.ListChangeListener<CustomerSummary>) change ->
+            resultsHeading.setText((searchField.getText().isBlank() ? "All customers (" : "Search results (") + filtered.size() + ")"));
         searchField.textProperty().addListener((obs, oldValue, value) -> {
             String query = value.strip().toLowerCase(Locale.ROOT);
             filtered.setPredicate(customer -> customer.matches(query));
@@ -102,7 +106,17 @@ public class CustomersController {
         listView.setManaged(false);
         detailsView.setVisible(false);
         detailsView.setManaged(false);
-        addCustomerController = new AddCustomerController(registrationService, this::onShown);
+        addCustomerController = new AddCustomerController(registrationService, this::onShown, (id, draft) -> {
+            customers.add(new CustomerSummary(id,
+                draft.personal.getOrDefault("firstName", "") + " " + draft.personal.getOrDefault("lastName", ""),
+                primaryContact(draft.phones, "number"),
+                primaryContact(draft.emails, "email")));
+            onShown();
+            Alert confirmation = new Alert(Alert.AlertType.INFORMATION, "Customer " + id + " has been saved.", ButtonType.OK);
+            confirmation.setHeaderText("Customer added successfully");
+            if (root.getScene() != null) confirmation.initOwner(root.getScene().getWindow());
+            confirmation.showAndWait();
+        });
         javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addCustomer.fxml"));
         loader.setControllerFactory(type -> addCustomerController);
         try {
@@ -117,6 +131,11 @@ public class CustomersController {
         }
         VBox.setVgrow(addCustomerView, javafx.scene.layout.Priority.ALWAYS);
         root.getChildren().add(addCustomerView);
+    }
+
+    private static String primaryContact(List<java.util.Map<String, String>> entries, String key) {
+        return entries.stream().filter(entry -> "true".equals(entry.get("primary"))).findFirst()
+            .or(() -> entries.stream().findFirst()).map(entry -> entry.getOrDefault(key, "")).orElse("");
     }
 
     private void closeEditor() {

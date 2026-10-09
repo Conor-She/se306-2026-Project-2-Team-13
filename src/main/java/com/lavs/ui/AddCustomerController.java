@@ -4,6 +4,7 @@ import com.lavs.business.CustomerRegistrationService;
 import com.lavs.business.CustomerRegistrationService.ValidationError;
 import com.lavs.model.CustomerDraft;
 import java.util.*;
+import java.util.function.BiConsumer;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import java.io.IOException;
@@ -12,31 +13,41 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-/** Customer registration stages and draft navigation. */
+/** Resizable four-step editor. Business rules are supplied by the registration service. */
 public class AddCustomerController {
+    private static final String[] STEPS = {"Personal Details", "Contact", "Employment", "Review"};
     private final CustomerRegistrationService service;
     private final Runnable onCancel;
+    private final BiConsumer<String, CustomerDraft> onSaved;
     private final CustomerDraft draft = new CustomerDraft();
     private final Map<String, Label> fieldErrors = new LinkedHashMap<>();
     private final Map<String, Control> fields = new LinkedHashMap<>();
-    private int step;
     private final Set<String> expanded = new HashSet<>();
-    @FXML private VBox view, body, personalPane, contactPane, employmentPane, addressRows, phoneRows, emailRows, employerRows;
+    private final boolean[] completed = new boolean[4];
+    @FXML private VBox view, body, personalPane, contactPane, employmentPane, reviewPane;
+    @FXML private VBox addressRows, phoneRows, emailRows, employerRows;
+    @FXML private VBox employmentReview;
+    @FXML private FlowPane personalReview, contactReview;
     @FXML private FlowPane footer;
-    @FXML private Button back, skip, next;
-    @FXML private Label message, guarantorNote;
-    @FXML private Label marker0, marker1, marker2, stepName0, stepName1, stepName2;
+    @FXML private Label message, reviewNotice, guarantorNote;
+    @FXML private Label marker0, marker1, marker2, marker3, stepName0, stepName1, stepName2, stepName3;
     @FXML private TextField title, firstName, lastName, dateOfBirth, nationality;
     @FXML private Label titleError, firstNameError, lastNameError, dateOfBirthError, nationalityError;
-    @FXML private String markerStyle, stepNameStyle, activeMarkerStyle, activeStepNameStyle, inputStyle, invalidInputStyle;
+    @FXML private String markerStyle, activeMarkerStyle, stepNameStyle, activeStepNameStyle, inputStyle, invalidInputStyle;
     @FXML private ScrollPane customerScroll;
     @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
+    @FXML private Button cancel, back, skip, next;
+    private int step;
+    private boolean editingReview;
     private boolean showErrors;
 
-    public AddCustomerController(CustomerRegistrationService service, Runnable onCancel) {
+    public AddCustomerController(CustomerRegistrationService service, Runnable onCancel,
+                                 BiConsumer<String, CustomerDraft> onSaved) {
         this.service = service;
         this.onCancel = onCancel;
+        this.onSaved = onSaved;
     }
+
     @FXML private void initialize() {
         ScrollPaneAppearance.install(customerScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         bindField("title", title, titleError, draft.personal, "title");
@@ -57,24 +68,68 @@ public class AddCustomerController {
         return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
-    @FXML private void cancel() { if (confirmLeave()) onCancel.run(); }
-
-    @FXML private void next() {
-        showErrors = true;
-        refreshValidation();
-        List<ValidationError> errors = validate().stream().filter(error -> error.step() == step).toList();
-        if (!errors.isEmpty()) {
-            Control field = fields.get(errors.get(0).field());
-            if (field != null) field.requestFocus();
-        } else if (step < 2) {
-            step++;
-            showErrors = false;
-            render();
-        } else {
-            message.setText("Employment details are valid. The Review stage is not implemented yet.");
-            message.setVisible(true);
-            message.setManaged(true);
+    private void render() {
+        // The FXML defines every step; only the current one is attached to the scroll body.
+        Label[] markers = {marker0, marker1, marker2, marker3};
+        Label[] names = {stepName0, stepName1, stepName2, stepName3};
+        for (int i = 0; i < STEPS.length; i++) {
+            markers[i].setText(completed[i] && i != step ? "✓" : String.valueOf(i + 1));
+            markers[i].setStyle(i == step || completed[i] ? activeMarkerStyle : markerStyle);
+            names[i].setStyle(i == step ? activeStepNameStyle : stepNameStyle);
         }
+        reviewNotice.setVisible(editingReview);
+        reviewNotice.setManaged(editingReview);
+        switch (step) {
+            case 0 -> body.getChildren().setAll(personalPane);
+            case 1 -> {
+                entries(addressRows, "addresses", draft.addresses);
+                entries(phoneRows, "phones", draft.phones);
+                entries(emailRows, "emails", draft.emails);
+                body.getChildren().setAll(contactPane);
+            }
+            case 2 -> {
+                entries(employerRows, "employers", draft.employers);
+                guarantorNote.setVisible(draft.employers.isEmpty());
+                guarantorNote.setManaged(draft.employers.isEmpty());
+                body.getChildren().setAll(employmentPane);
+            }
+            case 3 -> { review(); body.getChildren().setAll(reviewPane); }
+            default -> throw new IllegalStateException("Unknown step");
+        }
+        customerScroll.setVvalue(0);
+        footer.getChildren().clear();
+        if (step > 0 && !editingReview) footer.getChildren().add(back);
+        if (step == 1 || step == 2) footer.getChildren().add(skip);
+        next.setText(step == 3 ? "Save customer" : editingReview ? "Save and return to Review" : "Next");
+        footer.getChildren().add(next);
+        refreshValidation();
+    }
+
+    @FXML private void cancel() { if (confirmLeave()) onCancel.run(); }
+    @FXML private void back() { step--; showErrors = false; render(); }
+    @FXML private void skip() { advance(false); }
+    @FXML private void next() { if (step == 3) save(); else advance(true); }
+    @FXML private void addAddress() { addEntry("addresses", draft.addresses); }
+    @FXML private void addPhone() { addEntry("phones", draft.phones); }
+    @FXML private void addEmail() { addEntry("emails", draft.emails); }
+    @FXML private void addEmployer() { addEntry("employers", draft.employers); }
+    @FXML private void editPersonal() { editStep(0); }
+    @FXML private void editContact() { editStep(1); }
+    @FXML private void editEmployment() { editStep(2); }
+
+    private void editStep(int target) {
+        step = target;
+        editingReview = true;
+        showErrors = false;
+        render();
+    }
+
+    private void addEntry(String kind, List<Map<String, String>> values) {
+        Map<String, String> value = new LinkedHashMap<>();
+        if (kind.equals("phones")) value.put("type", "Mobile");
+        values.add(value);
+        expanded.add(kind + "." + (values.size() - 1));
+        render();
     }
 
     private void bindField(String path, TextField input, Label error, Map<String, String> values, String key) {
@@ -85,78 +140,6 @@ public class AddCustomerController {
             values.put(key, value.strip());
             refreshValidation();
         });
-    }
-
-    private List<ValidationError> validate() {
-        try { return service.validate(draft); }
-        catch (RuntimeException exception) {
-            return List.of(new ValidationError(step, "", "Unable to validate the customer. Please try again."));
-        }
-    }
-
-    private void refreshValidation() {
-        List<ValidationError> errors = validate();
-        fieldErrors.forEach((path, label) -> {
-            String text = showErrors ? errors.stream().filter(e -> e.field().equals(path)).map(ValidationError::message).findFirst().orElse("") : "";
-            label.setText(text);
-            label.setVisible(!text.isEmpty());
-            label.setManaged(!text.isEmpty());
-            fields.get(path).setStyle(text.isEmpty() ? inputStyle : invalidInputStyle);
-        });
-        String text = showErrors ? String.join("\n", errors.stream().filter(e -> e.step() == step && e.field().isBlank()).map(ValidationError::message).toList()) : "";
-        message.setText(text);
-        message.setVisible(!text.isBlank());
-        message.setManaged(!text.isBlank());
-    }
-    private void render() {
-        marker0.setStyle(activeMarkerStyle);
-        marker1.setStyle(step >= 1 ? activeMarkerStyle : markerStyle);
-        stepName0.setStyle(step == 0 ? activeStepNameStyle : stepNameStyle);
-        stepName1.setStyle(step == 1 ? activeStepNameStyle : stepNameStyle);
-        marker2.setStyle(step == 2 ? activeMarkerStyle : markerStyle);
-        stepName2.setStyle(step == 2 ? activeStepNameStyle : stepNameStyle);
-        if (step == 0) body.getChildren().setAll(personalPane);
-        else if (step == 1) {
-            entries(addressRows, "addresses", draft.addresses);
-            entries(phoneRows, "phones", draft.phones);
-            entries(emailRows, "emails", draft.emails);
-            body.getChildren().setAll(contactPane);
-        }
-        else {
-            entries(employerRows, "employers", draft.employers);
-            guarantorNote.setVisible(draft.employers.isEmpty());
-            guarantorNote.setManaged(draft.employers.isEmpty());
-            body.getChildren().setAll(employmentPane);
-        }
-        footer.getChildren().setAll(next);
-        if (step > 0) footer.getChildren().setAll(back, skip, next);
-        customerScroll.setVvalue(0);
-        refreshValidation();
-    }
-
-    @FXML private void back() { step--; showErrors = false; render(); }
-    @FXML private void skip() {
-        if (step == 1) {
-            step = 2;
-            showErrors = false;
-            render();
-        } else {
-            message.setText("The Review stage is not implemented yet. Your employment details are kept.");
-            message.setVisible(true);
-            message.setManaged(true);
-        }
-    }
-    @FXML private void addEmployer() { addEntry("employers", draft.employers); }
-    @FXML private void addAddress() { addEntry("addresses", draft.addresses); }
-    @FXML private void addPhone() { addEntry("phones", draft.phones); }
-    @FXML private void addEmail() { addEntry("emails", draft.emails); }
-
-    private void addEntry(String kind, List<Map<String, String>> values) {
-        Map<String, String> value = new LinkedHashMap<>();
-        if (kind.equals("phones")) value.put("type", "Mobile");
-        values.add(value);
-        expanded.add(kind + "." + (values.size() - 1));
-        render();
     }
 
     private void entries(VBox rows, String kind, List<Map<String, String>> values) {
@@ -238,6 +221,26 @@ public class AddCustomerController {
         });
     }
 
+    private void review() {
+        personalReview.getChildren().setAll(
+            reviewValue("Title", draft.personal.get("title")),
+            reviewValue("Name", join(draft.personal.get("title"), draft.personal.get("firstName"), draft.personal.get("lastName"))),
+            reviewValue("Date of birth", draft.personal.get("dateOfBirth")),
+            reviewValue("Nationality", draft.personal.get("nationality")),
+            reviewValue("Customer ID", "Assigned on save"));
+        contactReview.getChildren().setAll(
+            reviewValue("Addresses", reviewEntries("addresses", draft.addresses)),
+            reviewValue("Phone numbers", reviewEntries("phones", draft.phones)),
+            reviewValue("Emails", reviewEntries("emails", draft.emails)));
+        employmentReview.getChildren().setAll(reviewValue("Employers", reviewEntries("employers", draft.employers)));
+        if (draft.employers.isEmpty()) employmentReview.getChildren().add(
+            reviewValue("", "A guarantor will be needed when a loan is started."));
+    }
+
+    private String reviewEntries(String kind, List<Map<String, String>> values) {
+        return values.isEmpty() ? "None added" : String.join("\n", values.stream().map(value -> describe(kind, value)).toList());
+    }
+
     private Node reviewValue(String title, String value) {
         FXMLLoader loader = fragment("customerReviewValue.fxml");
         Label heading = (Label) loader.getNamespace().get("heading");
@@ -260,7 +263,7 @@ public class AddCustomerController {
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");
             case "employers" -> join(value.get("name"), value.get("role"), value.get("employmentType"), value.get("address"), value.get("phone"))
-                    + (value.getOrDefault("income", "").isBlank() ? "" : "  ? Annual income: NZD " + value.get("income"));
+                    + (value.getOrDefault("income", "").isBlank() ? "" : "  • Annual income: NZD " + value.get("income"));
             default -> "";
         };
         return result.isBlank() ? "New entry — enter details" : result;
@@ -268,6 +271,86 @@ public class AddCustomerController {
 
     private static String join(String... values) {
         return String.join(" ", Arrays.stream(values).filter(Objects::nonNull).filter(v -> !v.isBlank()).toList());
+    }
+
+    private List<ValidationError> validate() {
+        try { return service.validate(draft); }
+        catch (RuntimeException exception) {
+            return List.of(new ValidationError(step, "", "Unable to validate the customer. Please try again."));
+        }
+    }
+
+    private void refreshValidation() {
+        if (next == null) return;
+        List<ValidationError> errors = validate();
+        fieldErrors.forEach((path, label) -> {
+            String text = showErrors ? errors.stream().filter(e -> e.field().equals(path)).map(ValidationError::message).findFirst().orElse("") : "";
+            label.setText(text);
+            label.setVisible(!text.isEmpty());
+            label.setManaged(!text.isEmpty());
+            fields.get(path).setStyle(text.isEmpty() ? inputStyle : invalidInputStyle);
+        });
+        next.setDisable(step == 3 && !errors.isEmpty());
+        List<String> top = errors.stream().filter(e -> step == 3 || (e.step() == step && e.field().isBlank()))
+                .map(e -> (e.field().isBlank() ? "" : STEPS[e.step()] + ": ") + e.message()).distinct().toList();
+        if (step == 3 && !top.isEmpty()) setMessage("Please edit the listed sections before saving.\n" + String.join("\n", top));
+        else if (showErrors && !top.isEmpty()) setMessage(String.join("\n", top));
+        else { message.setVisible(false); message.setManaged(false); }
+    }
+
+    private void advance(boolean validateCurrent) {
+        if (validateCurrent) {
+            List<ValidationError> errors = validate().stream().filter(e -> e.step() == step).toList();
+            if (!errors.isEmpty()) { showErrors = true; render(); focusFirst(errors); return; }
+        }
+        completed[step] = true;
+        step = editingReview ? 3 : step + 1;
+        editingReview = false;
+        showErrors = step == 3;
+        render();
+    }
+
+    private void save() {
+        List<ValidationError> errors = validate();
+        if (!errors.isEmpty()) { showFailure(errors); return; }
+        next.setDisable(true);
+        try {
+            String id = service.save(draft.copy());
+            onSaved.accept(id, draft.copy());
+        } catch (CustomerRegistrationService.RegistrationException exception) {
+            showFailure(exception.errors().isEmpty() ? List.of(new ValidationError(step, "", "Customer could not be saved. Please try again.")) : exception.errors());
+        } catch (RuntimeException exception) {
+            next.setDisable(false);
+            setMessage("Customer could not be saved. Your details are kept. Please try again.");
+        }
+    }
+
+    private void showFailure(List<ValidationError> errors) {
+        for (ValidationError error : errors) {
+            int lastDot = error.field().lastIndexOf('.');
+            if (lastDot > 0) expanded.add(error.field().substring(0, lastDot));
+        }
+        step = Math.max(0, Math.min(2, errors.get(0).step()));
+        editingReview = step < 3;
+        showErrors = true;
+        render();
+        for (ValidationError error : errors) {
+            Label label = fieldErrors.get(error.field());
+            if (label != null) { label.setText(error.message()); label.setVisible(true); label.setManaged(true); }
+        }
+        setMessage(String.join("\n", errors.stream().filter(e -> e.step() == step && (e.field().isBlank() || !fieldErrors.containsKey(e.field()))).map(ValidationError::message).toList()));
+        focusFirst(errors);
+    }
+
+    private void focusFirst(List<ValidationError> errors) {
+        Control field = fields.get(errors.get(0).field());
+        if (field != null) javafx.application.Platform.runLater(field::requestFocus);
+    }
+
+    private void setMessage(String text) {
+        message.setText(text);
+        message.setVisible(!text.isBlank());
+        message.setManaged(!text.isBlank());
     }
 
 }

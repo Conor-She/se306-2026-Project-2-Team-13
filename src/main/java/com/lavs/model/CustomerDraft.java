@@ -30,4 +30,17 @@ public class CustomerDraft {
         return personal.values().stream().anyMatch(value -> !value.isBlank())
                 || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty() || !employers.isEmpty();
     }
+    public CustomerDraft copy() {
+        CustomerDraft copy = new CustomerDraft();
+        copy.personal.putAll(personal);
+        copyEntries(addresses, copy.addresses);
+        copyEntries(phones, copy.phones);
+        copyEntries(emails, copy.emails);
+        copyEntries(employers, copy.employers);
+        return copy;
+    }
+
+    private static void copyEntries(List<Map<String, String>> from, List<Map<String, String>> to) {
+        from.forEach(entry -> to.add(new LinkedHashMap<>(entry)));
+    }
 }
