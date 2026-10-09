@@ -170,6 +170,17 @@ public class AddCustomerController {
             focusFirst(errors);
             return;
         }
+        Optional<String> openEntry = expanded.stream().filter(path -> step == 2
+            ? path.startsWith("employers.")
+            : path.startsWith("addresses.") || path.startsWith("phones.") || path.startsWith("emails."))
+            .findFirst();
+        if (openEntry.isPresent()) {
+            String path = openEntry.get();
+            setMessage("Click Done on the open entry before adding another, or remove it.");
+            fields.entrySet().stream().filter(entry -> entry.getKey().startsWith(path + "."))
+                .map(Map.Entry::getValue).findFirst().ifPresent(Control::requestFocus);
+            return;
+        }
         Map<String, String> value = new LinkedHashMap<>();
         if (kind.equals("phones")) value.put("type", "Mobile");
         values.add(value);

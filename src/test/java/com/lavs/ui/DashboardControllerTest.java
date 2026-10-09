@@ -201,6 +201,10 @@ class DashboardControllerTest {
 
             wizardField(wizard, "City *").setText("Auckland");
             wizardButton(wizard, "+ Add phone").fire();
+            assertTrue(((Parent) wizard.lookup("#phoneRows")).lookupAll(".text-field").isEmpty());
+            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Click Done"));
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "+ Add phone").fire();
             TextField phone = wizardField(wizard, "Phone number *");
             phone.appendText("abc");
             assertEquals("", phone.getText());
@@ -220,6 +224,9 @@ class DashboardControllerTest {
             assertEquals("", phone.getText());
             phone.setText("021 555 0101");
             wizardButton(wizard, "+ Add email").fire();
+            assertTrue(((Parent) wizard.lookup("#emailRows")).lookupAll(".text-field").isEmpty());
+            wizardButton(wizard, "Done").fire();
+            wizardButton(wizard, "+ Add email").fire();
             wizardField(wizard, "Email address *").setText("invalid");
             wizardButton(wizard, "Next").fire();
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
@@ -228,8 +235,10 @@ class DashboardControllerTest {
             assertEquals("Amelia", wizardField(wizard, "First name *").getText());
             wizardButton(wizard, "Next").fire();
             assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
-            assertEquals("12 Queen St", wizardField(wizard, "Street address *").getText());
-            assertEquals("021 555 0101", wizardField(wizard, "Phone number *").getText());
+            assertTrue(((Parent) wizard.lookup("#addressRows")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("12 Queen St")));
+            assertTrue(((Parent) wizard.lookup("#phoneRows")).lookupAll(".label").stream()
+                .map(Label.class::cast).anyMatch(label -> label.getText().contains("021 555 0101")));
             wizardButton(wizard, "Next").fire();
             assertNotNull(wizard.lookup("#employmentPane"));
             assertTrue(wizard.lookup("#guarantorNote").isVisible());
@@ -256,6 +265,10 @@ class DashboardControllerTest {
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
             wizardField(wizard, "Annual income (NZD)").setText("50000.00");
             ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Part-time");
+            wizardButton(wizard, "+ Add employer").fire();
+            assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                .filter(button -> button.getText().equals("Done")).count());
+            assertTrue(((Label) wizard.lookup("#message")).getText().contains("Click Done"));
             wizardButton(wizard, "Done").fire();
             wizardButton(wizard, "Back").fire();
             assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
