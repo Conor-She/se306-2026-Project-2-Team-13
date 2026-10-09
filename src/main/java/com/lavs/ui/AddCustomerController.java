@@ -161,6 +161,15 @@ public class AddCustomerController {
     }
 
     private void addEntry(String kind, List<Map<String, String>> values) {
+        List<ValidationError> errors = validate().stream()
+            .filter(error -> error.step() == step).toList();
+        if (!errors.isEmpty()) {
+            showErrors = true;
+            render();
+            setMessage("Finish or remove the incomplete entry before adding another.");
+            focusFirst(errors);
+            return;
+        }
         Map<String, String> value = new LinkedHashMap<>();
         if (kind.equals("phones")) value.put("type", "Mobile");
         values.add(value);

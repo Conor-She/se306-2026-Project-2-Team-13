@@ -174,15 +174,25 @@ class DashboardControllerTest {
             }
             // Empty editors are discarded automatically by either navigation action.
             for (String action : new String[] {"Next", "Skip"}) {
-                for (String kind : new String[] {"address", "phone", "email"})
+                for (String kind : new String[] {"address", "phone", "email"}) {
                     wizardButton(wizard, "+ Add " + kind).fire();
-                wizardButton(wizard, action).fire();
-                assertNotNull(wizard.lookup("#employmentPane"));
-                wizardButton(wizard, "Back").fire();
-                assertTrue(wizard.lookupAll(".text-field").isEmpty());
+                    for (String other : new String[] {"address", "phone", "email"}) {
+                        wizardButton(wizard, "+ Add " + other).fire();
+                        assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                            .filter(button -> button.getText().equals("Done")).count());
+                    }
+                    wizardButton(wizard, action).fire();
+                    assertNotNull(wizard.lookup("#employmentPane"));
+                    wizardButton(wizard, "Back").fire();
+                    assertTrue(wizard.lookupAll(".text-field").isEmpty());
+                }
             }
             wizardButton(wizard, "+ Add address").fire();
             wizardField(wizard, "Street address *").setText("12 Queen St");
+            wizardButton(wizard, "+ Add email").fire();
+            assertEquals(1, ((Parent) wizard.lookup("#addressRows")).lookupAll(".text-field").stream()
+                .map(TextField.class::cast).filter(field -> field.getText().equals("12 Queen St")).count());
+            assertTrue(((Parent) wizard.lookup("#emailRows")).lookupAll(".text-field").isEmpty());
             wizardButton(wizard, "Done").fire();
             assertNotNull(wizard.lookup("#contactPane"));
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
@@ -224,6 +234,9 @@ class DashboardControllerTest {
             assertNotNull(wizard.lookup("#employmentPane"));
             assertTrue(wizard.lookup("#guarantorNote").isVisible());
             wizardButton(wizard, "+ Add employer").fire();
+            wizardButton(wizard, "+ Add employer").fire();
+            assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
+                .filter(button -> button.getText().equals("Done")).count());
             wizardButton(wizard, "Next").fire();
             assertNotNull(wizard.lookup("#reviewPane"));
             wizardButton(wizard, "Back").fire();
