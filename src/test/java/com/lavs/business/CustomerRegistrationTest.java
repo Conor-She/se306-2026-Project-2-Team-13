@@ -35,4 +35,19 @@ class CustomerRegistrationTest {
         assertTrue(service.validate(draft).isEmpty());
     }
 
+    @Test void contactValidationUsesIndexedFieldsAndAllowsEmptySections() {
+        CustomerDraft draft = validDraft();
+        assertTrue(service.validate(draft).isEmpty());
+        draft.addresses.add(Map.of("street", "12 Queen St"));
+        draft.phones.add(Map.of("number", "abc"));
+        draft.emails.add(Map.of("email", "invalid"));
+        var errors = service.validate(draft);
+        assertTrue(errors.stream().allMatch(error -> error.step() == 1));
+        assertEquals(java.util.Set.of("addresses.0.city", "phones.0.number", "emails.0.email"),
+            errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
+        draft.addresses.set(0, Map.of("street", "12 Queen St", "city", "Auckland"));
+        draft.phones.set(0, Map.of("number", "+64 21 555 0101"));
+        draft.emails.set(0, Map.of("email", "amelia@example.com"));
+        assertTrue(service.validate(draft).isEmpty());
+    }
 }

@@ -2,12 +2,29 @@ package com.lavs.model;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 /** Unsaved personal details. */
 public class CustomerDraft {
+    /** Options such as phone type or primary status alone are not contact details. */
+    public static boolean hasEntryDetails(String kind, Map<String, String> entry) {
+        List<String> keys = switch (kind) {
+            case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
+            case "phones" -> List.of("number");
+            case "emails" -> List.of("email");
+            default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
+        };
+        return keys.stream().anyMatch(key -> !entry.getOrDefault(key, "").isBlank());
+    }
     public final Map<String, String> personal = new LinkedHashMap<>();
 
+    public final List<Map<String, String>> addresses = new ArrayList<>();
+    public final List<Map<String, String>> phones = new ArrayList<>();
+    public final List<Map<String, String>> emails = new ArrayList<>();
+
     public boolean hasData() {
-        return personal.values().stream().anyMatch(value -> !value.isBlank());
+        return personal.values().stream().anyMatch(value -> !value.isBlank())
+                || !addresses.isEmpty() || !phones.isEmpty() || !emails.isEmpty();
     }
 }

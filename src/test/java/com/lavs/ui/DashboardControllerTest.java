@@ -146,8 +146,31 @@ class DashboardControllerTest {
             wizardField(wizard, "Last name *").setText("Adams");
             wizardField(wizard, "Date of birth * (dd-mm-yyyy)").setText("14-03-1990");
             wizardButton(wizard, "Next").fire();
-            assertNotNull(wizard.lookup("#firstName"));
-            assertNull(wizard.lookup("#contactPane"));
+            assertNotNull(wizard.lookup("#contactPane"));
+            for (String kind : new String[] {"address", "phone", "email"}) {
+                wizardButton(wizard, "+ Add " + kind).fire();
+                wizardButton(wizard, "Done").fire();
+                wizard.applyCss(); wizard.layout();
+                assertTrue(((Parent) wizard.lookup("#" + (kind.equals("address") ? "address" : kind) + "Rows"))
+                    .lookupAll(".button").isEmpty());
+            }
+            wizardButton(wizard, "+ Add address").fire();
+            wizardField(wizard, "Street address *").setText("12 Queen St");
+            wizardField(wizard, "City *").setText("Auckland");
+            wizardButton(wizard, "+ Add phone").fire();
+            wizardField(wizard, "Phone number *").setText("021 555 0101");
+            wizardButton(wizard, "+ Add email").fire();
+            wizardField(wizard, "Email address *").setText("invalid");
+            wizardButton(wizard, "Next").fire();
+            assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            wizardField(wizard, "Email address *").setText("amelia@example.com");
+            wizardButton(wizard, "Back").fire();
+            assertEquals("Amelia", wizardField(wizard, "First name *").getText());
+            wizardButton(wizard, "Next").fire();
+            assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
+            assertEquals("12 Queen St", wizardField(wizard, "Street address *").getText());
+            assertEquals("021 555 0101", wizardField(wizard, "Phone number *").getText());
+            wizardButton(wizard, "Next").fire();
             assertTrue(wizard.lookupAll(".label").stream().map(Label.class::cast)
                 .anyMatch(label -> label.getText().contains("next stage is not implemented")));
             // End this draft without opening a modal confirmation in the test.
