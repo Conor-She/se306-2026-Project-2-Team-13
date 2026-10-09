@@ -18,6 +18,8 @@ import com.lavs.model.Repayment;
 public class TableLoanCalculator implements RepaymentCalculator {
     private static final int MONEY_SCALE = 2;
     private static final RoundingMode MONEY_ROUNDING = RoundingMode.HALF_UP;
+    private static final String ON_RENEWAL_UNSUPPORTED =
+        "ON_RENEWAL payments cannot be scheduled by TableLoanCalculator";
 
     @Override
     public List<Repayment> calculateSchedule(Loan loan) {
@@ -89,13 +91,32 @@ public class TableLoanCalculator implements RepaymentCalculator {
         if (loan.getRateFrequency() == null) {
             throw new IllegalArgumentException("rateFrequency must not be null");
         }
+        if (loan.getLoanId() == null) {
+            throw new IllegalArgumentException(
+                    "loanId must be assigned before a schedule can be calculated");
+        }
+        if (loan.getTermMonths() == null) {
+            throw new IllegalArgumentException("termMonths must not be null");
+        }
     }
 
-    private int periodsPerYear(Loan.Frequency frequency) {
+    private int periodsPerYear(Loan.PaymentFrequency frequency) {
         return switch (frequency) {
             case WEEKLY -> 52;
             case FORTNIGHTLY -> 26;
             case MONTHLY -> 12;
+            case YEARLY -> 1;
+            case ON_RENEWAL -> throw new IllegalArgumentException(ON_RENEWAL_UNSUPPORTED);
+        };
+    }
+
+    private int periodsPerYear(Loan.RateFrequency frequency) {
+        return switch (frequency) {
+            case DAILY -> 365;
+            case WEEKLY -> 52;
+            case FORTNIGHTLY -> 26;
+            case MONTHLY -> 12;
+            case YEARLY -> 1;
         };
     }
 
@@ -151,12 +172,14 @@ public class TableLoanCalculator implements RepaymentCalculator {
 
     private LocalDate dueDate(
             LocalDate startDate,
-            Loan.Frequency paymentFrequency,
+            Loan.PaymentFrequency paymentFrequency,
             int paymentNumber) {
         return switch (paymentFrequency) {
             case WEEKLY -> startDate.plusWeeks(paymentNumber);
             case FORTNIGHTLY -> startDate.plusWeeks(2L * paymentNumber);
             case MONTHLY -> startDate.plusMonths(paymentNumber);
+            case YEARLY -> startDate.plusYears(paymentNumber);
+            case ON_RENEWAL -> throw new IllegalArgumentException(ON_RENEWAL_UNSUPPORTED);
         };
     }
 
