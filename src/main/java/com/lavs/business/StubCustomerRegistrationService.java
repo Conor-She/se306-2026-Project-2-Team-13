@@ -59,7 +59,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
             case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
-            case "employers" -> List.of("name", "role", "employmentType", "income");
+            case "employers" -> List.of("name", "role", "employmentType", "income", "phone");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         for (String key : required)
@@ -71,6 +71,9 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         if (kind.equals("employers") && !income.isBlank() && !income.matches("[0-9]+(\\.[0-9]{1,2})?"))
             errors.add(new ValidationError(step, "income", "Enter a non-negative annual income with up to two decimal places."));
         String number = kind.equals("phones") ? entry.getOrDefault("number", "") : "";
+        String employerPhone = kind.equals("employers") ? entry.getOrDefault("phone", "") : "";
+        if (!employerPhone.isBlank() && !employerPhone.matches("\\+?[0-9 ()-]{7,20}"))
+            errors.add(new ValidationError(step, "phone", "Enter a valid phone number."));
         if (!number.isBlank() && !number.matches("\\+?[0-9 ()-]{7,20}"))
             errors.add(new ValidationError(step, "number", "Enter a valid phone number."));
         return List.copyOf(errors);

@@ -70,7 +70,7 @@ class CustomerRegistrationTest {
         draft.employers.add(Map.of("income", "-1"));
         var errors = service.validate(draft);
         assertTrue(errors.stream().allMatch(error -> error.step() == 2));
-        assertEquals(java.util.Set.of("employers.0.name", "employers.0.role", "employers.0.employmentType", "employers.0.income"),
+        assertEquals(java.util.Set.of("employers.0.name", "employers.0.role", "employers.0.employmentType", "employers.0.income", "employers.0.phone"),
             errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
         for (String income : new String[] {"abc", "12.345"}) {
             draft.employers.set(0, validEmployer(income));
@@ -89,7 +89,8 @@ class CustomerRegistrationTest {
     }
 
     private Map<String, String> validEmployer(String income) {
-        return Map.of("name", "Acme", "role", "Engineer", "employmentType", "Full-time", "income", income);
+        return Map.of("name", "Acme", "role", "Engineer", "employmentType", "Full-time", "income", income,
+                "phone", "+64 9 555 0101");
     }
 
     @Test void everyAddressAndEmployerFieldIsRequiredBeforeSaving() {
@@ -107,6 +108,22 @@ class CustomerRegistrationTest {
                 assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
             }
         }
+    }
+
+    @Test void employerPhoneIsValidatedAndAddressIsPreserved() throws Exception {
+        CustomerDraft draft = validDraft();
+        Map<String, String> employer = new java.util.LinkedHashMap<>(validEmployer("50000.00"));
+        employer.put("address", "12 Queen St, Auckland");
+        employer.put("phone", "invalid");
+        draft.employers.add(employer);
+        assertEquals("employers.0.phone", service.validate(draft).get(0).field());
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
+        employer.put("phone", "+64 9 555 0101");
+        String id = service.save(draft);
+        assertEquals("12 Queen St, Auckland", service.savedCustomers().get(id).employers.get(0).get("address"));
+        assertEquals("+64 9 555 0101", service.savedCustomers().get(id).employers.get(0).get("phone"));
+        assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("address", "12 Queen St")));
+        assertTrue(CustomerDraft.hasEntryDetails("employers", Map.of("phone", "095550101")));
     }
 
     @Test void saveValidatesAndKeepsAnIndependentSnapshot() throws Exception {

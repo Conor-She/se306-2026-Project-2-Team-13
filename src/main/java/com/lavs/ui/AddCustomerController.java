@@ -220,7 +220,7 @@ public class AddCustomerController {
     private void bindField(String path, TextField input, Label error, Map<String, String> values, String key) {
         fields.put(path, input);
         fieldErrors.put(path, error);
-        if (key.equals("number")) {
+        if (key.equals("number") || key.equals("phone")) {
             input.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\+?[0-9 ()-]*") ? change : null));
         }
@@ -365,7 +365,9 @@ public class AddCustomerController {
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");
             case "employers" -> join(value.get("name"), value.get("role"), value.get("employmentType"))
-                    + (value.getOrDefault("income", "").isBlank() ? "" : "  • Annual income: NZD " + value.get("income"));
+                    + (value.getOrDefault("income", "").isBlank() ? "" : "  • Annual income: NZD " + value.get("income"))
+                    + (value.getOrDefault("address", "").isBlank() ? "" : "  • Address: " + value.get("address"))
+                    + (value.getOrDefault("phone", "").isBlank() ? "" : "  • Phone: " + value.get("phone"));
             default -> "";
         };
         return result.isBlank() ? "New entry — enter details" : result;

@@ -13,7 +13,7 @@ public class CustomerDraft {
             case "addresses" -> List.of("street", "suburb", "city", "postcode", "country");
             case "phones" -> List.of("number");
             case "emails" -> List.of("email");
-            case "employers" -> List.of("name", "role", "employmentType", "income");
+            case "employers" -> List.of("name", "role", "employmentType", "income", "address", "phone");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         return keys.stream().anyMatch(key -> !entry.getOrDefault(key, "").isBlank());

@@ -5,8 +5,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.collections.FXCollections?>
 <FlowPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" hgap="16" vgap="12" minWidth="0"><VBox spacing="6" minWidth="0" prefWidth="260">
-      <TextFlow style="-fx-font-weight: bold;"><Text text="Employer name "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
-      <TextField fx:id="name" accessibleText="Employer name *" promptText="Employer name" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Company name "/><Text text="*" fill="#b42318"/><Text text=""/></TextFlow>
+      <TextField fx:id="name" accessibleText="Company name *" promptText="Company name" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="nameError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox><VBox spacing="6" minWidth="0" prefWidth="260">
       <TextFlow style="-fx-font-weight: bold;"><Text text="Job title "/><Text text="*" fill="#b42318"/></TextFlow>
@@ -27,5 +27,15 @@
       <TextFlow style="-fx-font-weight: bold;"><Text text="Annual income (NZD) "/><Text text="*" fill="#b42318"/></TextFlow>
       <TextField fx:id="income" accessibleText="Annual income (NZD) *" promptText="e.g. 50000.00" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
       <Label fx:id="incomeError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox>
+    <VBox spacing="6" minWidth="0" prefWidth="260">
+      <Label text="Employer address" style="-fx-font-weight: bold;"/>
+      <TextField fx:id="address" accessibleText="Employer address" promptText="Employer address" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="addressError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+    </VBox>
+    <VBox spacing="6" minWidth="0" prefWidth="260">
+      <TextFlow style="-fx-font-weight: bold;"><Text text="Employer phone "/><Text text="*" fill="#b42318"/></TextFlow>
+      <TextField fx:id="phone" accessibleText="Employer phone *" promptText="e.g. +64 9 555 0101" maxWidth="Infinity" style="-fx-padding: 10; -fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+      <Label fx:id="phoneError" wrapText="true" visible="false" managed="false" styleClass="field-error" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
     </VBox>
   </FlowPane>
