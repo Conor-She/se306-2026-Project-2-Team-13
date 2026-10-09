@@ -86,4 +86,18 @@ public class TableLoanCalculator extends BaseRepaymentCalculator {
         return money(BigDecimal.valueOf(payment));
     }
 
+    private int periodsPerYear(Enum<?> frequency) {
+        return switch (frequency.name().toUpperCase()) {
+            case "ANNUAL", "ANNUALLY", "YEARLY" -> 1;
+            case "SEMI_ANNUAL", "SEMI_ANNUALLY", "HALF_YEARLY" -> 2;
+            case "QUARTERLY" -> 4;
+            case "MONTHLY" -> 12;
+            case "FORTNIGHTLY" -> 26;
+            case "WEEKLY" -> 52;
+            case "DAILY" -> 365;
+            default -> throw new IllegalArgumentException(
+                    "Unsupported rate frequency: " + frequency);
+        };
+    }
+
 }
