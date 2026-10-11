@@ -1,10 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.lavs.ui.CustomerDetailsController" spacing="18" minWidth="0">
- <Button text="Back to customers" onAction="#back"/>
- <Label text="Customer details" style="-fx-font-size: 28; -fx-font-weight: bold;"/>
- <Label fx:id="customerHeading" wrapText="true" style="-fx-font-size: 18;"/>
- <Label text="Customer details are coming soon." wrapText="true"/>
+      fx:controller="com.lavs.ui.CustomerDetailsController" spacing="18" minWidth="0"
+      style="-fx-background-color: white; -fx-font-family: &quot;Segoe UI&quot;;">
+ <fx:define>
+  <ToggleGroup fx:id="customerTabs"/>
+  <String fx:id="tabStyle" fx:value="-fx-background-color: transparent; -fx-text-fill: #111111; -fx-font-size: 16px; -fx-padding: 4 17 11 17; -fx-border-width: 0 0 5 0; -fx-border-color: transparent; -fx-border-radius: 0; -fx-cursor: hand;"/>
+  <String fx:id="selectedTabStyle" fx:value="-fx-border-color: transparent;"/>
+  <String fx:id="focusStyle" fx:value="-fx-background-color: #f3f3fa;"/>
+ </fx:define>
+ <Button text="&#x27F5;  Back to Search" onAction="#back" fx:id="backButton" style="-fx-background-color: transparent; -fx-text-fill: #111111; -fx-font-size: 14px; -fx-padding: 4 0; -fx-cursor: hand;"/>
+ <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: white; -fx-border-color: #666666; -fx-border-width: 0.75; -fx-border-radius: 15; -fx-background-radius: 15; -fx-padding: 17 24; -fx-min-height: 93;">
+  <Pane minWidth="56" prefWidth="56" maxWidth="56" minHeight="56" prefHeight="56" maxHeight="56">
+   <Circle centerX="28" centerY="28" radius="28" fill="#393A7B"/>
+   <Circle centerX="28" centerY="21" radius="9.5" fill="white"/>
+   <SVGPath content="M 11 47 C 13 31 43 31 45 47 Q 28 59 11 47 Z" fill="white"/>
+  </Pane>
+  <VBox alignment="CENTER_LEFT" spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
+   <Label fx:id="customerHeading" wrapText="true" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: black;"/>
+   <Label fx:id="customerId" wrapText="true" style="-fx-font-size: 15px; -fx-text-fill: #111111;"/>
+  </VBox>
+ </HBox>
+ <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-border-color: transparent transparent #bdbdbd transparent; -fx-border-width: 0 0 1 0;">
+  <StackPane>
+   <ToggleButton fx:id="detailsTab" text="Details" selected="true" toggleGroup="$customerTabs" style="$tabStyle"/>
+   <Region visible="${detailsTab.selected}" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" style="-fx-background-color: #e64d2e; -fx-background-radius: 7 7 0 0;"/>
+  </StackPane>
+  <StackPane>
+   <ToggleButton fx:id="loansTab" text="Loans" toggleGroup="$customerTabs" style="$tabStyle"/>
+   <Region visible="${loansTab.selected}" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" style="-fx-background-color: #e64d2e; -fx-background-radius: 7 7 0 0;"/>
+  </StackPane>
+  <StackPane>
+   <ToggleButton fx:id="notesTab" text="Notes" toggleGroup="$customerTabs" style="$tabStyle"/>
+   <Region visible="${notesTab.selected}" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" style="-fx-background-color: #e64d2e; -fx-background-radius: 7 7 0 0;"/>
+  </StackPane>
+  <StackPane>
+   <ToggleButton fx:id="documentsTab" text="Documents" toggleGroup="$customerTabs" style="$tabStyle"/>
+   <Region visible="${documentsTab.selected}" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" style="-fx-background-color: #e64d2e; -fx-background-radius: 7 7 0 0;"/>
+  </StackPane>
+  <StackPane>
+   <ToggleButton fx:id="guarantorsTab" text="Guarantors" toggleGroup="$customerTabs" style="$tabStyle"/>
+   <Region visible="${guarantorsTab.selected}" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" style="-fx-background-color: #e64d2e; -fx-background-radius: 7 7 0 0;"/>
+  </StackPane>
+ </HBox>
+ <Label fx:id="sectionPlaceholder" text="Customer details are coming soon." wrapText="true"/>
 </VBox>
