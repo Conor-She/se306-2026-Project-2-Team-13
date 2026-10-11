@@ -43,6 +43,13 @@ public interface MainframeGateway {
     Employer updateEmployer(Employer employer);
     void deleteEmployer(String employerId);
 
+    // Read a customer's child records (for checking a loan's prerequisites)
+    List<Address> getAddresses(String customerId);
+    List<Phone> getPhones(String customerId);
+    List<Email> getEmails(String customerId);
+    List<Employer> getEmployers(String customerId);
+    List<Guarantor> getGuarantors(String customerId);
+
     // Manage Notes, Documents & Guarantors
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);

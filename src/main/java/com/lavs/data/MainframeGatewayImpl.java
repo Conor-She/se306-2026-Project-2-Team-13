@@ -178,6 +178,24 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public List<Address> getAddresses(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerAddress retrieval");
+    }
+
+    @Override
+    public List<Phone> getPhones(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerPhoneNumber retrieval");
+    }
+
+    @Override
+    public List<Email> getEmails(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerEmail retrieval");
+    }
+
+    @Override
     public Employer addEmployer(Employer employer) {
         throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmployer");
     }
@@ -236,6 +254,18 @@ public class MainframeGatewayImpl implements MainframeGateway {
     public void deleteGuarantor(String guarantorId) {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs customer.DeleteRelationship");
+    }
+
+    @Override
+    public List<Employer> getEmployers(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerEmployer retrieval");
+    }
+
+    @Override
+    public List<Guarantor> getGuarantors(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerRelationship retrieval");
     }
 
     @Override
