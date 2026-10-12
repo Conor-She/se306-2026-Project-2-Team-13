@@ -72,6 +72,7 @@ public interface MainframeGateway {
     CoBorrower addCoBorrower(CoBorrower coBorrower);
     void deleteCoBorrower(String coBorrowerId);
     int getCoBorrowerCount(String loanId);
+    List<CoBorrower> getCoBorrowers(String loanId);
 
     // Generate Repayment Schedule & Summary
     // (LAVS calculates the schedule itself - this just persists it)

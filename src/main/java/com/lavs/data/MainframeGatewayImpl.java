@@ -1,22 +1,12 @@
 package com.lavs.data;
 
-import com.lavs.model.Address;
-import com.lavs.model.Customer;
-import mainframe.client.Connection;
-import mainframe.client.Message;
-import mainframe.client.Status;
-import mainframe.client.StatusMessage;
-import mainframe.client.messages.customer.AddAddress;
-import mainframe.client.messages.customer.Create;
-import mainframe.client.messages.customer.Search;
-import mainframe.client.messages.customer.Retrieve;
-import mainframe.client.messages.customer.Update;
-import mainframe.client.messages.loan.UpdateStatus;
-
-import java.util.ArrayList;
-
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
+import com.lavs.model.Customer;
 import com.lavs.model.CustomerDocument;
 import com.lavs.model.CustomerNote;
 import com.lavs.model.Email;
@@ -27,7 +17,16 @@ import com.lavs.model.Payment;
 import com.lavs.model.Phone;
 import com.lavs.model.Repayment;
 
-import java.util.List;
+import mainframe.client.Connection;
+import mainframe.client.Message;
+import mainframe.client.Status;
+import mainframe.client.StatusMessage;
+import mainframe.client.messages.customer.AddAddress;
+import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.Retrieve;
+import mainframe.client.messages.customer.Search;
+import mainframe.client.messages.customer.Update;
+import mainframe.client.messages.loan.UpdateStatus;
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -339,6 +338,12 @@ public class MainframeGatewayImpl implements MainframeGateway {
     public void deleteCoBorrower(String coBorrowerId) {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs loanCoborrower.Delete");
+    }
+
+    @Override
+    public List<CoBorrower> getCoBorrowers(String loanId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs loanCoborrower retrieval");
     }
 
     @Override
