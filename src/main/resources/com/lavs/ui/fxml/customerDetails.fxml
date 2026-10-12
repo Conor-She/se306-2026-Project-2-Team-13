@@ -141,6 +141,66 @@
    </HBox>
   </VBox></content>
  </ScrollPane>
+ <ScrollPane fx:id="notesContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+  <content><VBox spacing="10" minWidth="0" style="-fx-padding: 0 12 12 12;">
+   <fx:define>
+    <String fx:id="noteCardStyle" fx:value="-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 14 18;"/>
+    <String fx:id="noteTitleStyle" fx:value="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"/>
+    <String fx:id="noteMetaStyle" fx:value="-fx-font-size: 11px; -fx-text-fill: #747ba6;"/>
+    <String fx:id="noteActionStyle" fx:value="-fx-background-color: transparent; -fx-text-fill: #747ba6; -fx-font-size: 28px; -fx-padding: 4 12; -fx-min-width: 44; -fx-min-height: 44; -fx-cursor: hand;"/>
+   </fx:define>
+   <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 14 16;">
+    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Customer Notes" style="$titleStyle"/>
+     <Label text="View and manage notes related to this customer." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <Button text="+  Add Note" onAction="#showStubAction" style="-fx-background-color: #5b56b5; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;"/>
+   </HBox>
+   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
+    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
+     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
+    </StackPane>
+    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Loan discussion" wrapText="true" style="$noteTitleStyle"/>
+     <Label text="Customer is looking to consolidate existing loans." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <VBox spacing="5" minWidth="145" prefWidth="145">
+     <Label text="12 Sep 2025" style="$noteMetaStyle"/>
+     <Label text="By Jack Slater" style="$noteMetaStyle"/>
+    </VBox>
+    <Button text="&#x22EE;" accessibleText="Actions for loan discussion note" onAction="#showStubAction" style="$noteActionStyle"/>
+   </HBox>
+   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
+    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
+     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
+    </StackPane>
+    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Follow up" wrapText="true" style="$noteTitleStyle"/>
+     <Label text="Called customer to confirm documents received." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <VBox spacing="5" minWidth="145" prefWidth="145">
+     <Label text="3 Aug 2025" style="$noteMetaStyle"/>
+     <Label text="By Sarah Lee" style="$noteMetaStyle"/>
+    </VBox>
+    <Button text="&#x22EE;" accessibleText="Actions for follow up note" onAction="#showStubAction" style="$noteActionStyle"/>
+   </HBox>
+   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
+    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
+     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
+    </StackPane>
+    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="General note" wrapText="true" style="$noteTitleStyle"/>
+     <Label text="Customer is happy with the current service." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <VBox spacing="5" minWidth="145" prefWidth="145">
+     <Label text="21 Jun 2025" style="$noteMetaStyle"/>
+     <Label text="By Jack Slater" style="$noteMetaStyle"/>
+    </VBox>
+    <Button text="&#x22EE;" accessibleText="Actions for general note note" onAction="#showStubAction" style="$noteActionStyle"/>
+   </HBox>
+  </VBox></content>
+ </ScrollPane>
  <Label fx:id="sectionPlaceholder" visible="false" managed="false" wrapText="true" StackPane.alignment="TOP_LEFT" style="$mutedStyle"/>
  </StackPane>
 </VBox>
+ 

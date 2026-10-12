@@ -17,6 +17,7 @@ public class CustomerDetailsController {
     @FXML private Label fullNameValue, emailValue, phoneValue;
     @FXML private ScrollPane detailsContent;
     @FXML private ScrollPane loansContent;
+    @FXML private ScrollPane notesContent;
     @FXML private ToggleGroup customerTabs;
     @FXML private Button backButton;
     @FXML private String tabStyle, selectedTabStyle, focusStyle;
@@ -27,6 +28,7 @@ public class CustomerDetailsController {
     @FXML private void initialize() {
         ScrollPaneAppearance.install(detailsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(loansContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(notesContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         for (var toggle : customerTabs.getToggles()) {
             ToggleButton tab = (ToggleButton) toggle;
             tab.styleProperty().bind(Bindings.createStringBinding(() ->
@@ -46,12 +48,15 @@ public class CustomerDetailsController {
             String section = ((ToggleButton) selected).getText();
             boolean details = "Details".equals(section);
             boolean loans = "Loans".equals(section);
+            boolean notes = "Notes".equals(section);
             detailsContent.setVisible(details);
             detailsContent.setManaged(details);
             loansContent.setVisible(loans);
             loansContent.setManaged(loans);
-            sectionPlaceholder.setVisible(!details && !loans);
-            sectionPlaceholder.setManaged(!details && !loans);
+            notesContent.setVisible(notes);
+            notesContent.setManaged(notes);
+            sectionPlaceholder.setVisible(!details && !loans && !notes);
+            sectionPlaceholder.setManaged(!details && !loans && !notes);
             sectionPlaceholder.setText(section + " are coming soon.");
         });
     }
@@ -65,6 +70,7 @@ public class CustomerDetailsController {
         phoneValue.setText(customer.phone());
         detailsContent.setVvalue(0);
         loansContent.setVvalue(0);
+        notesContent.setVvalue(0);
         customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
