@@ -26,8 +26,8 @@ public class FakeMainframeGateway implements MainframeGateway {
     private final Map<String, Customer> customers = new HashMap<>();
     private final Map<String, Loan> loans = new HashMap<>();
     private final Map<String, List<Repayment>> repaymentSchedules = new HashMap<>();
-    private final Map<String, Integer> coBorrowerCounts = new HashMap<>();
     private final Map<String, List<String>> categoryValues = new HashMap<>();
+    private final Map<String, CoBorrower> coBorrowers = new HashMap<>();
     private final Map<String, List<Address>> addresses = new HashMap<>();
     private final Map<String, List<Phone>> phones = new HashMap<>();
     private final Map<String, List<Email>> emails = new HashMap<>();
@@ -37,6 +37,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private boolean unavailable = false;
     private MainframeException nextFailure = null;
     private int nextLoanNumber = 1;
+    private int nextCoBorrowerNumber = 1;
 
     // Stores an item under its customer, creating that customer's list on first use
     private <T> T store(Map<String, List<T>> storage, String customerId, T item) {
@@ -217,6 +218,36 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
+    public CoBorrower addCoBorrower(CoBorrower coBorrower) {
+        checkAvailability();
+        // The real mainframe assigns the ID, so the fake does too
+        String coBorrowerId = coBorrower.getCoBorrowerId() != null
+                ? coBorrower.getCoBorrowerId()
+                : "FAKE-COBORROWER-" + nextCoBorrowerNumber++;
+        CoBorrower stored =
+                new CoBorrower(coBorrowerId, coBorrower.getLoanId(), coBorrower.getCustomerId());
+        coBorrowers.put(coBorrowerId, stored);
+        return stored;
+    }
+
+    @Override
+    public void deleteCoBorrower(String coBorrowerId) {
+        checkAvailability();
+        if (coBorrowers.remove(coBorrowerId) == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Co-borrower '" + coBorrowerId + "' not found");
+        }
+    }
+
+    @Override
+    public int getCoBorrowerCount(String loanId) {
+        checkAvailability();
+        return (int) coBorrowers.values().stream()
+                .filter(coBorrower -> loanId.equals(coBorrower.getLoanId()))
+                .count();
+    }
+
+    @Override
     public CustomerNote addNote(CustomerNote note) {
         checkAvailability();
         return note;
@@ -277,7 +308,6 @@ public class FakeMainframeGateway implements MainframeGateway {
                 : "FAKE-LOAN-" + nextLoanNumber++;
         Loan created = copyWith(loan, loanId, Loan.Status.NEW);
         loans.put(loanId, created);
-        coBorrowerCounts.put(loanId, 0);
         return created;
     }
 
@@ -310,24 +340,6 @@ public class FakeMainframeGateway implements MainframeGateway {
                     "Loan '" + loanId + "' not found");
         }
         return loan;
-    }
-
-    @Override
-    public CoBorrower addCoBorrower(CoBorrower coBorrower) {
-        checkAvailability();
-        coBorrowerCounts.merge(coBorrower.getLoanId(), 1, Integer::sum);
-        return coBorrower;
-    }
-
-    @Override
-    public void deleteCoBorrower(String coBorrowerId) {
-        checkAvailability();
-    }
-
-    @Override
-    public int getCoBorrowerCount(String loanId) {
-        checkAvailability();
-        return coBorrowerCounts.getOrDefault(loanId, 0);
     }
 
     @Override
