@@ -240,6 +240,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
+    public List<CoBorrower> getCoBorrowers(String loanId) {
+        checkAvailability();
+        return coBorrowers.values().stream()
+                .filter(coBorrower -> loanId.equals(coBorrower.getLoanId()))
+                .toList();
+    }
+
+    @Override
     public int getCoBorrowerCount(String loanId) {
         checkAvailability();
         return (int) coBorrowers.values().stream()

@@ -152,6 +152,18 @@ class FakeMainframeGatewayTest {
         assertTrue(gateway.getAddresses("C999").isEmpty());
     }
 
+    // A loan's co-borrowers can be listed, and only that loan's
+    @Test
+    void listsCoBorrowersPerLoan() {
+        Loan first = gateway.createLoan(buildNewLoan());
+        Loan second = gateway.createLoan(buildNewLoan());
+        gateway.addCoBorrower(new CoBorrower(null, first.getLoanId(), "C002"));
+
+        assertEquals(1, gateway.getCoBorrowers(first.getLoanId()).size());
+        assertEquals("C002", gateway.getCoBorrowers(first.getLoanId()).get(0).getCustomerId());
+        assertTrue(gateway.getCoBorrowers(second.getLoanId()).isEmpty());
+    }
+
     // Like the real mainframe, asking for a loan that doesn't exist is an error
     @Test
     void unknownLoanIsABusinessError() {
