@@ -84,6 +84,63 @@
  <Region HBox.hgrow="ALWAYS"/><Button text="+" accessibleText="Add employment" onAction="#showStubAction" style="$actionStyle"/>
  </HBox><VBox style="-fx-padding: 10 14 16 14;"><VBox spacing="5" style="-fx-padding: 12 14; -fx-background-color: #f5f6ff; -fx-background-radius: 8;"><Label text="Smith Consulting" style="$titleStyle"/><Label text="Consultant  &#x2022;  Full-time  &#x2022;  $85,000 / year" style="$mutedStyle" wrapText="true"/></VBox></VBox></VBox><Label text="Sample information for UI preview" style="$mutedStyle"/></VBox></content>
  </ScrollPane>
+ <ScrollPane fx:id="loansContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+  <content><VBox spacing="16" minWidth="0" style="-fx-padding: 0 12 12 12;">
+   <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 12 14;">
+    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Customer Loans" style="$titleStyle"/>
+     <Label text="View and manage the customer's loan details." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <Button text="+  Add Loan" onAction="#showStubAction" style="-fx-background-color: #5b56b5; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;"/>
+   </HBox>
+   <GridPane minWidth="0" style="-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8;">
+    <fx:define>
+     <String fx:id="loanHeaderStyle" fx:value="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #747ba6;"/>
+     <String fx:id="loanCellStyle" fx:value="-fx-font-size: 12px; -fx-text-fill: #393a7b;"/>
+     <String fx:id="loanStatusStyle" fx:value="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-font-size: 11px; -fx-padding: 2 12;"/>
+     <String fx:id="loanActionStyle" fx:value="-fx-background-color: transparent; -fx-text-fill: #747ba6; -fx-font-size: 19px; -fx-padding: 2 12; -fx-cursor: hand;"/>
+    </fx:define>
+    <columnConstraints>
+     <ColumnConstraints percentWidth="15"/><ColumnConstraints percentWidth="20"/>
+     <ColumnConstraints percentWidth="20"/><ColumnConstraints percentWidth="20"/>
+     <ColumnConstraints percentWidth="17"/><ColumnConstraints percentWidth="8" halignment="CENTER"/>
+    </columnConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="44"/><RowConstraints minHeight="44"/><RowConstraints minHeight="44"/></rowConstraints>
+    <Region GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
+    <Region GridPane.rowIndex="1" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"/>
+    <Region GridPane.rowIndex="2" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"/>
+    <Label text="Loan ID" style="$loanHeaderStyle"><padding><Insets left="16"/></padding></Label>
+    <Label text="Loan Type" GridPane.columnIndex="1" style="$loanHeaderStyle"/>
+    <Label text="Amount" GridPane.columnIndex="2" style="$loanHeaderStyle"/>
+    <Label text="Interest Rate" GridPane.columnIndex="3" style="$loanHeaderStyle"/>
+    <Label text="Status" GridPane.columnIndex="4" style="$loanHeaderStyle"/>
+    <Label text="Actions" GridPane.columnIndex="5" style="$loanHeaderStyle"/>
+    <Label text="LN00123" GridPane.rowIndex="1" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
+    <Label text="Home Loan" GridPane.rowIndex="1" GridPane.columnIndex="1" style="$loanCellStyle"/>
+    <Label text="\$450,000" GridPane.rowIndex="1" GridPane.columnIndex="2" style="$loanCellStyle"/>
+    <Label text="4.95%" GridPane.rowIndex="1" GridPane.columnIndex="3" style="$loanCellStyle"/>
+    <Label text="Active" GridPane.rowIndex="1" GridPane.columnIndex="4" style="$loanStatusStyle"/>
+    <Button text="&#x22EE;" accessibleText="Actions for loan LN00123" GridPane.rowIndex="1" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
+    <Label text="LN00456" GridPane.rowIndex="2" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
+    <Label text="Personal Loan" GridPane.rowIndex="2" GridPane.columnIndex="1" style="$loanCellStyle"/>
+    <Label text="\$15,000" GridPane.rowIndex="2" GridPane.columnIndex="2" style="$loanCellStyle"/>
+    <Label text="12.50%" GridPane.rowIndex="2" GridPane.columnIndex="3" style="$loanCellStyle"/>
+    <Label text="Active" GridPane.rowIndex="2" GridPane.columnIndex="4" style="$loanStatusStyle"/>
+    <Button text="&#x22EE;" accessibleText="Actions for loan LN00456" GridPane.rowIndex="2" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
+    <Label text="LN00789" GridPane.rowIndex="3" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
+    <Label text="Car Loan" GridPane.rowIndex="3" GridPane.columnIndex="1" style="$loanCellStyle"/>
+    <Label text="\$30,000" GridPane.rowIndex="3" GridPane.columnIndex="2" style="$loanCellStyle"/>
+    <Label text="6.75%" GridPane.rowIndex="3" GridPane.columnIndex="3" style="$loanCellStyle"/>
+    <Label text="Active" GridPane.rowIndex="3" GridPane.columnIndex="4" style="$loanStatusStyle"/>
+    <Button text="&#x22EE;" accessibleText="Actions for loan LN00789" GridPane.rowIndex="3" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
+   </GridPane>
+   <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 16 20;">
+    <StackPane minWidth="24" prefWidth="24"><SVGPath content="M 7 0 A 4 4 0 1 1 7 8 A 4 4 0 1 1 7 0 Z M 17 2 A 3 3 0 1 1 17 8 A 3 3 0 1 1 17 2 Z M 0 19 C 0 7 14 7 14 19 Z M 15 10 C 23 8 24 15 24 19 H 16 Z" fill="#393A7B"/></StackPane>
+    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS"><Label text="Co-borrowers" style="$titleStyle"/><Label text="View and manage co-borrowers for this customer's loans." wrapText="true" style="$mutedStyle"/></VBox>
+    <Button text="View Co-borrowers   &#x203A;" onAction="#showStubAction" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #5b56b5; -fx-font-size: 11px; -fx-padding: 8 16; -fx-cursor: hand;"/>
+   </HBox>
+  </VBox></content>
+ </ScrollPane>
  <Label fx:id="sectionPlaceholder" visible="false" managed="false" wrapText="true" StackPane.alignment="TOP_LEFT" style="$mutedStyle"/>
  </StackPane>
 </VBox>

@@ -16,6 +16,7 @@ public class CustomerDetailsController {
     @FXML private Label sectionPlaceholder;
     @FXML private Label fullNameValue, emailValue, phoneValue;
     @FXML private ScrollPane detailsContent;
+    @FXML private ScrollPane loansContent;
     @FXML private ToggleGroup customerTabs;
     @FXML private Button backButton;
     @FXML private String tabStyle, selectedTabStyle, focusStyle;
@@ -25,6 +26,7 @@ public class CustomerDetailsController {
 
     @FXML private void initialize() {
         ScrollPaneAppearance.install(detailsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(loansContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         for (var toggle : customerTabs.getToggles()) {
             ToggleButton tab = (ToggleButton) toggle;
             tab.styleProperty().bind(Bindings.createStringBinding(() ->
@@ -43,10 +45,13 @@ public class CustomerDetailsController {
             }
             String section = ((ToggleButton) selected).getText();
             boolean details = "Details".equals(section);
+            boolean loans = "Loans".equals(section);
             detailsContent.setVisible(details);
             detailsContent.setManaged(details);
-            sectionPlaceholder.setVisible(!details);
-            sectionPlaceholder.setManaged(!details);
+            loansContent.setVisible(loans);
+            loansContent.setManaged(loans);
+            sectionPlaceholder.setVisible(!details && !loans);
+            sectionPlaceholder.setManaged(!details && !loans);
             sectionPlaceholder.setText(section + " are coming soon.");
         });
     }
@@ -59,6 +64,7 @@ public class CustomerDetailsController {
         emailValue.setText(customer.email());
         phoneValue.setText(customer.phone());
         detailsContent.setVvalue(0);
+        loansContent.setVvalue(0);
         customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
