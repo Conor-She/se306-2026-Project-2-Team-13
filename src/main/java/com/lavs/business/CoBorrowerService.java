@@ -3,19 +3,24 @@ package com.lavs.business;
 import com.lavs.data.MainframeGateway;
 import com.lavs.model.CoBorrower;
 import com.lavs.model.Loan;
+import java.util.List;
 
 // Business logic for adding and removing a loan's co-borrowers
 // A loan has one primary borrower plus up to MAX_CO_BORROWERS
-// co-borrowers. Depends only on the MainframeGateway interface.
+// co-borrowers, and the same customer can't be on a loan twice. Depends only
+// on the MainframeGateway interface.
 public class CoBorrowerService {
 
-    // The agreed limit is the primary borrower plus up to three co-borrowers (four people in total)
+    // The agreed limit (still to be confirmed with the product owner): the
+    // primary borrower plus up to three co-borrowers, four people in total
     public static final int MAX_CO_BORROWERS = 3;
 
     static final String LIMIT_MESSAGE = "A loan can have at most " + MAX_CO_BORROWERS
             + " co-borrowers in addition to the primary borrower";
     static final String PRIMARY_BORROWER_MESSAGE =
             "The primary borrower cannot also be added as a co-borrower";
+    static final String DUPLICATE_MESSAGE =
+            "This customer is already a co-borrower on this loan";
 
     private final MainframeGateway gateway;
 
@@ -23,8 +28,8 @@ public class CoBorrowerService {
         this.gateway = gateway;
     }
 
-    // Adds a customer as a co-borrower on a loan, unless the loan already
-    // has the maximum number
+    // Adds a customer as a co-borrower on a loan, unless they are already on
+    // it or the loan already has the maximum number
     public CoBorrower addCoBorrower(String loanId, String customerId) {
         requireNotBlank(loanId, "loanId");
         requireNotBlank(customerId, "customerId");
@@ -36,9 +41,20 @@ public class CoBorrowerService {
             throw new IllegalArgumentException(PRIMARY_BORROWER_MESSAGE);
         }
 
-        // Count the co-borrowers already on the loan, before adding. The new
-        // one is allowed only while that count is below the maximum (<3).
-        if (gateway.getCoBorrowerCount(loanId) >= MAX_CO_BORROWERS) {
+        // Who is already on the loan, looked at before adding
+        List<CoBorrower> existing = gateway.getCoBorrowers(loanId);
+
+        // Checked before the limit, so someone already on a full loan is
+        // told they are a duplicate, which is more useful than "loan full"
+        boolean alreadyOnLoan = existing.stream()
+                .anyMatch(coBorrower -> customerId.equals(coBorrower.getCustomerId()));
+        if (alreadyOnLoan) {
+            throw new IllegalArgumentException(DUPLICATE_MESSAGE);
+        }
+
+        // The new co-borrower is allowed only while the number already on
+        // the loan is below the maximum (<3, not <= 3)
+        if (existing.size() >= MAX_CO_BORROWERS) {
             throw new CoBorrowerLimitException(LIMIT_MESSAGE);
         }
 
