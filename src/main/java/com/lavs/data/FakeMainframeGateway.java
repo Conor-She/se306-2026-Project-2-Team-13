@@ -38,6 +38,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private MainframeException nextFailure = null;
     private int nextLoanNumber = 1;
     private int nextCoBorrowerNumber = 1;
+    private int nextGuarantorNumber = 1;
 
     // Stores an item under its customer, creating that customer's list on first use
     private <T> T store(Map<String, List<T>> storage, String customerId, T item) {
@@ -292,18 +293,68 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
         checkAvailability();
+        String guarantorId = guarantor.getGuarantorId() != null
+                ? guarantor.getGuarantorId()
+                : "FAKE-GUARANTOR-" + nextGuarantorNumber++;
+        Guarantor stored = new Guarantor(
+                guarantorId,
+                guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(),
+                guarantor.getRelationshipType());
+        return store(guarantors, stored.getCustomerId(), stored);
+    }
+
+    @Override
+    public Guarantor updateGuarantor(Guarantor guarantor) {
+        checkAvailability();
+
+        String existingCustomerId = null;
+        Guarantor existing = null;
+        for (Map.Entry<String, List<Guarantor>> entry : guarantors.entrySet()) {
+            for (Guarantor stored : entry.getValue()) {
+                if (stored.getGuarantorId().equals(guarantor.getGuarantorId())) {
+                    existingCustomerId = entry.getKey();
+                    existing = stored;
+                    break;
+                }
+            }
+            if (existing != null) {
+                break;
+            }
+        }
+
+        if (existing == null) {
+            throw guarantorNotFound(guarantor.getGuarantorId());
+        }
+
+        guarantors.get(existingCustomerId).remove(existing);
         return store(guarantors, guarantor.getCustomerId(), guarantor);
     }
 
     @Override
     public void deleteGuarantor(String guarantorId) {
         checkAvailability();
+        for (List<Guarantor> stored : guarantors.values()) {
+            boolean removed = stored.removeIf(
+                    guarantor -> guarantor.getGuarantorId().equals(guarantorId));
+            if (removed) {
+                return;
+            }
+        }
+        throw guarantorNotFound(guarantorId);
     }
 
     @Override
     public List<Guarantor> getGuarantors(String customerId) {
         checkAvailability();
         return read(guarantors, customerId);
+    }
+
+    private MainframeException guarantorNotFound(String guarantorId) {
+        return new MainframeException(
+                MainframeException.Type.BUSINESS_ERROR,
+                3,
+                "Guarantor '" + guarantorId + "' not found");
     }
 
     @Override

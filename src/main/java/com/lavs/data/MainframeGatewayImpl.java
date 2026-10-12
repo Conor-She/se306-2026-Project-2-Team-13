@@ -250,6 +250,12 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public Guarantor updateGuarantor(Guarantor guarantor) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customer.UpdateRelationship");
+    }
+
+    @Override
     public void deleteGuarantor(String guarantorId) {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs customer.DeleteRelationship");
