@@ -26,7 +26,12 @@ class CoBorrowerServiceTest {
     void setUp() {
         gateway = new FakeMainframeGateway();
         service = new CoBorrowerService(gateway);
-        loanId = gateway.createLoan(new Loan(null, "C001", Loan.Status.NEW, 12_000, 12.0,
+        loanId = createLoan();
+    }
+
+    // Creates a loan on the fake mainframe, whose primary borrower is C001
+    private String createLoan() {
+        return gateway.createLoan(new Loan(null, "C001", Loan.Status.NEW, 12_000, 12.0,
                 Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
                 1_000, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12))
                 .getLoanId();
@@ -137,6 +142,39 @@ class CoBorrowerServiceTest {
                 () -> service.addCoBorrower(loanId, "C002"));
 
         assertEquals(MainframeException.Type.UNAVAILABLE, exception.getType());
+    }
+
+    // The same customer can't be a co-borrower on a loan twice
+    @Test
+    void rejectsAddingTheSameCoBorrowerTwice() {
+        service.addCoBorrower(loanId, "C002");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.addCoBorrower(loanId, "C002"));
+
+        assertEquals(CoBorrowerService.DUPLICATE_MESSAGE, exception.getMessage());
+        assertEquals(1, gateway.getCoBorrowerCount(loanId));
+    }
+
+    // On a full loan, someone already on it is reported as a duplicate, not
+    // as the loan being full
+    @Test
+    void reportsADuplicateRatherThanTheLimitWhenTheLoanIsFull() {
+        addCoBorrowers(3);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.addCoBorrower(loanId, "C002"));
+
+        assertEquals(CoBorrowerService.DUPLICATE_MESSAGE, exception.getMessage());
+    }
+
+    // The rule is per loan: the same customer may co-borrow on different loans
+    @Test
+    void allowsTheSameCustomerOnDifferentLoans() {
+        service.addCoBorrower(loanId, "C002");
+        String otherLoanId = createLoan();
+
+        assertDoesNotThrow(() -> service.addCoBorrower(otherLoanId, "C002"));
     }
 
     // --- Removing ---
