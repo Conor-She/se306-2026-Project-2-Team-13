@@ -323,4 +323,35 @@ class LoanServiceTest {
 
         assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
+
+    // The mainframe doesn't store the term, so the MMM must enter one: a
+    // loan without it can't be scheduled and must not be created
+    @Test
+    void doesNotCreateALoanWithoutATerm() {
+        givenEligibleCustomer();
+        Loan noTerm = new Loan(null, "C001", Loan.Status.NEW, 12_000, 12.0, Loan.Type.TABLE_LOAN,
+                false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1), 1_000,
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.create(noTerm));
+
+        assertTrue(exception.getMessage().contains("termMonths"));
+        assertNoLoanWasCreated();
+    }
+
+    // The same applies when editing: a loan re-fetched from the mainframe has
+    // no term, so an edit has to supply one again
+    @Test
+    void doesNotUpdateALoanWithoutATerm() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+        Loan noTerm = new Loan(loanId, "C001", Loan.Status.NEW, 24_000, 12.0, Loan.Type.TABLE_LOAN,
+                false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1), 1_000,
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null);
+
+        assertThrows(IllegalArgumentException.class, () -> service.update(noTerm));
+
+        assertEquals(12_000, gateway.getLoan(loanId).getPrincipal());
+    }
 }

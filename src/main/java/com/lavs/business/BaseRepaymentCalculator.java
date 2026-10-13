@@ -31,6 +31,16 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         if (loan.getRateFrequency() == null) {
             throw new IllegalArgumentException("rateFrequency must not be null");
         }
+                if (loan.getRateFrequency() == null) {
+            throw new IllegalArgumentException("rateFrequency must not be null");
+        }
+        if (loan.getLoanId() == null) {
+            throw new IllegalArgumentException(
+                    "loanId must be assigned before a schedule can be calculated");
+        }
+        if (loan.getTermMonths() == null) {
+            throw new IllegalArgumentException("termMonths must not be null");
+        }
     }
 
     protected final int periodsPerYear(Loan.PaymentFrequency frequency) {
