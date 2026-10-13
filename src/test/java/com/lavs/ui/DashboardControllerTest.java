@@ -137,12 +137,30 @@ class DashboardControllerTest {
             VBox wizard = (VBox) root.lookup(".customer-wizard");
             assertNotNull(wizard);
             ScrollPane customerScroll = (ScrollPane) wizard.lookup("#customerScroll");
-            assertTrue(customerScroll.lookupAll(".thumb").stream().anyMatch(node -> node.getStyle().contains("#9693ca")));
-            assertTrue(customerScroll.lookupAll(".increment-button").stream().allMatch(node -> node.getStyle().contains("-fx-opacity: 0")));
+            // Descendant lookups also find scrollbars inside controls such as ComboBox.
+            // Only the wizard scroll pane's own bars receive its custom appearance.
+            var wizardBars = customerScroll.lookupAll(".scroll-bar").stream()
+                    .filter(ScrollBar.class::isInstance).map(ScrollBar.class::cast)
+                    .filter(bar -> bar.getParent() == customerScroll).toList();
+            assertEquals(2, wizardBars.size(), "Expected the wizard's horizontal and vertical scrollbars");
+            for (ScrollBar bar : wizardBars) {
+                var thumbs = bar.lookupAll(".thumb");
+                assertFalse(thumbs.isEmpty(), "Scrollbar thumb was not created");
+                assertTrue(thumbs.stream().allMatch(node -> node.getStyle().contains("#9693ca")),
+                        "Wizard scrollbar thumbs should use the custom colour");
+                for (String selector : new String[] {".increment-button", ".decrement-button"}) {
+                    var buttons = bar.lookupAll(selector);
+                    assertFalse(buttons.isEmpty(), "Scrollbar part was not created: " + selector);
+                    assertTrue(buttons.stream().allMatch(node -> node.getStyle().contains("-fx-opacity: 0")),
+                            "Wizard scrollbar arrows should be hidden: " + selector);
+                }
+            }
             assertTrue(wizard.lookupAll(".button").stream().map(Button.class::cast).noneMatch(b -> b.getText().equals("Skip")));
             wizardButton(wizard, "Next").fire();
             wizard.applyCss(); wizard.layout();
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
+            ((ComboBox<String>) wizard.lookup("#title")).setValue("Ms");
+            wizardField(wizard, "Nationality *").setText("New Zealand");
             wizardField(wizard, "First name *").setText("Amelia");
             wizardField(wizard, "Last name *").setText("Adams");
             TextField dob = wizardField(wizard, "Date of birth * (dd-mm-yyyy)");
@@ -200,6 +218,9 @@ class DashboardControllerTest {
             wizardButton(wizard, "Skip").fire();
             assertNotNull(wizard.lookup("#contactPane"));
 
+            wizardField(wizard, "Suburb *").setText("Central");
+            wizardField(wizard, "Postcode *").setText("1010");
+            wizardField(wizard, "Country *").setText("New Zealand");
             wizardField(wizard, "City *").setText("Auckland");
             wizardButton(wizard, "+ Add phone").fire();
             assertTrue(((Parent) wizard.lookup("#phoneRows")).lookupAll(".text-field").isEmpty());
@@ -247,27 +268,28 @@ class DashboardControllerTest {
             wizardButton(wizard, "+ Add employer").fire();
             assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
                 .filter(button -> button.getText().equals("Done")).count());
-            wizardButton(wizard, "Next").fire();
-            assertNotNull(wizard.lookup("#reviewPane"));
-            wizardButton(wizard, "Back").fire();
+            advanceToReview(wizard, "Next");
+            returnToEmployment(wizard);
             wizardButton(wizard, "+ Add employer").fire();
             wizardButton(wizard, "Done").fire();
             assertTrue(((Parent) wizard.lookup("#employerRows")).lookupAll(".button").isEmpty());
             wizardButton(wizard, "+ Add employer").fire();
-            wizardField(wizard, "Employer name *").setText("Acme");
+            wizardField(wizard, "Company name *").setText("Acme");
             wizard.applyCss(); wizard.layout();
             wizard.requestLayout(); wizard.layout();
-            TextField employerName = wizardField(wizard, "Employer name *");
+            TextField employerName = wizardField(wizard, "Company name *");
             ComboBox<?> employmentType = (ComboBox<?>) wizard.lookup("#employmentType");
             assertEquals(employerName.getWidth(), employmentType.getWidth(), 1);
             assertEquals(employerName.getHeight(), employmentType.getHeight(), 1);
-            assertNull(wizard.lookup("#address"));
-            assertNull(wizard.lookup("#phone"));
-            wizardField(wizard, "Annual income (NZD)").setText("-1");
+            assertNotNull(wizard.lookup("#address"));
+            assertNotNull(wizard.lookup("#phone"));
+            wizardField(wizard, "Job title *").setText("Consultant");
+            wizardField(wizard, "Employer phone *").setText("09 555 0101");
+            wizardField(wizard, "Annual income (NZD) *").setText("-1");
             wizardButton(wizard, "Skip").fire();
             assertNotNull(wizard.lookup("#employmentPane"));
             assertTrue(wizard.lookupAll(".field-error").stream().anyMatch(javafx.scene.Node::isVisible));
-            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
+            wizardField(wizard, "Annual income (NZD) *").setText("50000.00");
             ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Part-time");
             wizardButton(wizard, "+ Add employer").fire();
             assertEquals(1, wizard.lookupAll(".button").stream().map(Button.class::cast)
@@ -278,13 +300,12 @@ class DashboardControllerTest {
             assertEquals("amelia@example.com", wizardField(wizard, "Email address *").getText());
             wizardButton(wizard, "Next").fire();
             wizardButton(wizard, "Edit").fire();
-            assertEquals("Acme", wizardField(wizard, "Employer name *").getText());
-            assertEquals("50000.00", wizardField(wizard, "Annual income (NZD)").getText());
+            assertEquals("Acme", wizardField(wizard, "Company name *").getText());
+            assertEquals("50000.00", wizardField(wizard, "Annual income (NZD) *").getText());
             assertEquals("Part-time", ((ComboBox<?>) wizard.lookup("#employmentType")).getValue());
             wizardButton(wizard, "Remove").fire();
             assertTrue(wizard.lookup("#guarantorNote").isVisible());
-            wizardButton(wizard, "Skip").fire();
-            assertNotNull(wizard.lookup("#reviewPane"));
+            advanceToReview(wizard, "Skip");
             assertFalse(wizardButton(wizard, "Save customer").isDisabled());
             assertTrue(((Parent) wizard.lookup("#personalReview")).lookupAll(".label").stream()
                 .map(Label.class::cast).anyMatch(label -> label.getText().contains("Amelia Adams")));
@@ -306,11 +327,14 @@ class DashboardControllerTest {
             wizardField(wizard, "Email address *").setText("amy@example.com");
             wizardButton(wizard, "Save and return to Review").fire();
             assertFalse(wizardButton(wizard, "Save customer").isDisabled());
-            wizardButton(wizard, "Back").fire();
+            returnToEmployment(wizard);
             wizardButton(wizard, "+ Add employer").fire();
-            wizardField(wizard, "Employer name *").setText("Acme");
-            wizardField(wizard, "Annual income (NZD)").setText("50000.00");
-            wizardButton(wizard, "Next").fire();
+            wizardField(wizard, "Company name *").setText("Acme");
+            wizardField(wizard, "Job title *").setText("Consultant");
+            wizardField(wizard, "Employer phone *").setText("09 555 0101");
+            ((ComboBox<String>) wizard.lookup("#employmentType")).setValue("Full-time");
+            wizardField(wizard, "Annual income (NZD) *").setText("50000.00");
+            advanceToReview(wizard, "Next");
             assertTrue(((Parent) wizard.lookup("#employmentReview")).lookupAll(".label").stream()
                 .map(Label.class::cast).anyMatch(label -> label.getText().contains("Acme") && label.getText().contains("50000.00")));
 
@@ -363,6 +387,24 @@ class DashboardControllerTest {
             }
             return null;
         });
+    }
+
+    private static void advanceToReview(Parent wizard, String action) {
+        wizardButton(wizard, action).fire();
+        assertNotNull(wizard.lookup("#notesPane"));
+        wizardButton(wizard, "Skip").fire();
+        assertNotNull(wizard.lookup("#documentsPane"));
+        wizardButton(wizard, "Skip").fire();
+        assertNotNull(wizard.lookup("#reviewPane"));
+    }
+
+    private static void returnToEmployment(Parent wizard) {
+        wizardButton(wizard, "Back").fire();
+        assertNotNull(wizard.lookup("#documentsPane"));
+        wizardButton(wizard, "Back").fire();
+        assertNotNull(wizard.lookup("#notesPane"));
+        wizardButton(wizard, "Back").fire();
+        assertNotNull(wizard.lookup("#employmentPane"));
     }
 
     private static Button wizardButton(Parent wizard, String text) {
