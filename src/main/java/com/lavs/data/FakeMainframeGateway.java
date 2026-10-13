@@ -234,12 +234,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deleteCoBorrower(String coBorrowerId) {
+    public void deleteCoBorrower(String loanId, String coBorrowerId) {
         checkAvailability();
-        if (coBorrowers.remove(coBorrowerId) == null) {
+        CoBorrower existing = coBorrowers.get(coBorrowerId);
+        if (existing == null || !existing.getLoanId().equals(loanId)) {
             throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
-                    "Co-borrower '" + coBorrowerId + "' not found");
+                    "Co-borrower '" + coBorrowerId + "' not found on loan '" + loanId + "'");
         }
+        coBorrowers.remove(coBorrowerId);
     }
 
     @Override
@@ -451,12 +453,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deletePayment(String paymentId) {
+    public void deletePayment(String loanId, String paymentId) {
         checkAvailability();
-        if (payments.remove(paymentId) == null) {
+        Payment existing = payments.get(paymentId);
+        if (existing == null || !existing.getLoanId().equals(loanId)) {
             throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
-                    "Payment '" + paymentId + "' not found");
+                    "Payment '" + paymentId + "' not found on loan '" + loanId + "'");
         }
+        payments.remove(paymentId);
     }
 
     @Override

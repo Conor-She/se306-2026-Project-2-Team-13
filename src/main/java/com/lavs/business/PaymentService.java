@@ -58,9 +58,10 @@ public class PaymentService {
         return gateway.updatePayment(payment);
     }
 
-    public void deletePayment(String paymentId) {
+    public void deletePayment(String loanId, String paymentId) {
+        requireNotBlank(loanId, "loanId");
         requireNotBlank(paymentId, "paymentId");
-        gateway.deletePayment(paymentId);
+        gateway.deletePayment(loanId, paymentId);
     }
 
     // All the payments made against a loan, linked to a repayment or not

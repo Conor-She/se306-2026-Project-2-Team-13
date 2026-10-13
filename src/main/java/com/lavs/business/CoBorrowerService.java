@@ -63,9 +63,10 @@ public class CoBorrowerService {
 
     // Removes a co-borrower. There is deliberately no limit check here:
     // removal is always allowed, whatever the current count.
-    public void removeCoBorrower(String coBorrowerId) {
+    public void removeCoBorrower(String loanId, String coBorrowerId) {
+        requireNotBlank(loanId, "loanId");
         requireNotBlank(coBorrowerId, "coBorrowerId");
-        gateway.deleteCoBorrower(coBorrowerId);
+        gateway.deleteCoBorrower(loanId, coBorrowerId);
     }
 
     private void requireNotBlank(String value, String name) {

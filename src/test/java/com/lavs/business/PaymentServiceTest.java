@@ -168,7 +168,7 @@ class PaymentServiceTest {
     void deletesAPayment() {
         Payment added = service.addPayment(payment("R1", DUE, 100.00));
 
-        service.deletePayment(added.getPaymentId());
+        service.deletePayment(loanId, added.getPaymentId());
 
         assertTrue(service.getPayments(loanId).isEmpty());
     }
@@ -176,15 +176,29 @@ class PaymentServiceTest {
     @Test
     void deletingAnUnknownPaymentIsABusinessError() {
         MainframeException exception = assertThrows(MainframeException.class,
-                () -> service.deletePayment("MISSING"));
+                () -> service.deletePayment(loanId, "MISSING"));
 
         assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
+    
+    // The mainframe needs the right loan for a delete, so a payment can't be
+    // deleted by naming a different loan
+    @Test
+    void deletingAPaymentUnderTheWrongLoanIsABusinessError() {
+        String otherLoanId = createLoanWithSchedule("X");
+        Payment added = service.addPayment(payment("R1", DUE, 100.00));
+
+        assertThrows(MainframeException.class,
+                () -> service.deletePayment(otherLoanId, added.getPaymentId()));
+
+        assertEquals(1, service.getPayments(loanId).size());
+    }
 
     @Test
-    void deleteRejectsMissingId() {
-        assertThrows(IllegalArgumentException.class, () -> service.deletePayment(null));
-        assertThrows(IllegalArgumentException.class, () -> service.deletePayment(" "));
+    void deleteRejectsMissingIds() {
+        assertThrows(IllegalArgumentException.class, () -> service.deletePayment(loanId, null));
+        assertThrows(IllegalArgumentException.class, () -> service.deletePayment(loanId, " "));
+        assertThrows(IllegalArgumentException.class, () -> service.deletePayment(null, "P1"));
     }
 
     @Test
