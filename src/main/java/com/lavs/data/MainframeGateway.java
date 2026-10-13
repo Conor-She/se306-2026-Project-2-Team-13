@@ -58,6 +58,7 @@ public interface MainframeGateway {
     CustomerDocument updateDocument(CustomerDocument document);
     void deleteDocument(String documentId);
     Guarantor addGuarantor(Guarantor guarantor);
+    Guarantor updateGuarantor(Guarantor guarantor);
     void deleteGuarantor(String guarantorId);
 
     // Create a Loan

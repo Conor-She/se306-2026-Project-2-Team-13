@@ -9,8 +9,8 @@ public class Guarantor {
 
     public Guarantor(String guarantorId, String customerId, String guarantorCustomerId,
             String relationshipType) {
-        if (guarantorId == null || guarantorId.isBlank()) {
-            throw new IllegalArgumentException("guarantorId must not be null or blank");
+        if (guarantorId != null && guarantorId.isBlank()) {
+            throw new IllegalArgumentException("guarantorId must not be blank");
         }
         if (customerId == null || customerId.isBlank()) {
             throw new IllegalArgumentException("customerId must not be null or blank");
@@ -21,6 +21,9 @@ public class Guarantor {
         // A customer cannot be their own guarantor
         if (customerId.equals(guarantorCustomerId)) {
             throw new IllegalArgumentException("customerId and guarantorCustomerId must differ");
+        }
+        if (relationshipType == null || relationshipType.isBlank()) {
+            throw new IllegalArgumentException("relationshipType must not be null or blank");
         }
 
         // Assign all fields once the guarantor link is confirmed valid
