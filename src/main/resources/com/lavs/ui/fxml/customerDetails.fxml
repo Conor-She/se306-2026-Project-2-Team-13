@@ -271,7 +271,49 @@
    </GridPane>
   </VBox></content>
  </ScrollPane>
- <Label fx:id="sectionPlaceholder" visible="false" managed="false" wrapText="true" StackPane.alignment="TOP_LEFT" style="$mutedStyle"/>
+ <ScrollPane fx:id="guarantorsContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+  <content><VBox spacing="12" minWidth="0" style="-fx-padding: 0 12 12 12;">
+   <fx:define>
+    <String fx:id="guarantorHeaderStyle" fx:value="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #747ba6;"/>
+    <String fx:id="guarantorCellStyle" fx:value="-fx-font-size: 12px; -fx-text-fill: #55558d;"/>
+   </fx:define>
+   <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 14 16;">
+    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Customer Guarantors" style="$titleStyle"/>
+     <Label text="View and manage guarantors linked to this customer." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <Button text="+  Add Guarantor" onAction="#showStubAction" style="-fx-background-color: #5b56b5; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;"/>
+   </HBox>
+   <GridPane minWidth="0" style="-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8;">
+    <columnConstraints>
+     <ColumnConstraints percentWidth="22"/><ColumnConstraints percentWidth="13"/>
+     <ColumnConstraints percentWidth="16"/><ColumnConstraints percentWidth="26"/>
+     <ColumnConstraints percentWidth="16"/><ColumnConstraints percentWidth="7" halignment="CENTER"/>
+    </columnConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="60"/></rowConstraints>
+    <Region GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
+    <Label text="Name" style="$guarantorHeaderStyle"><padding><Insets left="20"/></padding></Label>
+    <Label text="Relationship" GridPane.columnIndex="1" style="$guarantorHeaderStyle"/>
+    <Label text="Phone" GridPane.columnIndex="2" style="$guarantorHeaderStyle"/>
+    <Label text="Email" GridPane.columnIndex="3" style="$guarantorHeaderStyle"/>
+    <Label text="Status" GridPane.columnIndex="4" style="$guarantorHeaderStyle"/>
+    <Label text="Actions" GridPane.columnIndex="5" style="$guarantorHeaderStyle"/>
+    <HBox GridPane.rowIndex="1" alignment="CENTER_LEFT" spacing="12" minWidth="0" style="-fx-padding: 0 20;">
+     <Pane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36">
+      <Circle centerX="18" centerY="18" radius="18" fill="#efedff"/>
+      <Circle centerX="18" centerY="13" radius="6" fill="#393a7b"/>
+      <SVGPath content="M 8 28 C 8 16 28 16 28 28 Q 18 33 8 28 Z" fill="#393a7b"/>
+     </Pane>
+     <Label text="Michael Johnson" wrapText="true" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #55558d;"/>
+    </HBox>
+    <Label text="Brother" GridPane.rowIndex="1" GridPane.columnIndex="1" style="$guarantorCellStyle"/>
+    <Label text="021 987 6543" GridPane.rowIndex="1" GridPane.columnIndex="2" wrapText="true" style="$guarantorCellStyle"/>
+    <Label text="michael.johnson@email.com" GridPane.rowIndex="1" GridPane.columnIndex="3" wrapText="true" style="$guarantorCellStyle"/>
+    <Label text="Active" GridPane.rowIndex="1" GridPane.columnIndex="4" style="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-font-size: 11px; -fx-padding: 2 16;"/>
+    <Button text="&#x22EE;" accessibleText="Actions for guarantor Michael Johnson" GridPane.rowIndex="1" GridPane.columnIndex="5" onAction="#showStubAction" style="-fx-background-color: transparent; -fx-text-fill: #747ba6; -fx-font-size: 19px; -fx-padding: 4 10; -fx-min-width: 36; -fx-min-height: 36; -fx-cursor: hand;"/>
+   </GridPane>
+  </VBox></content>
+ </ScrollPane>
  </StackPane>
 </VBox>
  
