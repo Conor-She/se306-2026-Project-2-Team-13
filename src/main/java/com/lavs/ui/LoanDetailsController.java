@@ -39,8 +39,7 @@ public class LoanDetailsController {
 
     @FXML private Label loanHeading;
     @FXML private Label customerHeading;
-    @FXML private Label loanIdValue;
-    @FXML private Label customerIdValue;
+    @FXML private Label loanInfoBanner;
     @FXML private Label statusValue;
     @FXML private Label amountValue;
     @FXML private Label typeValue;
@@ -82,8 +81,8 @@ public class LoanDetailsController {
         coborrowers.select(loan.loanId());
         loanHeading.setText("Loan ID: " + loan.loanId());
         customerHeading.setText(loan.customerName() + " | " + loan.customerId());
-        loanIdValue.setText(loan.loanId());
-        customerIdValue.setText(loan.customerId());
+        loanInfoBanner.setText("This loan is currently " + loan.status().toLowerCase(Locale.ROOT)
+                + ". You can view the loan details below.");
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());

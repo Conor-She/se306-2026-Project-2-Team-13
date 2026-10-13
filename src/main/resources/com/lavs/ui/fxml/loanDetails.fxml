@@ -68,22 +68,57 @@
       </HBox>
 
       <StackPane minHeight="300" VBox.vgrow="ALWAYS">
-            <VBox fx:id="loanDetailsView" spacing="16" visible="false" managed="false"
-                  style="-fx-background-color: white; -fx-border-color: #555555; -fx-border-radius: 18; -fx-background-radius: 18; -fx-padding: 24;">
-                  <Label text="Loan Details" style="-fx-font-size: 24px; -fx-font-weight: bold;" />
-                  <GridPane hgap="24" vgap="16" style="-fx-font-size: 18px;">
-                        <Label text="Loan ID" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                        <Label fx:id="loanIdValue" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                        <Label text="Customer" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                        <Label fx:id="customerIdValue" GridPane.columnIndex="1"
-                              GridPane.rowIndex="1" />
-                        <Label styleClass="coborrowers-column-heading" text="Status" GridPane.columnIndex="0" GridPane.rowIndex="2"  style="-fx-font-weight: bold;" />
-                        <Label fx:id="statusValue" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                        <Label text="Amount" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                        <Label fx:id="amountValue" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                        <Label text="Loan type" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                        <Label fx:id="typeValue" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                  </GridPane>
+            <VBox fx:id="loanDetailsView" spacing="16" visible="false" managed="false">
+                  <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #f0f4ff; -fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 12 16;">
+                        <SVGPath content="M 10 0 A 10 10 0 1 0 10 20 A 10 10 0 1 0 10 0 M 10 9 V 15 M 10 5 V 6" fill="transparent" stroke="#4947a5" strokeWidth="1.6" />
+                        <Label fx:id="loanInfoBanner" wrapText="true" style="-fx-font-size: 12; -fx-text-fill: #626499;" />
+                  </HBox>
+                  <VBox style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 8; -fx-background-radius: 8;">
+                        <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-background-color: #f8faff; -fx-background-radius: 8 8 0 0; -fx-border-color: transparent transparent #edf0fc transparent; -fx-padding: 14 18;">
+                              <SVGPath content="M 3 1 H 12 L 18 7 V 23 H 3 Z M 12 1 V 7 H 18 M 7 12 H 14 M 7 16 H 14 M 7 20 H 12" fill="transparent" stroke="#393a7b" strokeWidth="1.5" />
+                              <Label text="Loan Information" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #20205e;" />
+                              <Region HBox.hgrow="ALWAYS" />
+                        </HBox>
+                        <GridPane hgap="24" vgap="30" style="-fx-padding: 24 20;">
+                              <columnConstraints><ColumnConstraints percentWidth="33.33" /><ColumnConstraints percentWidth="33.33" /><ColumnConstraints percentWidth="33.34" /></columnConstraints>
+                        <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                              <Label text="Loan Type" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="typeValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                              <Label text="Principal" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="amountValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                              <Label text="Interest Rate" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="interestRateValue" text="6.25%" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                              <Label text="Payment Frequency" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="paymentFrequencyValue" text="Fortnightly" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                              <Label text="Rate Frequency" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="rateFrequencyValue" text="Monthly" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                              <Label text="Term" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="termValue" text="30 years" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                              <Label text="Start Date" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="startDateValue" text="01/02/2025" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                              <Label text="Renew Date" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="renewDateValue" text="01/02/2030" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                        </VBox>
+                        <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                              <Label text="Status" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="statusValue" wrapText="true" style="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-padding: 3 12; -fx-font-size: 12;" />
+                        </VBox>
+                        </GridPane>
+                  </VBox>
             </VBox>
 
             <VBox fx:id="coborrowersView" spacing="12" visible="false" managed="false" minWidth="0">
