@@ -35,12 +35,11 @@ import javafx.scene.shape.SVGPath;
 /** Displays loan information and the loan's related tabs and payments. */
 public class LoanDetailsController {
     private static final DateTimeFormatter PAYMENT_DATE_FORMAT =
-            DateTimeFormatter.ofPattern("d MMM uuuu", Locale.ENGLISH);
+            DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ENGLISH);
 
     @FXML private Label loanHeading;
     @FXML private Label customerHeading;
-    @FXML private Label loanIdValue;
-    @FXML private Label customerIdValue;
+    @FXML private Label loanInfoBanner;
     @FXML private Label statusValue;
     @FXML private Label amountValue;
     @FXML private Label typeValue;
@@ -52,7 +51,18 @@ public class LoanDetailsController {
     @FXML private VBox coborrowersView;
     @FXML private VBox repaymentScheduleView;
     @FXML private VBox paymentsView;
-    @FXML private VBox paymentRows;
+    @FXML private GridPane paymentRows;
+    @FXML private Label paymentsCount;
+    @FXML private String paymentCellStyle;
+    @FXML private String paymentBadgeStyle;
+    @FXML private String paymentRowStyle;
+    @FXML private GridPane coborrowersTable;
+    private LoanCoborrowersEditing coborrowers;
+    @FXML private String coborrowerRowStyle;
+    @FXML private String coborrowerActionStyle;
+    @FXML private String coborrowerIconStyle;
+    @FXML private String coborrowerHoverStyle;
+    @FXML private String coborrowerDeleteHoverStyle;
 
     private final ObservableList<Payment> payments = FXCollections.observableArrayList();
     private LoansController.LoanSummary loan;
@@ -60,16 +70,19 @@ public class LoanDetailsController {
     private Runnable onBack;
 
     @FXML private void initialize() {
-        showPaymentsTab();
+        coborrowers = new LoanCoborrowersEditing(coborrowersTable, coborrowerRowStyle,
+                coborrowerActionStyle, coborrowerIconStyle, coborrowerHoverStyle, coborrowerDeleteHoverStyle);
+        showLoanDetailsTab();
         refreshPayments();
     }
 
     public void setLoan(LoansController.LoanSummary loan) {
         this.loan = loan;
+        coborrowers.select(loan.loanId());
         loanHeading.setText("Loan ID: " + loan.loanId());
         customerHeading.setText(loan.customerName() + " | " + loan.customerId());
-        loanIdValue.setText(loan.loanId());
-        customerIdValue.setText(loan.customerId());
+        loanInfoBanner.setText("This loan is currently " + loan.status().toLowerCase(Locale.ROOT)
+                + ". You can view the loan details below.");
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
@@ -101,6 +114,10 @@ public class LoanDetailsController {
         selectTab(coborrowersTab, coborrowersView);
     }
 
+    @FXML private void addCoborrower() {
+        if (loan != null) coborrowers.add();
+    }
+
     @FXML private void showRepaymentScheduleTab() {
         selectTab(repaymentScheduleTab, repaymentScheduleView);
     }
@@ -112,6 +129,7 @@ public class LoanDetailsController {
     private void selectTab(Button selectedTab, VBox selectedView) {
         for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
+            tab.getParent().lookup(".loan-tab-indicator").setVisible(tab == selectedTab);
         }
         for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView, paymentsView)) {
             boolean selected = view == selectedView;
@@ -191,78 +209,77 @@ public class LoanDetailsController {
 
     private void refreshPayments() {
         if (paymentRows == null) return;
-        List<Node> rows = payments.stream()
-                .sorted(Comparator.comparing(Payment::getPaymentDate))
-                .map(this::createPaymentRow)
-                .map(Node.class::cast)
-                .toList();
-        if (rows.isEmpty()) {
-            Label emptyMessage = new Label("No payments recorded for this loan.");
-            emptyMessage.setStyle("-fx-font-size: 17px; -fx-text-fill: #666666; -fx-padding: 14 4;");
-            paymentRows.getChildren().setAll(emptyMessage);
-        } else {
-            paymentRows.getChildren().setAll(rows);
+        paymentRows.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
+                && GridPane.getRowIndex(node) > 0);
+        List<Payment> sorted = payments.stream()
+                .sorted(Comparator.comparing(Payment::getPaymentDate).reversed()).toList();
+        int row = 1;
+        for (Payment payment : sorted) {
+            Region background = new Region();
+            background.setStyle(paymentRowStyle);
+            paymentRows.add(background, 0, row, 6, 1);
+            String[] values = { payment.getPaymentDate().format(PAYMENT_DATE_FORMAT),
+                    formatAmount(payment.getAmountPaid()), "Principal & Interest", "Paid", payment.getPaymentId() };
+            javafx.scene.control.MenuItem edit = new javafx.scene.control.MenuItem("Edit payment");
+            edit.setOnAction(event -> editPayment(payment));
+            javafx.scene.control.MenuItem delete = new javafx.scene.control.MenuItem("Delete payment");
+            delete.setOnAction(event -> deletePayment(payment));
+            javafx.scene.control.ContextMenu actions = new javafx.scene.control.ContextMenu(edit, delete);
+            for (int column = 0; column < values.length; column++) {
+                Label cell = new Label(values[column]);
+                cell.setStyle(column == 3 ? paymentBadgeStyle : paymentCellStyle);
+                cell.setMaxWidth(column == 3 ? Region.USE_PREF_SIZE : Double.MAX_VALUE);
+                if (column == 3) cell.setTranslateX(18);
+                cell.setTooltip(new Tooltip("Right-click to edit or delete this payment"));
+                cell.setOnContextMenuRequested(event -> actions.show(cell, event.getScreenX(), event.getScreenY()));
+                paymentRows.add(cell, column, row);
+            }
+            Button editButton = iconButton("edit", "Edit payment " + payment.getPaymentId());
+            editButton.setOnAction(event -> editPayment(payment));
+            Button deleteButton = iconButton("delete", "Delete payment " + payment.getPaymentId());
+            deleteButton.setOnAction(event -> deletePayment(payment));
+            HBox buttons = new HBox(4, editButton, deleteButton);
+            buttons.setAlignment(Pos.CENTER_RIGHT);
+            buttons.setMinWidth(Region.USE_PREF_SIZE);
+            buttons.setPadding(new Insets(0, 12, 0, 0));
+            paymentRows.add(buttons, 5, row);
+            row++;
         }
-    }
-
-    private HBox createPaymentRow(Payment payment) {
-        Label date = new Label(payment.getPaymentDate().format(PAYMENT_DATE_FORMAT));
-        date.setStyle("-fx-font-size: 18px;");
-        date.setPrefWidth(220);
-
-        Label amount = new Label(formatAmount(payment.getAmountPaid()));
-        amount.setStyle("-fx-font-size: 18px;");
-        amount.setPrefWidth(190);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button editButton = iconButton("edit", "Edit payment dated " + date.getText());
-        editButton.setOnAction(event -> editPayment(payment));
-        Button deleteButton = iconButton("delete", "Delete payment dated " + date.getText());
-        deleteButton.setOnAction(event -> deletePayment(payment));
-
-        HBox row = new HBox(14, date, amount, spacer, editButton, deleteButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 18, 10, 18));
-        row.setMinHeight(58);
-        row.setStyle("-fx-background-color: white; -fx-border-color: #2f2f2f;"
-                + " -fx-border-width: 1; -fx-border-radius: 20; -fx-background-radius: 20;");
-        return row;
+        if (sorted.isEmpty()) {
+            Label empty = new Label("No payments recorded for this loan.");
+            empty.setStyle(paymentCellStyle);
+            paymentRows.add(empty, 0, 1, 6, 1);
+        }
+        paymentsCount.setText(sorted.isEmpty() ? "Showing 0 of 0"
+                : "Showing 1-" + sorted.size() + " of " + sorted.size());
     }
 
     private Button iconButton(String iconType, String accessibleText) {
         SVGPath icon = new SVGPath();
         if ("edit".equals(iconType)) {
-            icon.setContent("M3 17.25 L3 21 L6.75 21 L17.81 9.94 L14.06 6.19 Z "
-                    + "M20.71 7.04 C21.1 6.65 21.1 6.02 20.71 5.63 L18.37 3.29 "
-                    + "C17.98 2.9 17.35 2.9 16.96 3.29 L15.13 5.12 L18.88 8.87 Z");
+            icon.setContent("M 3 14 L 13 4 L 17 8 L 7 18 L 2 19 Z M 11 6 L 15 10 M 14 3 L 16 1 L 20 5 L 18 7");
         } else {
-            icon.setContent("M4 6 L20 6 M9 6 L9 4 L15 4 L15 6 M6 6 L7 21 L17 21 L18 6 "
-                    + "M10 10 L10 18 M14 10 L14 18");
+            icon.setContent("M 3 5 H 19 M 7 5 V 2 H 15 V 5 M 5 5 L 6 20 H 16 L 17 5 M 9 9 V 16 M 13 9 V 16");
         }
         icon.setFill(Color.TRANSPARENT);
-        icon.setStroke(Color.BLACK);
-        icon.setStrokeWidth(1.4);
-        icon.setScaleX(1.25);
-        icon.setScaleY(1.25);
+        icon.setStyle(coborrowerIconStyle + ("delete".equals(iconType) ? " -fx-stroke: #c34f64;" : ""));
 
         Button button = new Button();
         button.setGraphic(icon);
         button.setAccessibleText(accessibleText);
         button.setTooltip(new Tooltip(accessibleText));
-        button.setStyle("-fx-background-color: transparent; -fx-padding: 4 6; -fx-cursor: hand;");
+        button.setStyle(coborrowerActionStyle);
         return button;
     }
 
     private List<Payment> samplePayments(String loanId) {
         return List.of(
-                new Payment(loanId + "-PAY-1", loanId, null,
-                        LocalDate.of(2026, 9, 10), 500.00),
-                new Payment(loanId + "-PAY-2", loanId, null,
-                        LocalDate.of(2026, 10, 12), 500.00),
-                new Payment(loanId + "-PAY-3", loanId, null,
-                        LocalDate.of(2026, 11, 9), 500.00));
+                new Payment("FP-001232", loanId, null,
+                        LocalDate.of(2025, 8, 1), 3245.67),
+                new Payment("FP-001233", loanId, null,
+                        LocalDate.of(2025, 8, 15), 3245.67),
+                new Payment("FP-001234", loanId, null,
+                        LocalDate.of(2025, 9, 1), 3245.67));
     }
 
     private boolean isPositiveAmount(String value) {
@@ -279,20 +296,18 @@ public class LoanDetailsController {
 
     private String formatAmount(double amount) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.US);
-        formatter.setMinimumFractionDigits(0);
+        formatter.setMinimumFractionDigits(2);
         formatter.setMaximumFractionDigits(2);
         return formatter.format(amount);
     }
 
     private String tabStyle() {
         return "-fx-background-color: transparent; -fx-border-color: transparent;"
-                + " -fx-padding: 12 18; -fx-font-size: 18px; -fx-text-fill: #171717;";
+                + " -fx-border-width: 0 0 5 0; -fx-border-radius: 0;"
+                + " -fx-padding: 4 17 11 17; -fx-font-size: 14px; -fx-text-fill: #55558d; -fx-cursor: hand;";
     }
 
     private String selectedTabStyle() {
-        return "-fx-background-color: transparent;"
-                + " -fx-border-color: transparent transparent #d95736 transparent;"
-                + " -fx-border-width: 0 0 4 0; -fx-padding: 12 18;"
-                + " -fx-font-size: 18px; -fx-text-fill: #171717; -fx-font-weight: bold;";
+        return tabStyle() + " -fx-text-fill: #20205e; -fx-font-weight: bold;";
     }
 }
