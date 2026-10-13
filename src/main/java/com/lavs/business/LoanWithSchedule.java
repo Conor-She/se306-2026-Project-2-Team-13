@@ -4,17 +4,19 @@ import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 import java.util.List;
 
-// A loan together with its repayment schedule. LoanService returns this so
-// the UI always has both to show the MMM, and can't show a loan without its
-// schedule.
+// A loan together with its repayment schedule and the summary of that schedule.
+// LoanService returns this so the UI always has all three to show the MMM, and
+// can't show a loan without its schedule.
 public class LoanWithSchedule {
 
     private final Loan loan;
     private final List<Repayment> schedule;
+    private final LoanSummary summary;
 
     public LoanWithSchedule(Loan loan, List<Repayment> schedule) {
         this.loan = loan;
         this.schedule = List.copyOf(schedule);
+        this.summary = LoanSummary.fromSchedule(this.schedule);
     }
 
     public Loan getLoan() {
@@ -23,5 +25,9 @@ public class LoanWithSchedule {
 
     public List<Repayment> getSchedule() {
         return schedule;
+    }
+
+    public LoanSummary getSummary() {
+        return summary;
     }
 }
