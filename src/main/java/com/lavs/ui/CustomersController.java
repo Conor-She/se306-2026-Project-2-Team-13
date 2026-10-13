@@ -69,6 +69,14 @@ public class CustomersController {
             });
             return row;
         });
+        detailsViewController.setOnCustomerChanged(updated -> {
+            for (int index = 0; index < customers.size(); index++) {
+                if (customers.get(index).customerId().equals(updated.customerId())) {
+                    customers.set(index, updated);
+                    break;
+                }
+            }
+        });
         detailsViewController.setOnBack(() -> { showList(true); focusSearch(); });
     }
 

@@ -1,19 +1,153 @@
 package com.lavs.ui;
 
 import javafx.fxml.FXML;
+import javafx.beans.binding.Bindings;
+import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.ColumnConstraints;
+import java.util.Map;
+import java.util.function.Consumer;
+import static com.lavs.ui.CustomerRecordEditor.Kind;
 
-/** Placeholder for the future customer details form. */
+/** Customer summary header and navigation for the customer details page. */
 public class CustomerDetailsController {
     @FXML private Label customerHeading;
+    @FXML private Label customerId;
+    @FXML private Label firstNameValue, lastNameValue, emailValue, phoneValue;
+    @FXML private Label titleValue, birthDateValue, nationalityValue, addressValue;
+    @FXML private Label employerNameValue, employmentSummaryValue;
+    @FXML private GridPane loansTable, documentsTable, guarantorsTable;
+    @FXML private VBox notesList, additionalContacts, additionalEmployers;
+    @FXML private VBox personalCard, contactCard, employmentCard;
+    @FXML private GridPane overviewCards;
+    @FXML private javafx.scene.layout.HBox primaryEmployerRow;
+    private CustomerDetailsEditing editing;
+    private Consumer<CustomersController.CustomerSummary> onCustomerChanged = updated -> {};
+    @FXML private ScrollPane detailsContent;
+    @FXML private ScrollPane loansContent;
+    @FXML private ScrollPane notesContent;
+    @FXML private ScrollPane documentsContent;
+    @FXML private ScrollPane guarantorsContent;
+    @FXML private ToggleGroup customerTabs;
+    @FXML private Button backButton, viewAllEmail, viewAllPhone, viewAllAddress;
+    @FXML private String tabStyle, selectedTabStyle, focusStyle;
+    @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
     private CustomersController.CustomerSummary customer;
     private Runnable onBack;
 
+    @FXML private void initialize() {
+        int[] currentColumns = {0};
+        Runnable arrangeCards = () -> {
+            // Use the outer scroll pane width, which does not change when its scrollbar appears.
+            double available = Math.max(0, detailsContent.getWidth() - 24);
+            int columns = available >= 720 ? 3 : available >= 480 ? 2 : 1;
+            if (columns == currentColumns[0]) return;
+            currentColumns[0] = columns;
+            overviewCards.getColumnConstraints().clear();
+            for (int column = 0; column < columns; column++) {
+                ColumnConstraints constraint = new ColumnConstraints();
+                constraint.setPercentWidth(100.0 / columns);
+                overviewCards.getColumnConstraints().add(constraint);
+            }
+            VBox[] cards = {personalCard, contactCard, employmentCard};
+            for (int index = 0; index < cards.length; index++) {
+                GridPane.setColumnIndex(cards[index], index % columns);
+                GridPane.setRowIndex(cards[index], index / columns);
+            }
+        };
+        detailsContent.widthProperty().addListener((observable, previous, width) -> arrangeCards.run());
+        arrangeCards.run();
+        editing = new CustomerDetailsEditing(customerHeading, Map.ofEntries(
+                Map.entry("customerHeading", customerHeading), Map.entry("firstNameValue", firstNameValue), Map.entry("lastNameValue", lastNameValue),
+                Map.entry("titleValue", titleValue), Map.entry("birthDateValue", birthDateValue),
+                Map.entry("nationalityValue", nationalityValue), Map.entry("emailValue", emailValue),
+                Map.entry("phoneValue", phoneValue), Map.entry("addressValue", addressValue),
+                Map.entry("employerNameValue", employerNameValue), Map.entry("employmentSummaryValue", employmentSummaryValue)),
+                Map.of(Kind.LOAN, loansTable, Kind.DOCUMENT, documentsTable, Kind.GUARANTOR, guarantorsTable),
+                notesList, additionalContacts, additionalEmployers, primaryEmployerRow, Map.of("Email", viewAllEmail, "Phone", viewAllPhone, "Address", viewAllAddress), updated -> { customer = updated; onCustomerChanged.accept(updated); });
+        ScrollPaneAppearance.install(detailsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(loansContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(notesContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(documentsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(guarantorsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        for (var toggle : customerTabs.getToggles()) {
+            ToggleButton tab = (ToggleButton) toggle;
+            tab.styleProperty().bind(Bindings.createStringBinding(() ->
+                    tabStyle + (tab.isSelected() ? selectedTabStyle : "")
+                            + (tab.isFocused() ? focusStyle : ""),
+                    tab.selectedProperty(), tab.focusedProperty()));
+        }
+        String backStyle = backButton.getStyle();
+        backButton.styleProperty().bind(Bindings.createStringBinding(() ->
+                backStyle + (backButton.isFocused() ? focusStyle : ""),
+                backButton.focusedProperty()));
+        customerTabs.selectedToggleProperty().addListener((observable, previous, selected) -> {
+            if (selected == null) {
+                customerTabs.selectToggle(previous);
+                return;
+            }
+            String section = ((ToggleButton) selected).getText();
+            boolean details = "Details".equals(section);
+            boolean loans = "Loans".equals(section);
+            boolean notes = "Notes".equals(section);
+            boolean documents = "Documents".equals(section);
+            boolean guarantors = "Guarantors".equals(section);
+            detailsContent.setVisible(details);
+            detailsContent.setManaged(details);
+            loansContent.setVisible(loans);
+            loansContent.setManaged(loans);
+            notesContent.setVisible(notes);
+            notesContent.setManaged(notes);
+            documentsContent.setVisible(documents);
+            documentsContent.setManaged(documents);
+            guarantorsContent.setVisible(guarantors);
+            guarantorsContent.setManaged(guarantors);
+        });
+    }
+
     public void setCustomer(CustomersController.CustomerSummary customer) {
-        this.customer = customer;
-        customerHeading.setText(customer.name() + " (" + customer.customerId() + ")");
+        this.customer = editing.select(customer);
+        customerId.setText("Customer ID: " + this.customer.customerId());
+        detailsContent.setVvalue(0);
+        loansContent.setVvalue(0);
+        notesContent.setVvalue(0);
+        documentsContent.setVvalue(0);
+        guarantorsContent.setVvalue(0);
+        customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
     public void setOnBack(Runnable onBack) { this.onBack = onBack; }
+    public void setOnCustomerChanged(Consumer<CustomersController.CustomerSummary> onCustomerChanged) {
+        this.onCustomerChanged = onCustomerChanged;
+    }
+    @FXML private void editPersonal() { editing.editDetails(Kind.PERSONAL); }
+    @FXML private void editEmail() { editing.editContact("Email"); }
+    @FXML private void editPhone() { editing.editContact("Phone"); }
+    @FXML private void editAddress() { editing.editContact("Address"); }
+    @FXML private void viewEmail() { editing.viewContacts("Email"); }
+    @FXML private void viewPhone() { editing.viewContacts("Phone"); }
+    @FXML private void viewAddress() { editing.viewContacts("Address"); }
+    @FXML private void addContact() { editing.add(Kind.CONTACT_RECORD); }
+    @FXML private void deleteEmployer() { editing.deleteEmployer(); }
+    @FXML private void addEmployer() { editing.add(Kind.EMPLOYMENT); }
+    @FXML private void editEmployment() { editing.editDetails(Kind.EMPLOYMENT); }
+    @FXML private void addLoan() { editing.add(Kind.LOAN); }
+    @FXML private void addNote() { editing.add(Kind.NOTE); }
+    @FXML private void addDocument() { editing.add(Kind.DOCUMENT); }
+    @FXML private void addGuarantor() { editing.add(Kind.GUARANTOR); }
     @FXML private void back() { onBack.run(); }
+    @FXML private void showStubAction() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(customerHeading.getScene().getWindow());
+        alert.setTitle("Customer details preview");
+        alert.setHeaderText("Co-borrowers");
+        alert.setContentText("Co-borrower records are not available in this preview.");
+        alert.showAndWait();
+    }
 }
