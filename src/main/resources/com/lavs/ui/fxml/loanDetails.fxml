@@ -104,12 +104,48 @@
                   </ScrollPane>
             </VBox>
 
-            <VBox fx:id="repaymentScheduleView" spacing="16" visible="false" managed="false"
-                  style="-fx-background-color: white; -fx-border-color: #555555; -fx-border-radius: 18; -fx-background-radius: 18; -fx-padding: 24;">
-                  <Label text="Repayment Schedule"
-                        style="-fx-font-size: 24px; -fx-font-weight: bold;" />
-                  <Label text="The repayment schedule is not available yet."
-                        style="-fx-font-size: 18px; -fx-text-fill: #555555;" />
+            <VBox fx:id="repaymentScheduleView" spacing="12" visible="false" managed="false" styleClass="repayment-schedule">
+                <HBox alignment="CENTER_LEFT" spacing="16" styleClass="repayment-heading">
+                    <SVGPath content="M 2 5 H 22 V 23 H 2 Z M 2 10 H 22 M 7 2 V 7 M 17 2 V 7 M 6 14 H 9 M 12 14 H 15 M 18 14 H 20 M 6 18 H 9 M 12 18 H 15" fill="transparent" stroke="#393a7b" strokeWidth="1.8" />
+                    <VBox spacing="5">
+                        <Label text="Repayment Schedule" styleClass="repayment-title" />
+                        <Label text="View the full repayment schedule for this loan." styleClass="repayment-muted" />
+                    </VBox>
+                </HBox>
+                <GridPane hgap="12" style="-fx-padding: 0 12;">
+                    <columnConstraints><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /></columnConstraints>
+                    <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="0"><Label text="Total Repayments" styleClass="repayment-muted" /><Label text="\$6,491.34" styleClass="repayment-summary-value" /></VBox>
+<VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="1"><Label text="Principal" styleClass="repayment-muted" /><Label text="\$500,000.00" styleClass="repayment-summary-value" /></VBox>
+<VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="2"><Label text="Total Interest" styleClass="repayment-muted" /><Label text="\$3,985.22" styleClass="repayment-summary-value" /></VBox>
+<VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="3"><Label text="Term" styleClass="repayment-muted" /><Label text="30 years" styleClass="repayment-summary-value" /></VBox>
+                </GridPane>
+                <GridPane fx:id="repaymentScheduleTable" styleClass="repayment-table">
+                    <columnConstraints><ColumnConstraints percentWidth="8" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /></columnConstraints>
+                    <Region styleClass="repayment-table-header" mouseTransparent="true" GridPane.columnSpan="6" GridPane.rowIndex="0" />
+                    <Label text="#" styleClass="repayment-column-heading" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+<Label text="Due Date" styleClass="repayment-column-heading" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+<Label text="Repayment" styleClass="repayment-column-heading" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+<Label text="Principal" styleClass="repayment-column-heading" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+<Label text="Interest" styleClass="repayment-column-heading" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+<Label text="Balance" styleClass="repayment-column-heading" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+<Region styleClass="repayment-row-divider" mouseTransparent="true" GridPane.columnSpan="6" GridPane.rowIndex="1" />
+<Label text="1" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+<Label text="15/03/2025" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+<Label text="\$3,245.67" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+<Label text="\$1,245.67" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+<Label text="\$2,000.00" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+<Label text="\$498,754.33" GridPane.columnIndex="5" GridPane.rowIndex="1" />
+<Region styleClass="repayment-row-divider" mouseTransparent="true" GridPane.columnSpan="6" GridPane.rowIndex="2" />
+<Label text="2" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+<Label text="01/04/2025" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+<Label text="\$3,245.67" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+<Label text="\$1,260.45" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+<Label text="\$1,985.22" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+<Label text="\$497,493.88" GridPane.columnIndex="5" GridPane.rowIndex="2" />
+                </GridPane>
+                <HBox style="-fx-padding: 4 16 16 16;" alignment="CENTER_LEFT">
+                    <Label text="Showing 1–2 of 2" styleClass="repayment-muted" />
+                </HBox>
             </VBox>
 
             <VBox fx:id="paymentsView" spacing="16" visible="false" managed="false"
