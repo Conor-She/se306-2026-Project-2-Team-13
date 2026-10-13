@@ -323,4 +323,55 @@ class LoanServiceTest {
 
         assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
+
+    // Editing can't move a loan to a different customer, which would skip
+    // that customer's prerequisite checks
+    @Test
+    void updateCannotChangeTheCustomer() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+        Loan reassigned = new Loan(loanId, "C999", Loan.Status.NEW, 12_000, 12.0,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
+                1_000, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.update(reassigned));
+
+        assertEquals(LoanService.CUSTOMER_CHANGE_MESSAGE, exception.getMessage());
+        assertEquals("C001", gateway.getLoan(loanId).getCustomerId());
+    }
+
+    // The mainframe doesn't store the term, so the MMM must enter one: a
+    // loan without it can't be scheduled and must not be created
+    @Test
+    void doesNotCreateALoanWithoutATerm() {
+        givenEligibleCustomer();
+        Loan noTerm = new Loan(null, "C001", Loan.Status.NEW, 12_000, 12.0, Loan.Type.TABLE_LOAN,
+                false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1), 1_000,
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.create(noTerm));
+
+        assertEquals(LoanService.TERM_REQUIRED_MESSAGE, exception.getMessage());
+        assertNoLoanWasCreated();
+    }
+
+    // The same applies when editing: a loan re-fetched from the mainframe has
+    // no term, so an edit has to supply one again
+    @Test
+    void doesNotUpdateALoanWithoutATerm() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+        Loan noTerm = new Loan(loanId, "C001", Loan.Status.NEW, 24_000, 12.0, Loan.Type.TABLE_LOAN,
+                false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1), 1_000,
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.update(noTerm));
+
+        assertEquals(LoanService.TERM_REQUIRED_MESSAGE, exception.getMessage());
+
+        assertEquals(12_000, gateway.getLoan(loanId).getPrincipal());
+    }
 }
