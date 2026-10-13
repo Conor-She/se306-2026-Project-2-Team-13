@@ -397,7 +397,6 @@ public class MainframeGatewayImpl implements MainframeGateway {
         throw new UnsupportedOperationException(
                 "Not yet implemented - can be built from loanPayment.List");
     }
-    }
 
     @Override
     public List<String> getCategoryValues(String categoryType) {
