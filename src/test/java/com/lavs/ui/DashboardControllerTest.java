@@ -351,11 +351,41 @@ class DashboardControllerTest {
         fx(() -> {
             Stage stage = new Stage();
             try {
-                new Main().start(stage);
-                Parent login = stage.getScene().getRoot();
+                FXMLLoader loginLoader = new FXMLLoader(Main.class.getResource("fxml/login.fxml"));
+                Parent login = loginLoader.load();
+                LoginController loginController = loginLoader.getController();
+                Scene scene = new Scene(login, 900, 600);
+                stage.setScene(scene);
+                stage.show();
+                String[] submittedUsername = {null};
+                loginController.configure((username, password) -> {
+                    assertEquals("preview", password);
+                    submittedUsername[0] = username;
+                    loginController.setLoginInProgress(true);
+                }, () -> {
+                    try {
+                        FXMLLoader dashboardLoader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
+                        Parent dashboard = dashboardLoader.load();
+                        ((DashboardController) dashboardLoader.getController()).configure(submittedUsername[0], () -> {});
+                        scene.setRoot(dashboard);
+                    } catch (java.io.IOException failure) {
+                        throw new AssertionError("Dashboard failed to load", failure);
+                    }
+                });
                 ((TextField) login.lookup("#username")).setText("Jack");
                 ((PasswordField) login.lookup("#password")).setText("preview");
                 ((Button) login.lookup("#loginButton")).fire();
+                // Submitting credentials must wait for the authentication result.
+                assertSame(login, scene.getRoot());
+                assertEquals("Jack", submittedUsername[0]);
+                assertTrue(((Button) login.lookup("#loginButton")).isDisabled());
+                loginController.loginFailed();
+                assertSame(login, scene.getRoot());
+                assertFalse(((Button) login.lookup("#loginButton")).isDisabled());
+                assertTrue(((Label) login.lookup("#error")).getText().contains("Invalid username or password"));
+                ((Button) login.lookup("#loginButton")).fire();
+                loginController.loginSucceeded();
+                assertEquals("", ((PasswordField) login.lookup("#password")).getText());
                 Parent dashboard = stage.getScene().getRoot();
                 assertNotSame(login, dashboard);
                 dashboard.applyCss();

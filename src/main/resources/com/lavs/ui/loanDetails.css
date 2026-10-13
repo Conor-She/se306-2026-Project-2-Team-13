@@ -1,0 +1,57 @@
+.coborrowers-heading {
+    -fx-background-color: linear-gradient(to right, #f8faff, #f0f5ff);
+    -fx-background-radius: 6;
+    -fx-border-color: #dce2ff;
+    -fx-border-radius: 6;
+    -fx-padding: 14 18;
+}
+.coborrowers-scroll, .coborrowers-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-padding: 0;
+}
+.coborrowers-table {
+    -fx-background-color: white;
+    -fx-border-color: #dce2ff;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+.coborrowers-table-header {
+    -fx-background-color: #f2f6ff;
+    -fx-background-radius: 6 6 0 0;
+}
+.coborrowers-table > .label {
+    -fx-translate-x: 16;
+}
+.coborrowers-column-heading {
+    -fx-font-weight: bold;
+}
+.coborrowers-row {
+    -fx-border-color: #edf0fc transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 54;
+}
+.coborrower-actions {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4947a5;
+    -fx-padding: 6;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+.coborrower-actions:hover, .coborrower-actions:focused {
+    -fx-background-color: #eeecff;
+}
+.coborrower-action-icon {
+    -fx-fill: transparent;
+    -fx-stroke: #4947a5;
+    -fx-stroke-width: 1.8;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.coborrower-delete .coborrower-action-icon {
+    -fx-stroke: #c34f64;
+}
+.coborrower-delete:hover, .coborrower-delete:focused {
+    -fx-background-color: #fff0f2;
+}

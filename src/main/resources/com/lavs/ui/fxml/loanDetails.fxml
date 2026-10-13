@@ -4,8 +4,9 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.shape.Ellipse?>
 <?import javafx.scene.shape.Line?>
+<?import javafx.scene.shape.SVGPath?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.lavs.ui.LoanDetailsController" spacing="16" minWidth="0" minHeight="0">
+      fx:controller="com.lavs.ui.LoanDetailsController" stylesheets="@../loanDetails.css" spacing="16" minWidth="0" minHeight="0" style="-fx-background-color: white;">
       <HBox alignment="CENTER_LEFT" spacing="12">
             <Button text="←  Back to Customer Loans" onAction="#back"
                   accessibleText="Back to customer loans"
@@ -13,44 +14,44 @@
       </HBox>
 
       <HBox alignment="CENTER_LEFT" spacing="28"
-            style="-fx-background-color: white; -fx-border-color: #111111; -fx-border-width: 1.4; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 24 30;">
+            style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 14 18;">
             <StackPane minWidth="76" prefWidth="76" minHeight="72" prefHeight="72">
                   <VBox alignment="CENTER_LEFT" spacing="-5" StackPane.alignment="CENTER_LEFT">
                         <StackPane>
-                              <Ellipse radiusX="27" radiusY="10" fill="#111111" />
+                              <Ellipse radiusX="27" radiusY="10" fill="#393a7b" />
                               <Line startX="-22" endX="22" startY="0" endY="0" stroke="white"
                                     strokeWidth="1.5" />
                         </StackPane>
                         <StackPane>
-                              <Ellipse radiusX="27" radiusY="10" fill="#111111" />
+                              <Ellipse radiusX="27" radiusY="10" fill="#393a7b" />
                               <Line startX="-22" endX="22" startY="0" endY="0" stroke="white"
                                     strokeWidth="1.5" />
                         </StackPane>
                         <StackPane>
-                              <Ellipse radiusX="27" radiusY="10" fill="#111111" />
+                              <Ellipse radiusX="27" radiusY="10" fill="#393a7b" />
                               <Line startX="-22" endX="22" startY="0" endY="0" stroke="white"
                                     strokeWidth="1.5" />
                         </StackPane>
                   </VBox>
                   <StackPane StackPane.alignment="BOTTOM_RIGHT">
-                        <Circle radius="18" fill="#111111" stroke="white" strokeWidth="2" />
+                        <Circle radius="18" fill="#393a7b" stroke="white" strokeWidth="2" />
                         <Label text="\%"
                               style="-fx-font-size: 20px; -fx-text-fill: white; -fx-font-weight: bold;" />
                   </StackPane>
             </StackPane>
             <VBox spacing="6" alignment="CENTER_LEFT">
                   <Label fx:id="loanHeading" wrapText="true"
-                        style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #111111;" />
+                        style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #22245f;" />
                   <Label fx:id="customerHeading" wrapText="true"
-                        style="-fx-font-size: 20px; -fx-text-fill: #111111;" />
+                        style="-fx-font-size: 13px; -fx-text-fill: #747ba6;" />
             </VBox>
       </HBox>
 
       <HBox fx:id="tabs" alignment="CENTER_LEFT" spacing="4"
-            style="-fx-border-color: transparent transparent #555555 transparent; -fx-border-width: 0 0 1 0;">
+            style="-fx-border-color: transparent transparent #dce2ff transparent; -fx-border-width: 0 0 1 0;">
             <Button fx:id="loanDetailsTab" text="Loan Details" onAction="#showLoanDetailsTab" />
             <Button fx:id="coborrowersTab" text="Co-borrowers" onAction="#showCoborrowersTab" />
-            <Button fx:id="repaymentScheduleTab" text="Repayments Schedule"
+            <Button fx:id="repaymentScheduleTab" text="Repayment Schedule"
                   onAction="#showRepaymentScheduleTab" />
             <Button fx:id="paymentsTab" text="Payments" onAction="#showPaymentsTab" />
       </HBox>
@@ -65,7 +66,7 @@
                         <Label text="Customer" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                         <Label fx:id="customerIdValue" GridPane.columnIndex="1"
                               GridPane.rowIndex="1" />
-                        <Label text="Status" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label styleClass="coborrowers-column-heading" text="Status" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <Label fx:id="statusValue" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                         <Label text="Amount" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                         <Label fx:id="amountValue" GridPane.columnIndex="1" GridPane.rowIndex="3" />
@@ -74,16 +75,38 @@
                   </GridPane>
             </VBox>
 
-            <VBox fx:id="coborrowersView" spacing="16" visible="false" managed="false"
-                  style="-fx-background-color: white; -fx-border-color: #555555; -fx-border-radius: 18; -fx-background-radius: 18; -fx-padding: 24;">
-                  <Label text="Co-borrowers" style="-fx-font-size: 24px; -fx-font-weight: bold;" />
-                  <Label text="No co-borrowers are recorded for this loan."
-                        style="-fx-font-size: 18px; -fx-text-fill: #555555;" />
+            <VBox fx:id="coborrowersView" spacing="12" visible="false" managed="false" minWidth="0">
+                  <HBox alignment="CENTER_LEFT" spacing="16" styleClass="coborrowers-heading">
+                        <SVGPath content="M 8 9 A 4 4 0 1 0 8 1 A 4 4 0 1 0 8 9 M 2 20 V 16 C 2 10 14 10 14 16 V 20 Z M 18 10 A 3 3 0 1 0 18 4 A 3 3 0 1 0 18 10 M 17 13 C 22 12 25 15 25 19 H 17" fill="transparent" stroke="#393a7b" strokeWidth="1.5" />
+                        <VBox spacing="3">
+                              <Label text="Co-borrowers" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #22245f;" />
+                              <Label text="View and manage co-borrowers for this loan." style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button text="+  Add Co-borrower" accessibleText="Add co-borrower" onAction="#addCoborrower"
+                              style="-fx-background-color: #4947a5; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 9 14; -fx-cursor: hand;" />
+                  </HBox>
+                  <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="coborrowers-scroll">
+                        <GridPane fx:id="coborrowersTable" styleClass="coborrowers-table">
+                              <columnConstraints>
+                                    <ColumnConstraints percentWidth="25" /><ColumnConstraints percentWidth="14" />
+                                    <ColumnConstraints percentWidth="16" /><ColumnConstraints percentWidth="27" />
+                                    <ColumnConstraints percentWidth="11" /><ColumnConstraints percentWidth="7" />
+                              </columnConstraints>
+                              <Region styleClass="coborrowers-table-header" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" mouseTransparent="true" />
+                              <Label styleClass="coborrowers-column-heading" text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6; -fx-padding: 8 0;" />
+                              <Label styleClass="coborrowers-column-heading" text="Relationship" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Phone" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Email" GridPane.columnIndex="3" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Status" GridPane.columnIndex="4" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Actions" GridPane.columnIndex="5" GridPane.rowIndex="0" style="-fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                        </GridPane>
+                  </ScrollPane>
             </VBox>
 
             <VBox fx:id="repaymentScheduleView" spacing="16" visible="false" managed="false"
                   style="-fx-background-color: white; -fx-border-color: #555555; -fx-border-radius: 18; -fx-background-radius: 18; -fx-padding: 24;">
-                  <Label text="Repayments Schedule"
+                  <Label text="Repayment Schedule"
                         style="-fx-font-size: 24px; -fx-font-weight: bold;" />
                   <Label text="The repayment schedule is not available yet."
                         style="-fx-font-size: 18px; -fx-text-fill: #555555;" />

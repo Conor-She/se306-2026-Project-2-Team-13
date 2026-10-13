@@ -53,6 +53,8 @@ public class LoanDetailsController {
     @FXML private VBox repaymentScheduleView;
     @FXML private VBox paymentsView;
     @FXML private VBox paymentRows;
+    @FXML private GridPane coborrowersTable;
+    private LoanCoborrowersEditing coborrowers;
 
     private final ObservableList<Payment> payments = FXCollections.observableArrayList();
     private LoansController.LoanSummary loan;
@@ -60,12 +62,14 @@ public class LoanDetailsController {
     private Runnable onBack;
 
     @FXML private void initialize() {
+        coborrowers = new LoanCoborrowersEditing(coborrowersTable);
         showPaymentsTab();
         refreshPayments();
     }
 
     public void setLoan(LoansController.LoanSummary loan) {
         this.loan = loan;
+        coborrowers.select(loan.loanId());
         loanHeading.setText("Loan ID: " + loan.loanId());
         customerHeading.setText(loan.customerName() + " | " + loan.customerId());
         loanIdValue.setText(loan.loanId());
@@ -99,6 +103,10 @@ public class LoanDetailsController {
 
     @FXML private void showCoborrowersTab() {
         selectTab(coborrowersTab, coborrowersView);
+    }
+
+    @FXML private void addCoborrower() {
+        if (loan != null) coborrowers.add();
     }
 
     @FXML private void showRepaymentScheduleTab() {
@@ -286,13 +294,13 @@ public class LoanDetailsController {
 
     private String tabStyle() {
         return "-fx-background-color: transparent; -fx-border-color: transparent;"
-                + " -fx-padding: 12 18; -fx-font-size: 18px; -fx-text-fill: #171717;";
+                + " -fx-padding: 12 18; -fx-font-size: 13px; -fx-text-fill: #55558d;";
     }
 
     private String selectedTabStyle() {
         return "-fx-background-color: transparent;"
                 + " -fx-border-color: transparent transparent #d95736 transparent;"
                 + " -fx-border-width: 0 0 4 0; -fx-padding: 12 18;"
-                + " -fx-font-size: 18px; -fx-text-fill: #171717; -fx-font-weight: bold;";
+                + " -fx-font-size: 13px; -fx-text-fill: #22245f; -fx-font-weight: bold;";
     }
 }
