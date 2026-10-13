@@ -35,6 +35,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     private final Connection connection;
     private final String organisationName;
+    private static final String PAYMENTS_READ_ONLY_MESSAGE = "Not supported by the mainframe: "
+            + "its loanPayment messages only list and retrieve payments";
 
     public MainframeGatewayImpl(Connection connection, String organisationName) {
         this.connection = connection;
@@ -374,20 +376,27 @@ public class MainframeGatewayImpl implements MainframeGateway {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs loanRepaymentSchedule retrieval");
     }
-
+    
     @Override
     public Payment addPayment(Payment payment) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Add");
+        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
     }
 
     @Override
     public Payment updatePayment(Payment payment) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Update");
+        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
     }
 
     @Override
     public void deletePayment(String paymentId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Delete");
+        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
+    }
+
+    @Override
+    public List<Payment> getPayments(String loanId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - can be built from loanPayment.List");
+    }
     }
 
     @Override

@@ -87,6 +87,7 @@ public interface MainframeGateway {
     Payment addPayment(Payment payment);
     Payment updatePayment(Payment payment);
     void deletePayment(String paymentId);
+    List<Payment> getPayments(String loanId);
 
     // Retrieve Category Values
     List<String> getCategoryValues(String categoryType);

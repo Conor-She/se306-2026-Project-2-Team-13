@@ -33,13 +33,15 @@ public class FakeMainframeGateway implements MainframeGateway {
     private final Map<String, List<Email>> emails = new HashMap<>();
     private final Map<String, List<Employer>> employers = new HashMap<>();
     private final Map<String, List<Guarantor>> guarantors = new HashMap<>();
+    private final Map<String, Payment> payments = new HashMap<>();
 
     private boolean unavailable = false;
     private MainframeException nextFailure = null;
     private int nextLoanNumber = 1;
     private int nextCoBorrowerNumber = 1;
     private int nextGuarantorNumber = 1;
-
+    private int nextPaymentNumber = 1;
+    
     // Stores an item under its customer, creating that customer's list on first use
     private <T> T store(Map<String, List<T>> storage, String customerId, T item) {
         storage.computeIfAbsent(customerId, id -> new ArrayList<>()).add(item);
@@ -428,18 +430,47 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Payment addPayment(Payment payment) {
         checkAvailability();
-        return payment;
+        // The real mainframe assigns the ID, so the fake does too
+        String paymentId = payment.getPaymentId() != null
+                ? payment.getPaymentId()
+                : "FAKE-PAYMENT-" + nextPaymentNumber++;
+        Payment stored = withPaymentId(payment, paymentId);
+        payments.put(paymentId, stored);
+        return stored;
     }
 
     @Override
     public Payment updatePayment(Payment payment) {
         checkAvailability();
+        if (!payments.containsKey(payment.getPaymentId())) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Payment '" + payment.getPaymentId() + "' not found");
+        }
+        payments.put(payment.getPaymentId(), payment);
         return payment;
     }
 
     @Override
     public void deletePayment(String paymentId) {
         checkAvailability();
+        if (payments.remove(paymentId) == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Payment '" + paymentId + "' not found");
+        }
+    }
+
+    @Override
+    public List<Payment> getPayments(String loanId) {
+        checkAvailability();
+        return payments.values().stream()
+                .filter(payment -> loanId.equals(payment.getLoanId()))
+                .toList();
+    }
+
+    // Payment is immutable, so "changing" the ID means building a copy
+    private Payment withPaymentId(Payment payment, String paymentId) {
+        return new Payment(paymentId, payment.getLoanId(), payment.getRepaymentId(),
+                payment.getPaymentDate(), payment.getAmountPaid());
     }
 
     @Override
