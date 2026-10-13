@@ -16,6 +16,9 @@ public class LoanService {
             "A loan's status can only be changed through changeStatus, not by editing the loan";
     static final String LOAN_TYPE_REQUIRED_MESSAGE =
             "A loan type is required to calculate the repayment schedule";
+    static final String TERM_REQUIRED_MESSAGE = "A loan term is required!";
+    static final String CUSTOMER_CHANGE_MESSAGE =
+            "A loan's customer can't be changed by editing the loan";
 
     // Stands in for the real ID during create's dry run, since the mainframe
     // hasn't assigned one yet
@@ -53,6 +56,7 @@ public class LoanService {
             throw new IllegalArgumentException(NEW_LOAN_MESSAGE);
         }
 
+        requireTerm(loan);
         checkPrerequisites(loan.getCustomerId());
 
         // The calculators reject some terms (e.g. "on renewal" payments), so
@@ -73,11 +77,16 @@ public class LoanService {
             throw new IllegalArgumentException("An existing loan with a loanId is required");
         }
 
+        requireTerm(loan);
+
         Loan existing = gateway.getLoan(loan.getLoanId());
         if (existing.getStatus() != loan.getStatus()) {
             throw new InvalidStatusTransitionException(STATUS_VIA_CHANGE_STATUS_MESSAGE);
         }
-
+        if (!existing.getCustomerId().equals(loan.getCustomerId())) {
+            throw new IllegalArgumentException(CUSTOMER_CHANGE_MESSAGE);
+        }
+        
         // Check the new terms can be scheduled before changing anything
         calculatorFor(loan).calculateSchedule(loan);
 
@@ -136,5 +145,13 @@ public class LoanService {
         calculators.put(Loan.Type.REDUCING_BALANCE, new ReducingBalanceCalculator());
         calculators.put(Loan.Type.INTEREST_ONLY, new InterestOnlyCalculator());
         return calculators;
+    }
+
+    // The mainframe doesn't store the term, so nothing downstream would
+    // notice a missing one. A loan being created or edited must have it.
+    private void requireTerm(Loan loan) {
+        if (loan.getTermMonths() == null) {
+            throw new IllegalArgumentException(TERM_REQUIRED_MESSAGE);
+        }
     }
 }
