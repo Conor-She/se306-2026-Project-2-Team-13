@@ -50,7 +50,8 @@ class CustomerDetailsControllerTest {
             assertSame(SARAH, controller.getCustomer());
             assertEquals("Sarah Johnson", label("customerHeading").getText());
             assertEquals("Customer ID: 67670442", label("customerId").getText());
-            assertEquals("Sarah Johnson", label("fullNameValue").getText());
+            assertEquals("Sarah", label("firstNameValue").getText());
+            assertEquals("Johnson", label("lastNameValue").getText());
             assertEquals("sjohn67@gmail.com", label("emailValue").getText());
             assertEquals("021 135 6767", label("phoneValue").getText());
             assertOnlySectionVisible("details");
@@ -95,7 +96,8 @@ class CustomerDetailsControllerTest {
             assertSame(next, controller.getCustomer());
             assertEquals("Amelia Adams", label("customerHeading").getText());
             assertEquals("Customer ID: C001", label("customerId").getText());
-            assertEquals("Amelia Adams", label("fullNameValue").getText());
+            assertEquals("Amelia", label("firstNameValue").getText());
+            assertEquals("Adams", label("lastNameValue").getText());
             assertEquals("amelia@example.com", label("emailValue").getText());
             assertEquals("021 555 0101", label("phoneValue").getText());
             assertOnlySectionVisible("details");
@@ -159,6 +161,67 @@ class CustomerDetailsControllerTest {
             assertNotNull(buttonWithText(content("guarantors"), "+  Add Guarantor").getOnAction());
             return null;
         });
+    }
+
+    @Test void overviewCardsUseThreeColumnsAndStackAtNarrowWidths() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var personal = (javafx.scene.layout.VBox) loader.getNamespace().get("personalCard");
+            var contact = (javafx.scene.layout.VBox) loader.getNamespace().get("contactCard");
+            var employment = (javafx.scene.layout.VBox) loader.getNamespace().get("employmentCard");
+            for (int width : new int[] {1008, 420}) {
+                root.resize(width, 900);
+                for (int pass = 0; pass < 4; pass++) { root.applyCss(); root.requestLayout(); root.layout(); }
+                assertEquals(personal.getWidth(), contact.getWidth(), 1);
+                assertEquals(contact.getWidth(), employment.getWidth(), 1);
+                if (width == 1008) {
+                    assertEquals(personal.getLayoutY(), contact.getLayoutY(), 1);
+                    assertEquals(contact.getLayoutY(), employment.getLayoutY(), 1);
+                    assertTrue(contact.getLayoutX() > personal.getLayoutX());
+                    assertTrue(employment.getLayoutX() > contact.getLayoutX());
+                } else {
+                    assertTrue(contact.getLayoutY() > personal.getLayoutY());
+                    assertTrue(employment.getLayoutY() > contact.getLayoutY());
+                }
+            }
+            return null;
+        });
+    }
+
+    @Test void overviewDoesNotKeepResizingAcrossRenderedFrames() throws Exception {
+        var completed = new java.util.concurrent.CompletableFuture<Void>();
+        JavaFxTestSupport.run(() -> {
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(root.getScene());
+            stage.setWidth(760);
+            stage.setHeight(560);
+            stage.show();
+            var cards = List.of((javafx.scene.layout.VBox) loader.getNamespace().get("personalCard"),
+                    (javafx.scene.layout.VBox) loader.getNamespace().get("contactCard"),
+                    (javafx.scene.layout.VBox) loader.getNamespace().get("employmentCard"));
+            new javafx.animation.AnimationTimer() {
+                int frames;
+                List<Double> previous;
+                @Override public void handle(long now) {
+                    try {
+                        frames++;
+                        var geometry = cards.stream().flatMap(card -> java.util.stream.Stream.of(
+                                card.getWidth(), card.getHeight(), card.getLayoutX(), card.getLayoutY())).toList();
+                        if (frames > 10 && previous != null) {
+                            for (int index = 0; index < geometry.size(); index++) {
+                                assertEquals(previous.get(index), geometry.get(index), 0.5,
+                                        "Overview geometry changed on frame " + frames);
+                            }
+                        }
+                        previous = geometry;
+                        if (frames >= 35) { stop(); stage.close(); completed.complete(null); }
+                    } catch (Throwable failure) {
+                        stop(); stage.close(); completed.completeExceptionally(failure);
+                    }
+                }
+            }.start();
+            return null;
+        });
+        completed.get(10, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     private Label label(String id) { return (Label) loader.getNamespace().get(id); }

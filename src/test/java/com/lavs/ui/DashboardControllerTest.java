@@ -15,9 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DashboardControllerTest {
     private static <T> T fx(Callable<T> action) throws Exception {
-        FutureTask<T> task = new FutureTask<>(action);
-        Platform.runLater(task);
-        return task.get(5, TimeUnit.SECONDS);
+        return JavaFxTestSupport.run(action);
     }
 
     @Test void navigationAndUsernameWorkWithoutBackend() throws Exception {
