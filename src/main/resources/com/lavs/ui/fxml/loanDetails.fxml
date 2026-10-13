@@ -8,9 +8,9 @@
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lavs.ui.LoanDetailsController" stylesheets="@../loanDetails.css" spacing="16" minWidth="0" minHeight="0" style="-fx-background-color: white;">
       <HBox alignment="CENTER_LEFT" spacing="12">
-            <Button text="←  Back to Customer Loans" onAction="#back"
+            <Button text="&#x27F5;  Back to Customer Loans" onAction="#back"
                   accessibleText="Back to customer loans"
-                  style="-fx-background-color: transparent; -fx-font-size: 19px; -fx-padding: 4 2; -fx-cursor: hand;" />
+                  style="-fx-background-color: transparent; -fx-text-fill: #55558d; -fx-font-size: 14px; -fx-padding: 4 0; -fx-cursor: hand;" />
       </HBox>
 
       <HBox alignment="CENTER_LEFT" spacing="28"
@@ -47,13 +47,13 @@
             </VBox>
       </HBox>
 
-      <HBox fx:id="tabs" alignment="CENTER_LEFT" spacing="4"
+      <HBox fx:id="tabs" alignment="CENTER_LEFT" spacing="12"
             style="-fx-border-color: transparent transparent #dce2ff transparent; -fx-border-width: 0 0 1 0;">
-            <Button fx:id="loanDetailsTab" text="Loan Details" onAction="#showLoanDetailsTab" />
-            <Button fx:id="coborrowersTab" text="Co-borrowers" onAction="#showCoborrowersTab" />
-            <Button fx:id="repaymentScheduleTab" text="Repayment Schedule"
-                  onAction="#showRepaymentScheduleTab" />
-            <Button fx:id="paymentsTab" text="Payments" onAction="#showPaymentsTab" />
+            <StackPane><Button fx:id="loanDetailsTab" text="Loan Details" onAction="#showLoanDetailsTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" /></StackPane>
+            <StackPane><Button fx:id="coborrowersTab" text="Co-borrowers" onAction="#showCoborrowersTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" /></StackPane>
+            <StackPane><Button fx:id="repaymentScheduleTab" text="Repayment Schedule"
+                  onAction="#showRepaymentScheduleTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" /></StackPane>
+            <StackPane><Button fx:id="paymentsTab" text="Payments" onAction="#showPaymentsTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER" /></StackPane>
       </HBox>
 
       <StackPane minHeight="300" VBox.vgrow="ALWAYS">

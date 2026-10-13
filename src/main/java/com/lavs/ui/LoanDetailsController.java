@@ -63,7 +63,7 @@ public class LoanDetailsController {
 
     @FXML private void initialize() {
         coborrowers = new LoanCoborrowersEditing(coborrowersTable);
-        showPaymentsTab();
+        showLoanDetailsTab();
         refreshPayments();
     }
 
@@ -120,6 +120,7 @@ public class LoanDetailsController {
     private void selectTab(Button selectedTab, VBox selectedView) {
         for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
+            tab.getParent().lookup(".loan-tab-indicator").setVisible(tab == selectedTab);
         }
         for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView, paymentsView)) {
             boolean selected = view == selectedView;
@@ -294,13 +295,11 @@ public class LoanDetailsController {
 
     private String tabStyle() {
         return "-fx-background-color: transparent; -fx-border-color: transparent;"
-                + " -fx-padding: 12 18; -fx-font-size: 13px; -fx-text-fill: #55558d;";
+                + " -fx-border-width: 0 0 5 0; -fx-border-radius: 0;"
+                + " -fx-padding: 4 17 11 17; -fx-font-size: 14px; -fx-text-fill: #55558d; -fx-cursor: hand;";
     }
 
     private String selectedTabStyle() {
-        return "-fx-background-color: transparent;"
-                + " -fx-border-color: transparent transparent #d95736 transparent;"
-                + " -fx-border-width: 0 0 4 0; -fx-padding: 12 18;"
-                + " -fx-font-size: 13px; -fx-text-fill: #22245f; -fx-font-weight: bold;";
+        return tabStyle() + " -fx-text-fill: #20205e; -fx-font-weight: bold;";
     }
 }

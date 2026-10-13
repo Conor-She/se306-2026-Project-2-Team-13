@@ -55,3 +55,7 @@
 .coborrower-delete:hover, .coborrower-delete:focused {
     -fx-background-color: #fff0f2;
 }
+.loan-tab-indicator {
+    -fx-background-color: #ff642e;
+    -fx-background-radius: 7 7 0 0;
+}
