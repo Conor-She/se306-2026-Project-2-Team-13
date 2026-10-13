@@ -6,8 +6,9 @@ import com.lavs.model.Repayment;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 
-// Business logic for creating and editing loans and changing their status
+// Business logic for creating, editing, finding loans and changing their status
 // Depends only on the MainframeGateway interface, never on a concrete gateway.
 public class LoanService {
 
@@ -112,6 +113,30 @@ public class LoanService {
         return gateway.updateLoanStatus(loanId, newStatus);
     }
 
+    // Finds the loans a customer is the primary borrower on, for the
+    // "Customer's Loans" screen (DFD process 10.0)
+    public List<Loan> findByCustomer(String customerId) {
+        requireNotBlank(customerId, "customerId");
+        return List.copyOf(gateway.findLoansByCustomer(customerId));
+    }
+
+    // A loan's full details: the loan, every row of its saved schedule, and the
+    // summary of that schedule. The schedule is read back as it was saved, not
+    // recalculated, because the mainframe doesn't keep the type or term needed
+    // to calculate it again.
+    public LoanWithSchedule getFullDetails(String loanId) {
+        requireNotBlank(loanId, "loanId");
+
+        Loan loan = gateway.getLoan(loanId);
+        // Sorted here, so the schedule reads in order whatever order the
+        // mainframe returns it in
+        List<Repayment> schedule = gateway.getRepaymentSchedule(loanId).stream()
+                .sorted(Comparator.comparing(Repayment::getDueDate))
+                .toList();
+
+        return new LoanWithSchedule(loan, schedule);
+    }
+
     // Chosen order: mailing address, then phone or email, then a
     // guarantor if there is no employer. Each step fetches only what it
     // needs, so a failure stops further requests to the mainframe.
@@ -152,6 +177,12 @@ public class LoanService {
     private void requireTerm(Loan loan) {
         if (loan.getTermMonths() == null) {
             throw new IllegalArgumentException(TERM_REQUIRED_MESSAGE);
+        }
+    }
+
+    private void requireNotBlank(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be null or blank");
         }
     }
 }
