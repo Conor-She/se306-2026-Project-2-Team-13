@@ -55,6 +55,11 @@ public class LoanDetailsController {
     @FXML private VBox paymentRows;
     @FXML private GridPane coborrowersTable;
     private LoanCoborrowersEditing coborrowers;
+    @FXML private String coborrowerRowStyle;
+    @FXML private String coborrowerActionStyle;
+    @FXML private String coborrowerIconStyle;
+    @FXML private String coborrowerHoverStyle;
+    @FXML private String coborrowerDeleteHoverStyle;
 
     private final ObservableList<Payment> payments = FXCollections.observableArrayList();
     private LoansController.LoanSummary loan;
@@ -62,7 +67,8 @@ public class LoanDetailsController {
     private Runnable onBack;
 
     @FXML private void initialize() {
-        coborrowers = new LoanCoborrowersEditing(coborrowersTable);
+        coborrowers = new LoanCoborrowersEditing(coborrowersTable, coborrowerRowStyle,
+                coborrowerActionStyle, coborrowerIconStyle, coborrowerHoverStyle, coborrowerDeleteHoverStyle);
         showLoanDetailsTab();
         refreshPayments();
     }

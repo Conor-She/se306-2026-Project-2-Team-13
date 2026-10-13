@@ -16,7 +16,17 @@ final class LoanCoborrowersEditing {
     private final Map<String, List<Map<String, String>>> sessions = new HashMap<>();
     private List<Map<String, String>> records = List.of();
 
-    LoanCoborrowersEditing(GridPane table) { this.table = table; }
+    private final String rowStyle, actionStyle, iconStyle, hoverStyle, deleteHoverStyle;
+
+    LoanCoborrowersEditing(GridPane table, String rowStyle, String actionStyle,
+            String iconStyle, String hoverStyle, String deleteHoverStyle) {
+        this.table = table;
+        this.rowStyle = rowStyle;
+        this.actionStyle = actionStyle;
+        this.iconStyle = iconStyle;
+        this.hoverStyle = hoverStyle;
+        this.deleteHoverStyle = deleteHoverStyle;
+    }
 
     void select(String loanId) {
         records = sessions.computeIfAbsent(loanId, id -> new ArrayList<>(List.of(
@@ -71,6 +81,7 @@ final class LoanCoborrowersEditing {
         for (Map<String, String> record : records) {
             Region divider = new Region();
             divider.getStyleClass().add("coborrowers-row");
+            divider.setStyle(rowStyle);
             divider.setMouseTransparent(true);
             table.add(divider, 0, row, 6, 1);
             Label initials = cell(record.get("firstName").substring(0, 1) + record.get("lastName").substring(0, 1));
@@ -97,6 +108,7 @@ final class LoanCoborrowersEditing {
             Button delete = iconButton("Delete co-borrower", name(record),
                     "M 3 5 H 19 M 7 5 V 2 H 15 V 5 M 5 5 L 6 20 H 16 L 17 5 M 9 9 V 16 M 13 9 V 16");
             delete.getStyleClass().add("coborrower-delete");
+            delete.getGraphic().setStyle(iconStyle + " -fx-stroke: #c34f64;");
             delete.setOnAction(event -> delete(record));
             HBox actions = new HBox(4, edit, delete);
             actions.getStyleClass().add("coborrower-action-buttons");
@@ -104,16 +116,25 @@ final class LoanCoborrowersEditing {
             actions.setMinWidth(Region.USE_PREF_SIZE);
             table.add(actions, 5, row++);
         }
+        table.getChildren().stream().filter(Label.class::isInstance)
+                .forEach(label -> label.setTranslateX(16));
     }
 
-    private static Button iconButton(String action, String name, String path) {
+    private Button iconButton(String action, String name, String path) {
         SVGPath icon = new SVGPath();
         icon.setContent(path);
         icon.getStyleClass().add("coborrower-action-icon");
+        icon.setStyle(iconStyle);
         Button button = new Button(null, icon);
         button.setAccessibleText(action + " for " + name);
         button.setTooltip(new Tooltip(action));
         button.getStyleClass().add("coborrower-actions");
+        button.setStyle(actionStyle);
+        Runnable refreshStyle = () -> button.setStyle(actionStyle
+                + (button.isHover() || button.isFocused()
+                ? (action.startsWith("Delete") ? deleteHoverStyle : hoverStyle) : ""));
+        button.hoverProperty().addListener((observable, oldValue, newValue) -> refreshStyle.run());
+        button.focusedProperty().addListener((observable, oldValue, newValue) -> refreshStyle.run());
         return button;
     }
 
