@@ -200,6 +200,77 @@
    </HBox>
   </VBox></content>
  </ScrollPane>
+ <ScrollPane fx:id="documentsContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
+  <content><VBox spacing="12" minWidth="0" style="-fx-padding: 0 12 12 12;">
+   <fx:define>
+    <String fx:id="documentHeaderStyle" fx:value="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #747ba6;"/>
+    <String fx:id="documentCellStyle" fx:value="-fx-font-size: 12px; -fx-text-fill: #55558d;"/>
+    <String fx:id="documentActionStyle" fx:value="-fx-background-color: transparent; -fx-text-fill: #747ba6; -fx-font-size: 19px; -fx-padding: 4 10; -fx-min-width: 36; -fx-min-height: 36; -fx-cursor: hand;"/>
+   </fx:define>
+   <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 14 16;">
+    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS">
+     <Label text="Customer Documents" style="$titleStyle"/>
+     <Label text="View and manage documents related to this customer." wrapText="true" style="$mutedStyle"/>
+    </VBox>
+    <Button text="+  Upload Document" onAction="#showStubAction" style="-fx-background-color: #5b56b5; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;"/>
+   </HBox>
+   <GridPane minWidth="0" style="-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8;">
+    <columnConstraints>
+     <ColumnConstraints percentWidth="31"/><ColumnConstraints percentWidth="28"/>
+     <ColumnConstraints percentWidth="26"/><ColumnConstraints percentWidth="15" halignment="CENTER"/>
+    </columnConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/></rowConstraints>
+    <Region GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
+    <Label text="Document Name" style="$documentHeaderStyle"><padding><Insets left="24"/></padding></Label>
+    <Label text="Type" GridPane.columnIndex="1" style="$documentHeaderStyle"/>
+    <Label text="Uploaded Date" GridPane.columnIndex="2" style="$documentHeaderStyle"/>
+    <Label text="Actions" GridPane.columnIndex="3" style="$documentHeaderStyle"/>
+    <Region GridPane.rowIndex="1" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
+    <HBox GridPane.rowIndex="1" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
+     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#7666db" strokeWidth="2"/></StackPane>
+     <Label text="ID - Passport.pdf" wrapText="true" style="$documentCellStyle"/>
+    </HBox>
+    <Label text="Identity" GridPane.rowIndex="1" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
+    <Label text="12 Sep 2025" GridPane.rowIndex="1" GridPane.columnIndex="2" style="$documentCellStyle"/>
+    <HBox GridPane.rowIndex="1" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
+     <Button accessibleText="Download ID - Passport.pdf" onAction="#showStubAction" style="$documentActionStyle"><graphic><SVGPath content="M 7 0 V 10 M 3 6 L 7 10 L 11 6 M 1 10 V 13 H 13 V 10" fill="transparent" stroke="#747ba6" strokeWidth="1.7"/></graphic></Button>
+     <Button text="&#x22EE;" accessibleText="Actions for ID - Passport.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
+    </HBox>
+    <Region GridPane.rowIndex="2" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
+    <HBox GridPane.rowIndex="2" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
+     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#42bda6" strokeWidth="2"/></StackPane>
+     <Label text="Proof of Address.pdf" wrapText="true" style="$documentCellStyle"/>
+    </HBox>
+    <Label text="Address" GridPane.rowIndex="2" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
+    <Label text="3 Aug 2025" GridPane.rowIndex="2" GridPane.columnIndex="2" style="$documentCellStyle"/>
+    <HBox GridPane.rowIndex="2" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
+     <Button accessibleText="Download Proof of Address.pdf" onAction="#showStubAction" style="$documentActionStyle"><graphic><SVGPath content="M 7 0 V 10 M 3 6 L 7 10 L 11 6 M 1 10 V 13 H 13 V 10" fill="transparent" stroke="#747ba6" strokeWidth="1.7"/></graphic></Button>
+     <Button text="&#x22EE;" accessibleText="Actions for Proof of Address.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
+    </HBox>
+    <Region GridPane.rowIndex="3" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
+    <HBox GridPane.rowIndex="3" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
+     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#ed4d94" strokeWidth="2"/></StackPane>
+     <Label text="Payslip.pdf" wrapText="true" style="$documentCellStyle"/>
+    </HBox>
+    <Label text="Income" GridPane.rowIndex="3" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
+    <Label text="21 Jun 2025" GridPane.rowIndex="3" GridPane.columnIndex="2" style="$documentCellStyle"/>
+    <HBox GridPane.rowIndex="3" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
+     <Button accessibleText="Download Payslip.pdf" onAction="#showStubAction" style="$documentActionStyle"><graphic><SVGPath content="M 7 0 V 10 M 3 6 L 7 10 L 11 6 M 1 10 V 13 H 13 V 10" fill="transparent" stroke="#747ba6" strokeWidth="1.7"/></graphic></Button>
+     <Button text="&#x22EE;" accessibleText="Actions for Payslip.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
+    </HBox>
+    <HBox GridPane.rowIndex="4" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
+     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#ed4d94" strokeWidth="2"/></StackPane>
+     <Label text="Bank Statement.pdf" wrapText="true" style="$documentCellStyle"/>
+    </HBox>
+    <Label text="Bank Statement" GridPane.rowIndex="4" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
+    <Label text="10 May 2025" GridPane.rowIndex="4" GridPane.columnIndex="2" style="$documentCellStyle"/>
+    <HBox GridPane.rowIndex="4" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
+     <Button accessibleText="Download Bank Statement.pdf" onAction="#showStubAction" style="$documentActionStyle"><graphic><SVGPath content="M 7 0 V 10 M 3 6 L 7 10 L 11 6 M 1 10 V 13 H 13 V 10" fill="transparent" stroke="#747ba6" strokeWidth="1.7"/></graphic></Button>
+     <Button text="&#x22EE;" accessibleText="Actions for Bank Statement.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
+    </HBox>
+   </GridPane>
+  </VBox></content>
+ </ScrollPane>
  <Label fx:id="sectionPlaceholder" visible="false" managed="false" wrapText="true" StackPane.alignment="TOP_LEFT" style="$mutedStyle"/>
  </StackPane>
 </VBox>

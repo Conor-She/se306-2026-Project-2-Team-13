@@ -18,6 +18,7 @@ public class CustomerDetailsController {
     @FXML private ScrollPane detailsContent;
     @FXML private ScrollPane loansContent;
     @FXML private ScrollPane notesContent;
+    @FXML private ScrollPane documentsContent;
     @FXML private ToggleGroup customerTabs;
     @FXML private Button backButton;
     @FXML private String tabStyle, selectedTabStyle, focusStyle;
@@ -29,6 +30,7 @@ public class CustomerDetailsController {
         ScrollPaneAppearance.install(detailsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(loansContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(notesContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(documentsContent, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         for (var toggle : customerTabs.getToggles()) {
             ToggleButton tab = (ToggleButton) toggle;
             tab.styleProperty().bind(Bindings.createStringBinding(() ->
@@ -49,14 +51,17 @@ public class CustomerDetailsController {
             boolean details = "Details".equals(section);
             boolean loans = "Loans".equals(section);
             boolean notes = "Notes".equals(section);
+            boolean documents = "Documents".equals(section);
             detailsContent.setVisible(details);
             detailsContent.setManaged(details);
             loansContent.setVisible(loans);
             loansContent.setManaged(loans);
             notesContent.setVisible(notes);
             notesContent.setManaged(notes);
-            sectionPlaceholder.setVisible(!details && !loans && !notes);
-            sectionPlaceholder.setManaged(!details && !loans && !notes);
+            documentsContent.setVisible(documents);
+            documentsContent.setManaged(documents);
+            sectionPlaceholder.setVisible(!details && !loans && !notes && !documents);
+            sectionPlaceholder.setManaged(!details && !loans && !notes && !documents);
             sectionPlaceholder.setText(section + " are coming soon.");
         });
     }
@@ -71,6 +76,7 @@ public class CustomerDetailsController {
         detailsContent.setVvalue(0);
         loansContent.setVvalue(0);
         notesContent.setVvalue(0);
+        documentsContent.setVvalue(0);
         customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
