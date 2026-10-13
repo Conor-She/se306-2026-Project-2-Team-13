@@ -17,6 +17,12 @@ import com.lavs.model.Repayment;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 class LoanServiceTest {
 
     private static final double MONEY_TOLERANCE = 0.001;
@@ -373,5 +379,146 @@ class LoanServiceTest {
         assertEquals(LoanService.TERM_REQUIRED_MESSAGE, exception.getMessage());
 
         assertEquals(12_000, gateway.getLoan(loanId).getPrincipal());
+    }
+
+    // --- Finding a customer's loans: none, one, and several ---
+
+    @Test
+    void findsNoLoansForACustomerWithNone() {
+        assertTrue(service.findByCustomer("C001").isEmpty());
+    }
+
+    @Test
+    void findsTheOneLoanOfACustomerWithOne() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+
+        List<Loan> loans = service.findByCustomer("C001");
+
+        assertEquals(1, loans.size());
+        assertEquals(loanId, loans.get(0).getLoanId());
+    }
+
+    // Compared as sets, because the order loans come back in isn't guaranteed
+    @Test
+    void findsEveryLoanOfACustomerWithSeveral() {
+        givenEligibleCustomer();
+        String first = service.create(newLoan()).getLoan().getLoanId();
+        String second = service.create(newLoan()).getLoan().getLoanId();
+        String third = service.create(newLoan()).getLoan().getLoanId();
+
+        Set<String> found = service.findByCustomer("C001").stream()
+                .map(Loan::getLoanId)
+                .collect(Collectors.toSet());
+
+        assertEquals(Set.of(first, second, third), found);
+    }
+
+    // Another customer's loan must not show up
+    @Test
+    void findsOnlyTheRequestedCustomersLoans() {
+        givenEligibleCustomer();
+        String mine = service.create(newLoan()).getLoan().getLoanId();
+        gateway.createLoan(new Loan(null, "C002", Loan.Status.NEW, 5_000, 12.0,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
+                500, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+
+        List<Loan> loans = service.findByCustomer("C001");
+
+        assertEquals(1, loans.size());
+        assertEquals(mine, loans.get(0).getLoanId());
+    }
+
+    @Test
+    void findByCustomerRejectsMissingId() {
+        assertThrows(IllegalArgumentException.class, () -> service.findByCustomer(null));
+        assertThrows(IllegalArgumentException.class, () -> service.findByCustomer(" "));
+    }
+
+    // --- Full loan details ---
+
+    // The loan, every row of its schedule, and the summary. The expected totals
+    // come from the schedule's rows: 11 payments of 1,066.19 and a final one of
+    // 1,066.14 make 12,794.23, which is 12,000 borrowed plus 794.23 interest.
+    @Test
+    void returnsTheLoanItsFullScheduleAndSummary() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+
+        LoanWithSchedule details = service.getFullDetails(loanId);
+
+        assertEquals(loanId, details.getLoan().getLoanId());
+        assertEquals(12, details.getSchedule().size());
+        assertEquals(794.23, details.getSummary().getTotalInterest(), MONEY_TOLERANCE);
+        assertEquals(12_794.23, details.getSummary().getTotalRepayable(), MONEY_TOLERANCE);
+    }
+
+    // Whatever the schedule is, what is repaid must be the amount borrowed plus
+    // the interest
+    @Test
+    void summaryTotalsAreConsistentWithTheLoan() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+
+        LoanWithSchedule details = service.getFullDetails(loanId);
+
+        assertEquals(12_000 + details.getSummary().getTotalInterest(),
+                details.getSummary().getTotalRepayable(), MONEY_TOLERANCE);
+    }
+
+    // The summary is shown as soon as a loan is created, not only when it is
+    // fetched later
+    @Test
+    void createdLoanComesWithItsSummary() {
+        givenEligibleCustomer();
+
+        LoanWithSchedule created = service.create(newLoan());
+
+        assertEquals(794.23, created.getSummary().getTotalInterest(), MONEY_TOLERANCE);
+        assertEquals(12_794.23, created.getSummary().getTotalRepayable(), MONEY_TOLERANCE);
+    }
+
+    // The schedule reads in due-date order, even if it comes back reversed
+    @Test
+    void returnsTheScheduleInDueDateOrder() {
+        givenEligibleCustomer();
+        LoanWithSchedule created = service.create(newLoan());
+        String loanId = created.getLoan().getLoanId();
+        List<Repayment> reversed = new ArrayList<>(created.getSchedule());
+        Collections.reverse(reversed);
+        gateway.saveRepaymentSchedule(loanId, reversed);
+
+        List<Repayment> schedule = service.getFullDetails(loanId).getSchedule();
+
+        assertEquals(
+                created.getSchedule().stream().map(Repayment::getDueDate).toList(),
+                schedule.stream().map(Repayment::getDueDate).toList());
+    }
+
+    // A loan with no saved schedule comes back with an empty schedule and zero
+    // totals, not an error
+    @Test
+    void returnsAnEmptyScheduleAndZeroTotalsWhenNoneWasSaved() {
+        String loanId = gateway.createLoan(newLoan()).getLoanId();
+
+        LoanWithSchedule details = service.getFullDetails(loanId);
+
+        assertTrue(details.getSchedule().isEmpty());
+        assertEquals(0.0, details.getSummary().getTotalInterest());
+        assertEquals(0.0, details.getSummary().getTotalRepayable());
+    }
+
+    @Test
+    void fullDetailsOfAnUnknownLoanIsABusinessError() {
+        MainframeException exception = assertThrows(MainframeException.class,
+                () -> service.getFullDetails("MISSING"));
+
+        assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
+    }
+
+    @Test
+    void fullDetailsRejectsMissingId() {
+        assertThrows(IllegalArgumentException.class, () -> service.getFullDetails(null));
+        assertThrows(IllegalArgumentException.class, () -> service.getFullDetails(" "));
     }
 }
