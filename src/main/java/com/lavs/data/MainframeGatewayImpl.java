@@ -1,22 +1,12 @@
 package com.lavs.data;
 
-import com.lavs.model.Address;
-import com.lavs.model.Customer;
-import mainframe.client.Connection;
-import mainframe.client.Message;
-import mainframe.client.Status;
-import mainframe.client.StatusMessage;
-import mainframe.client.messages.customer.AddAddress;
-import mainframe.client.messages.customer.Create;
-import mainframe.client.messages.customer.Search;
-import mainframe.client.messages.customer.Retrieve;
-import mainframe.client.messages.customer.Update;
-import mainframe.client.messages.loan.UpdateStatus;
-
-import java.util.ArrayList;
-
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
+import com.lavs.model.Customer;
 import com.lavs.model.CustomerDocument;
 import com.lavs.model.CustomerNote;
 import com.lavs.model.Email;
@@ -27,7 +17,16 @@ import com.lavs.model.Payment;
 import com.lavs.model.Phone;
 import com.lavs.model.Repayment;
 
-import java.util.List;
+import mainframe.client.Connection;
+import mainframe.client.Message;
+import mainframe.client.Status;
+import mainframe.client.StatusMessage;
+import mainframe.client.messages.customer.AddAddress;
+import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.Retrieve;
+import mainframe.client.messages.customer.Search;
+import mainframe.client.messages.customer.Update;
+import mainframe.client.messages.loan.UpdateStatus;
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -178,6 +177,24 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public List<Address> getAddresses(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerAddress retrieval");
+    }
+
+    @Override
+    public List<Phone> getPhones(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerPhoneNumber retrieval");
+    }
+
+    @Override
+    public List<Email> getEmails(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerEmail retrieval");
+    }
+
+    @Override
     public Employer addEmployer(Employer employer) {
         throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmployer");
     }
@@ -233,9 +250,27 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public Guarantor updateGuarantor(Guarantor guarantor) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customer.UpdateRelationship");
+    }
+
+    @Override
     public void deleteGuarantor(String guarantorId) {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs customer.DeleteRelationship");
+    }
+
+    @Override
+    public List<Employer> getEmployers(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerEmployer retrieval");
+    }
+
+    @Override
+    public List<Guarantor> getGuarantors(String customerId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs customerRelationship retrieval");
     }
 
     @Override
@@ -309,6 +344,12 @@ public class MainframeGatewayImpl implements MainframeGateway {
     public void deleteCoBorrower(String coBorrowerId) {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs loanCoborrower.Delete");
+    }
+
+    @Override
+    public List<CoBorrower> getCoBorrowers(String loanId) {
+        throw new UnsupportedOperationException(
+                "Not yet implemented - needs loanCoborrower retrieval");
     }
 
     @Override

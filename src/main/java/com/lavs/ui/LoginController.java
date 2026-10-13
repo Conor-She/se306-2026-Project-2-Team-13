@@ -91,13 +91,25 @@ public class LoginController {
     /** Called by the login integration on the JavaFX application thread. */
     public void loginSucceeded() {
         clearError();
+        setLoginInProgress(false);
         password.clear();
         onSuccess.run();
     }
 
     /** Called by the login integration on the JavaFX application thread. */
     public void loginFailed() {
+        setLoginInProgress(false);
         showError("Invalid username or password. Please try again.");
+    }
+
+    /** Disable the form while credentials are checked by the mainframe. */
+    public void setLoginInProgress(boolean inProgress) {
+        username.setDisable(inProgress);
+        password.setDisable(inProgress);
+        visiblePassword.setDisable(inProgress);
+        toggle.setDisable(inProgress);
+        loginButton.setDisable(inProgress);
+        loginButton.setText(inProgress ? "Signing In..." : "Log In");
     }
 
     public void showError(String message) {

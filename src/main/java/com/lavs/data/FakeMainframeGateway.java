@@ -1,5 +1,10 @@
 package com.lavs.data;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
 import com.lavs.model.Customer;
@@ -12,10 +17,6 @@ import com.lavs.model.Loan;
 import com.lavs.model.Payment;
 import com.lavs.model.Phone;
 import com.lavs.model.Repayment;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 // In-memory test double for MainframeGateway. Can be configured to
 // simulate success, a business error, or the mainframe being unreachable,
@@ -25,12 +26,30 @@ public class FakeMainframeGateway implements MainframeGateway {
     private final Map<String, Customer> customers = new HashMap<>();
     private final Map<String, Loan> loans = new HashMap<>();
     private final Map<String, List<Repayment>> repaymentSchedules = new HashMap<>();
-    private final Map<String, Integer> coBorrowerCounts = new HashMap<>();
     private final Map<String, List<String>> categoryValues = new HashMap<>();
+    private final Map<String, CoBorrower> coBorrowers = new HashMap<>();
+    private final Map<String, List<Address>> addresses = new HashMap<>();
+    private final Map<String, List<Phone>> phones = new HashMap<>();
+    private final Map<String, List<Email>> emails = new HashMap<>();
+    private final Map<String, List<Employer>> employers = new HashMap<>();
+    private final Map<String, List<Guarantor>> guarantors = new HashMap<>();
 
     private boolean unavailable = false;
     private MainframeException nextFailure = null;
     private int nextLoanNumber = 1;
+    private int nextCoBorrowerNumber = 1;
+    private int nextGuarantorNumber = 1;
+
+    // Stores an item under its customer, creating that customer's list on first use
+    private <T> T store(Map<String, List<T>> storage, String customerId, T item) {
+        storage.computeIfAbsent(customerId, id -> new ArrayList<>()).add(item);
+        return item;
+    }
+
+    // Returns a copy of a customer's items, or an empty list if there are none
+    private <T> List<T> read(Map<String, List<T>> storage, String customerId) {
+        return List.copyOf(storage.getOrDefault(customerId, new ArrayList<>()));
+    }
 
     // Configures this fake to act as though the mainframe cannot be
     // reached, for every call, until reset
@@ -110,7 +129,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Address addAddress(Address address) {
         checkAvailability();
-        return address;
+        return store(addresses, address.getCustomerId(), address);
     }
 
     @Override
@@ -125,9 +144,15 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
+    public List<Address> getAddresses(String customerId) {
+        checkAvailability();
+        return read(addresses, customerId);
+    }
+
+    @Override
     public Phone addPhone(Phone phone) {
         checkAvailability();
-        return phone;
+        return store(phones, phone.getCustomerId(), phone);
     }
 
     @Override
@@ -142,9 +167,15 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
+    public List<Phone> getPhones(String customerId) {
+        checkAvailability();
+        return read(phones, customerId);
+    }
+
+    @Override
     public Email addEmail(Email email) {
         checkAvailability();
-        return email;
+        return store(emails, email.getCustomerId(), email);
     }
 
     @Override
@@ -159,9 +190,15 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
+    public List<Email> getEmails(String customerId) {
+        checkAvailability();
+        return read(emails, customerId);
+    }
+
+    @Override
     public Employer addEmployer(Employer employer) {
         checkAvailability();
-        return employer;
+        return store(employers, employer.getCustomerId(), employer);
     }
 
     @Override
@@ -173,6 +210,50 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public void deleteEmployer(String employerId) {
         checkAvailability();
+    }
+
+    @Override
+    public List<Employer> getEmployers(String customerId) {
+        checkAvailability();
+        return read(employers, customerId);
+    }
+
+    @Override
+    public CoBorrower addCoBorrower(CoBorrower coBorrower) {
+        checkAvailability();
+        // The real mainframe assigns the ID, so the fake does too
+        String coBorrowerId = coBorrower.getCoBorrowerId() != null
+                ? coBorrower.getCoBorrowerId()
+                : "FAKE-COBORROWER-" + nextCoBorrowerNumber++;
+        CoBorrower stored =
+                new CoBorrower(coBorrowerId, coBorrower.getLoanId(), coBorrower.getCustomerId());
+        coBorrowers.put(coBorrowerId, stored);
+        return stored;
+    }
+
+    @Override
+    public void deleteCoBorrower(String coBorrowerId) {
+        checkAvailability();
+        if (coBorrowers.remove(coBorrowerId) == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Co-borrower '" + coBorrowerId + "' not found");
+        }
+    }
+
+    @Override
+    public List<CoBorrower> getCoBorrowers(String loanId) {
+        checkAvailability();
+        return coBorrowers.values().stream()
+                .filter(coBorrower -> loanId.equals(coBorrower.getLoanId()))
+                .toList();
+    }
+
+    @Override
+    public int getCoBorrowerCount(String loanId) {
+        checkAvailability();
+        return (int) coBorrowers.values().stream()
+                .filter(coBorrower -> loanId.equals(coBorrower.getLoanId()))
+                .count();
     }
 
     @Override
@@ -212,12 +293,68 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
         checkAvailability();
-        return guarantor;
+        String guarantorId = guarantor.getGuarantorId() != null
+                ? guarantor.getGuarantorId()
+                : "FAKE-GUARANTOR-" + nextGuarantorNumber++;
+        Guarantor stored = new Guarantor(
+                guarantorId,
+                guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(),
+                guarantor.getRelationshipType());
+        return store(guarantors, stored.getCustomerId(), stored);
+    }
+
+    @Override
+    public Guarantor updateGuarantor(Guarantor guarantor) {
+        checkAvailability();
+
+        String existingCustomerId = null;
+        Guarantor existing = null;
+        for (Map.Entry<String, List<Guarantor>> entry : guarantors.entrySet()) {
+            for (Guarantor stored : entry.getValue()) {
+                if (stored.getGuarantorId().equals(guarantor.getGuarantorId())) {
+                    existingCustomerId = entry.getKey();
+                    existing = stored;
+                    break;
+                }
+            }
+            if (existing != null) {
+                break;
+            }
+        }
+
+        if (existing == null) {
+            throw guarantorNotFound(guarantor.getGuarantorId());
+        }
+
+        guarantors.get(existingCustomerId).remove(existing);
+        return store(guarantors, guarantor.getCustomerId(), guarantor);
     }
 
     @Override
     public void deleteGuarantor(String guarantorId) {
         checkAvailability();
+        for (List<Guarantor> stored : guarantors.values()) {
+            boolean removed = stored.removeIf(
+                    guarantor -> guarantor.getGuarantorId().equals(guarantorId));
+            if (removed) {
+                return;
+            }
+        }
+        throw guarantorNotFound(guarantorId);
+    }
+
+    @Override
+    public List<Guarantor> getGuarantors(String customerId) {
+        checkAvailability();
+        return read(guarantors, customerId);
+    }
+
+    private MainframeException guarantorNotFound(String guarantorId) {
+        return new MainframeException(
+                MainframeException.Type.BUSINESS_ERROR,
+                3,
+                "Guarantor '" + guarantorId + "' not found");
     }
 
     @Override
@@ -230,14 +367,7 @@ public class FakeMainframeGateway implements MainframeGateway {
                 : "FAKE-LOAN-" + nextLoanNumber++;
         Loan created = copyWith(loan, loanId, Loan.Status.NEW);
         loans.put(loanId, created);
-        coBorrowerCounts.put(loanId, 0);
         return created;
-    }
-
-    @Override
-    public Loan getLoan(String loanId) {
-        checkAvailability();
-        return loans.get(loanId);
     }
 
     @Override
@@ -261,21 +391,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public CoBorrower addCoBorrower(CoBorrower coBorrower) {
+    public Loan getLoan(String loanId) {
         checkAvailability();
-        coBorrowerCounts.merge(coBorrower.getLoanId(), 1, Integer::sum);
-        return coBorrower;
-    }
-
-    @Override
-    public void deleteCoBorrower(String coBorrowerId) {
-        checkAvailability();
-    }
-
-    @Override
-    public int getCoBorrowerCount(String loanId) {
-        checkAvailability();
-        return coBorrowerCounts.getOrDefault(loanId, 0);
+        Loan loan = loans.get(loanId);
+        if (loan == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Loan '" + loanId + "' not found");
+        }
+        return loan;
     }
 
     @Override

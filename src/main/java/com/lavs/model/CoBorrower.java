@@ -8,8 +8,8 @@ public class CoBorrower {
 
     public CoBorrower(String coBorrowerId, String loanId, String customerId) {
       // Basic structural checks only (3-co-borrower limit enforced in Business Logic Layer (LoanService))
-        if (coBorrowerId == null || coBorrowerId.isBlank()) {
-            throw new IllegalArgumentException("coBorrowerId must not be null or blank");
+        if (coBorrowerId != null && coBorrowerId.isBlank()) {
+            throw new IllegalArgumentException("coBorrowerId must not be blank");
         }
         if (loanId == null || loanId.isBlank()) {
             throw new IllegalArgumentException("loanId must not be null or blank");

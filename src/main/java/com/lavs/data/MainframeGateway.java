@@ -43,6 +43,13 @@ public interface MainframeGateway {
     Employer updateEmployer(Employer employer);
     void deleteEmployer(String employerId);
 
+    // Read a customer's child records (for checking a loan's prerequisites)
+    List<Address> getAddresses(String customerId);
+    List<Phone> getPhones(String customerId);
+    List<Email> getEmails(String customerId);
+    List<Employer> getEmployers(String customerId);
+    List<Guarantor> getGuarantors(String customerId);
+
     // Manage Notes, Documents & Guarantors
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);
@@ -51,6 +58,7 @@ public interface MainframeGateway {
     CustomerDocument updateDocument(CustomerDocument document);
     void deleteDocument(String documentId);
     Guarantor addGuarantor(Guarantor guarantor);
+    Guarantor updateGuarantor(Guarantor guarantor);
     void deleteGuarantor(String guarantorId);
 
     // Create a Loan
@@ -65,6 +73,7 @@ public interface MainframeGateway {
     CoBorrower addCoBorrower(CoBorrower coBorrower);
     void deleteCoBorrower(String coBorrowerId);
     int getCoBorrowerCount(String loanId);
+    List<CoBorrower> getCoBorrowers(String loanId);
 
     // Generate Repayment Schedule & Summary
     // (LAVS calculates the schedule itself - this just persists it)

@@ -6,9 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
 import com.lavs.model.Customer;
+import com.lavs.model.Email;
+import com.lavs.model.Employer;
+import com.lavs.model.Guarantor;
 import com.lavs.model.Loan;
+import com.lavs.model.Phone;
+
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -125,5 +131,45 @@ class FakeMainframeGatewayTest {
 
         gateway.simulateUnavailable(false);
         assertDoesNotThrow(() -> gateway.login("user", "pass"));
+    }
+
+    // Child records can be read back for their own customer only, which is
+    // what Business Logic's prerequisite checks rely on
+    @Test
+    void returnsChildRecordsOnlyForTheirOwnCustomer() {
+        gateway.addAddress(
+                new Address(1L, "C001", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        gateway.addPhone(new Phone(1L, "C001", "0211234567", true, true));
+        gateway.addEmail(new Email(1L, "C001", "jane@example.com", true));
+        gateway.addEmployer(new Employer(1L, "C001", "Acme Ltd", "Engineer", 90000, "Full-time"));
+        gateway.addGuarantor(new Guarantor("G001", "C001", "C002", "Parent"));
+
+        assertEquals(1, gateway.getAddresses("C001").size());
+        assertEquals(1, gateway.getPhones("C001").size());
+        assertEquals(1, gateway.getEmails("C001").size());
+        assertEquals(1, gateway.getEmployers("C001").size());
+        assertEquals(1, gateway.getGuarantors("C001").size());
+        assertTrue(gateway.getAddresses("C999").isEmpty());
+    }
+
+    // A loan's co-borrowers can be listed, and only that loan's
+    @Test
+    void listsCoBorrowersPerLoan() {
+        Loan first = gateway.createLoan(buildNewLoan());
+        Loan second = gateway.createLoan(buildNewLoan());
+        gateway.addCoBorrower(new CoBorrower(null, first.getLoanId(), "C002"));
+
+        assertEquals(1, gateway.getCoBorrowers(first.getLoanId()).size());
+        assertEquals("C002", gateway.getCoBorrowers(first.getLoanId()).get(0).getCustomerId());
+        assertTrue(gateway.getCoBorrowers(second.getLoanId()).isEmpty());
+    }
+
+    // Like the real mainframe, asking for a loan that doesn't exist is an error
+    @Test
+    void unknownLoanIsABusinessError() {
+        MainframeException exception = assertThrows(MainframeException.class,
+                () -> gateway.getLoan("MISSING"));
+
+        assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
 }

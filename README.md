@@ -40,13 +40,24 @@ To run the tests, replace `javafx:run` with `test`.
 
 ### Dashboard and customer search
 
-After login, the Home screen and sidebar profile show the entered username. Home,
-Customers (search UI), and Loans share a persistent navigation sidebar. Loans
-and Add Customer currently display placeholders.
+Set `LAVS_MAINFRAME_URL` to the HTTPS base URL of the course mainframe before
+starting the app (plain HTTP is allowed for localhost development). The login
+form sends the entered credentials to that server, and only a successful response
+opens the dashboard. For example, in PowerShell:
 
-Login is a UI preview that accepts a non-blank username and non-empty password.
-The Search screen includes an input and results area; customer search is not
-connected yet. These screens make no backend requests.
+```powershell
+$env:LAVS_MAINFRAME_URL = "https://your-mainframe-url/"
+.\mvnw.cmd javafx:run
+```
+
+You can also set the Java system property `lavs.mainframe.url`. Login errors are
+shown on the form, and logging out clears the local session token before returning
+to login. `LAVS_ORGANISATION_NAME` (or the `lavs.organisation.name` system
+property) can be set for customer creation, which uses the configured organisation.
+
+The Home screen and sidebar profile show the signed-in username. Home, Customers
+(search UI), and Loans share a persistent navigation sidebar. The Search screen
+includes an input and results area; customer search is not connected yet.
 
 ## Initial Repository Code
 
