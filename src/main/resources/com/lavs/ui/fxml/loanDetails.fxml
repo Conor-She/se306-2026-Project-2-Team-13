@@ -14,6 +14,9 @@
             <String fx:id="coborrowerIconStyle" fx:value="-fx-fill: transparent; -fx-stroke: #4947a5; -fx-stroke-width: 1.8; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;" />
             <String fx:id="coborrowerHoverStyle" fx:value="-fx-background-color: #eeecff;" />
             <String fx:id="coborrowerDeleteHoverStyle" fx:value="-fx-background-color: #fff0f2;" />
+            <String fx:id="paymentCellStyle" fx:value="-fx-font-size: 11; -fx-text-fill: #55558d; -fx-padding: 12 18;" />
+            <String fx:id="paymentBadgeStyle" fx:value="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-padding: 3 12; -fx-font-size: 11;" />
+            <String fx:id="paymentRowStyle" fx:value="-fx-border-color: #edf0fc transparent transparent transparent; -fx-border-width: 1 0 0 0; -fx-min-height: 44;" />
       </fx:define>
       <HBox alignment="CENTER_LEFT" spacing="12">
             <Button text="&#x27F5;  Back to Customer Loans" onAction="#back"
@@ -94,7 +97,8 @@
                         <Button text="+  Add Co-borrower" accessibleText="Add co-borrower" onAction="#addCoborrower"
                               style="-fx-background-color: #4947a5; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 9 14; -fx-cursor: hand;" />
                   </HBox>
-                  <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="coborrowers-scroll">
+                  <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="coborrowers-scroll"
+                        style="-fx-background: white; -fx-background-color: transparent; -fx-background-insets: 0; -fx-border-width: 0; -fx-padding: 0; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;">
                         <GridPane fx:id="coborrowersTable" styleClass="coborrowers-table" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6;">
                               <columnConstraints>
                                     <ColumnConstraints percentWidth="25" /><ColumnConstraints percentWidth="14" />
@@ -156,21 +160,28 @@
                 </HBox>
             </VBox>
 
-            <VBox fx:id="paymentsView" spacing="16" visible="false" managed="false"
-                  style="-fx-background-color: white; -fx-border-color: #555555; -fx-border-radius: 18; -fx-background-radius: 18; -fx-padding: 22 24;">
-                  <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="Payments" style="-fx-font-size: 25px; -fx-font-weight: bold;" />
+            <VBox fx:id="paymentsView" spacing="12" visible="false" managed="false"
+                  style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 8; -fx-background-radius: 8;">
+                  <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: linear-gradient(to right, #f8faff, #f0f5ff); -fx-background-radius: 8 8 0 0; -fx-padding: 16 20;">
+                        <SVGPath content="M 4 4 H 9 V 2 H 15 V 4 H 20 V 22 H 4 Z M 9 4 H 15 M 10 13 H 14 M 12 11 V 15" fill="transparent" stroke="#393a7b" strokeWidth="1.8" />
+                        <VBox spacing="5">
+                              <Label text="Payments" style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #20205e;" />
+                              <Label text="View and manage payments for this loan." style="-fx-font-size: 11; -fx-text-fill: #747ba6;" />
+                        </VBox>
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button text="+" onAction="#addPayment" accessibleText="Add payment"
-                              style="-fx-background-color: transparent; -fx-font-size: 38px; -fx-padding: 0 4; -fx-cursor: hand;" />
+                        <Button text="Make a Payment" onAction="#addPayment" accessibleText="Add payment"
+                              style="-fx-background-color: #4947a5; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 9 14; -fx-cursor: hand;" />
                   </HBox>
-                  <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 0 18 2 18;">
-                        <Label text="Date" minWidth="220"
-                              style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                        <Label text="Amount Paid" minWidth="190"
-                              style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                  </HBox>
-                  <VBox fx:id="paymentRows" spacing="12" VBox.vgrow="ALWAYS" />
+                  <ScrollPane fitToWidth="true" style="-fx-background: white; -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-width: 0;" VBox.vgrow="ALWAYS">
+                        <GridPane fx:id="paymentRows">
+                              <columnConstraints><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="25" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="7" /></columnConstraints>
+                              <Region GridPane.columnSpan="6" GridPane.rowIndex="0" style="-fx-background-color: #f2f6ff;" />
+                              <Label text="Date" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Amount" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Type" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Status" GridPane.columnIndex="3" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Reference" GridPane.columnIndex="4" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
+
+                              <Label text="Actions" GridPane.columnIndex="5" GridPane.rowIndex="0" GridPane.halignment="CENTER" style="-fx-padding: 12 8; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
+                        </GridPane>
+                  </ScrollPane>
+                  <Label fx:id="paymentsCount" style="-fx-padding: 4 18 16 18; -fx-font-size: 11; -fx-text-fill: #747ba6;" />
             </VBox>
       </StackPane>
 </VBox>
