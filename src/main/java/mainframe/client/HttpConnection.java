@@ -5,12 +5,8 @@ import okhttp3.*;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -26,42 +22,7 @@ public class HttpConnection implements Connection {
 
     public HttpConnection(String baseUrl) {
         _baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-        _client = initializeClient();
-    }
-
-    private OkHttpClient initializeClient() {
-        // initialize a new HTTP client
-        // WARNING: this code is DANGEROUS - we are ignoring all SSL validation errors
-        TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return new java.security.cert.X509Certificate[]{};
-                    }
-                }
-        };
-
-        SSLContext sslContext = null;
-        try {
-            sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } catch (KeyManagementException e) {
-            throw new RuntimeException(e);
-        }
-        OkHttpClient.Builder newBuilder = new OkHttpClient.Builder();
-        newBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0]);
-        newBuilder.hostnameVerifier((hostname, session) -> true);
-        return newBuilder.build();
+        _client = new OkHttpClient();
     }
 
     @Override
