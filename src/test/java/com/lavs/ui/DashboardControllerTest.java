@@ -21,10 +21,7 @@ class DashboardControllerTest {
     }
 
     @Test void navigationAndUsernameWorkWithoutBackend() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        Platform.startup(started::countDown);
-        assertTrue(started.await(5, TimeUnit.SECONDS));
-        Platform.setImplicitExit(false);
+        JavaFxTestSupport.startToolkit();
         boolean[] loggedOut = {false};
         FXMLLoader loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
         Parent root = fx(() -> {
