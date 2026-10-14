@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import com.lavs.model.LoanDraft;
-import com.lavs.business.StubLoanGuarantorService;
+import com.lavs.business.StubLoanPrerequisiteService;
+import com.lavs.business.LoanPrerequisiteChecker;
 import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
 import com.lavs.business.LoanSummary;
@@ -38,8 +39,8 @@ public class AddLoanController {
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
     private final LoanDraft draft = new LoanDraft();
-    private final StubLoanGuarantorService guarantorService = new StubLoanGuarantorService();
-    @FXML private Label guarantorNotice;
+    private final StubLoanPrerequisiteService prerequisiteService = new StubLoanPrerequisiteService();
+    @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
     @FXML private TableView<Repayment> repaymentTable;
     @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn, interestColumn, balanceColumn;
@@ -110,7 +111,7 @@ public class AddLoanController {
         selectedBorrower.setVisible(true);
         selectedBorrower.setManaged(true);
         customerSearch.clear();
-        refreshGuarantorNotice();
+        refreshPrerequisiteNotice();
         message.setVisible(false);
         message.setManaged(false);
     }
@@ -156,7 +157,7 @@ public class AddLoanController {
         draft.primaryBorrower = null;
         selectedBorrower.setVisible(false);
         selectedBorrower.setManaged(false);
-        refreshGuarantorNotice();
+        refreshPrerequisiteNotice();
         message.setVisible(false);
         message.setManaged(false);
         customerSearch.requestFocus();
@@ -346,8 +347,8 @@ public class AddLoanController {
 
     String validateDetails() {
         if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
-        String guarantorError = guarantorError();
-        if (guarantorError != null) return guarantorError;
+        String prerequisiteError = prerequisiteError();
+        if (prerequisiteError != null) return prerequisiteError;
         if (draft.details.getOrDefault("loanType", "").isBlank()) return "Select a loan type.";
         if (!validNumber(draft.details.getOrDefault("principal", ""), false)) return "Enter a principal greater than zero.";
         if (!validNumber(draft.details.getOrDefault("interestRate", ""), true)) return "Enter an interest rate of zero or greater.";
@@ -366,22 +367,28 @@ public class AddLoanController {
         return null;
     }
 
-    private String guarantorError() {
+    private String prerequisiteError() {
         if (draft.primaryBorrower == null) return null;
         try {
-            guarantorService.validate(draft.primaryBorrower.customerId());
+            prerequisiteService.validate(draft.primaryBorrower.customerId());
             return null;
         } catch (LoanPrerequisiteException exception) {
+            if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage()))
+                return draft.primaryBorrower.name() + " has no mailing address recorded. "
+                        + "Add an address marked as mailing to this customer's record before continuing with the loan.";
+            if (LoanPrerequisiteChecker.CONTACT_MESSAGE.equals(exception.getMessage()))
+                return draft.primaryBorrower.name() + " has no phone number or email recorded. "
+                        + "Add at least one alternate contact to this customer's record before continuing with the loan.";
             return draft.primaryBorrower.name() + " has no employer recorded and needs a guarantor. "
                     + "Add a guarantor to this customer's record before continuing with the loan.";
         }
     }
 
-    private void refreshGuarantorNotice() {
-        String error = guarantorError();
-        guarantorNotice.setText(error == null ? "" : error);
-        guarantorNotice.setVisible(error != null);
-        guarantorNotice.setManaged(error != null);
+    private void refreshPrerequisiteNotice() {
+        String error = prerequisiteError();
+        prerequisiteNotice.setText(error == null ? "" : error);
+        prerequisiteNotice.setVisible(error != null);
+        prerequisiteNotice.setManaged(error != null);
     }
 
     private static boolean validNumber(String text, boolean allowZero) {
