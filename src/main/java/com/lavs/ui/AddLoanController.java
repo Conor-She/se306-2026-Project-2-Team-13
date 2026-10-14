@@ -11,7 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 
-/** Loan details and optional co-borrowers. Saving belongs to the later review step. */
+/** Three-step loan wizard. Persistence is not yet connected to the sample loan list. */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
@@ -25,10 +25,16 @@ public class AddLoanController {
     @FXML private TextField coborrowerSearch;
     @FXML private ListView<CustomersController.CustomerSummary> coborrowerResults;
     @FXML private Label coborrowerCount, emptyCoborrowers, marker0, marker1, stepName0, stepName1;
-    @FXML private Button back;
+    @FXML private Button back, next;
+    @FXML private VBox reviewPane, reviewCoborrowers;
+    @FXML private Label marker2, stepName2, reviewBorrower, reviewType, reviewPrincipal,
+            reviewInterest, reviewPaymentFrequency, reviewRateFrequency, reviewTerm,
+            reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
     private final List<CustomersController.CustomerSummary> coborrowers = new ArrayList<>();
-    private boolean showingCoborrowers;
+    private int step;
+    private boolean editingReview;
+    @FXML private Label reviewNotice;
     private String activeMarkerStyle, inactiveMarkerStyle, activeNameStyle, inactiveNameStyle;
     private CustomersController.CustomerSummary borrower;
     private List<CustomersController.CustomerSummary> customers = List.of();
@@ -105,13 +111,29 @@ public class AddLoanController {
     @FXML private void cancel() { onCancel.run(); }
 
     @FXML private void next() {
-        if (showingCoborrowers) {
-            showMessage("Co-borrowers are ready. Review will be available in the next update. No loan has been saved.");
-            return;
-        }
         String error = validateDetails();
         if (error != null) { showMessage(error); return; }
-        showStep(true);
+        if (step == 2) {
+            showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
+        } else {
+            int target = editingReview ? 2 : step + 1;
+            editingReview = false;
+            showStep(target);
+        }
+    }
+
+    @FXML private void editBorrower() { editStep(0); }
+
+    @FXML private void editLoanDetails() {
+        editStep(0);
+        javafx.application.Platform.runLater(principal::requestFocus);
+    }
+
+    @FXML private void editCoborrowers() { editStep(1); }
+
+    private void editStep(int target) {
+        editingReview = true;
+        showStep(target);
     }
 
     private void showMessage(String text) {
@@ -120,27 +142,61 @@ public class AddLoanController {
         message.setManaged(true);
     }
 
-    @FXML private void back() { showStep(false); }
+    @FXML private void back() { showStep(Math.max(0, step - 1)); }
 
-    private void showStep(boolean coStep) {
-        showingCoborrowers = coStep;
-        detailsPane.setVisible(!coStep);
-        detailsPane.setManaged(!coStep);
-        coborrowersPane.setVisible(coStep);
-        coborrowersPane.setManaged(coStep);
-        back.setVisible(coStep);
-        back.setManaged(coStep);
-        marker0.setStyle(coStep ? inactiveMarkerStyle : activeMarkerStyle);
-        marker1.setStyle(coStep ? activeMarkerStyle : inactiveMarkerStyle);
-        stepName0.setStyle(coStep ? inactiveNameStyle : activeNameStyle);
-        stepName1.setStyle(coStep ? activeNameStyle : inactiveNameStyle);
+    private void showStep(int selectedStep) {
+        step = selectedStep;
+        VBox[] panes = {detailsPane, coborrowersPane, reviewPane};
+        Label[] markers = {marker0, marker1, marker2};
+        Label[] names = {stepName0, stepName1, stepName2};
+        for (int index = 0; index < panes.length; index++) {
+            panes[index].setVisible(index == step);
+            panes[index].setManaged(index == step);
+            markers[index].setStyle(index == step ? activeMarkerStyle : inactiveMarkerStyle);
+            names[index].setStyle(index == step ? activeNameStyle : inactiveNameStyle);
+        }
+        back.setVisible(step > 0 && !editingReview);
+        back.setManaged(back.isVisible());
+        next.setText(step == 2 ? "Finish" : editingReview ? "Update and return to Review" : "Next");
+        reviewNotice.setVisible(editingReview);
+        reviewNotice.setManaged(editingReview);
         message.setVisible(false);
         message.setManaged(false);
         loanScroll.setVvalue(0);
-        if (coStep) {
+        if (step == 1) {
             renderCoborrowers();
             focusCoborrowerSearch();
+        } else if (step == 2) {
+            renderReview();
+            javafx.application.Platform.runLater(next::requestFocus);
         } else focusBorrowerSearch();
+    }
+
+    private void renderReview() {
+        reviewBorrower.setText(borrower.name() + " | Customer ID: " + borrower.customerId());
+        reviewType.setText(loanType.getValue());
+        java.text.NumberFormat currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+        reviewPrincipal.setText(currency.format(new BigDecimal(principal.getText().strip())));
+        reviewInterest.setText(new BigDecimal(interestRate.getText().strip()).stripTrailingZeros().toPlainString() + "%");
+        reviewPaymentFrequency.setText(paymentFrequency.getValue());
+        reviewRateFrequency.setText(rateFrequency.getValue());
+        reviewTerm.setText(Integer.parseInt(term.getText().strip()) + " months");
+        var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        reviewStartDate.setText(startDate.getValue().format(dateFormat));
+        reviewRenewDate.setText(renewDate.getValue().format(dateFormat));
+        reviewStatus.setText(status.getValue());
+        reviewCoborrowerCount.setText("Co-borrowers (" + coborrowers.size() + "/3)");
+        reviewCoborrowers.getChildren().clear();
+        if (coborrowers.isEmpty()) {
+            reviewCoborrowers.getChildren().add(new Label("No co-borrowers added."));
+        } else {
+            for (var customer : coborrowers) {
+                Label name = new Label(customer.name() + " | Customer ID: " + customer.customerId());
+                name.setWrapText(true);
+                name.setMinWidth(0);
+                reviewCoborrowers.getChildren().add(name);
+            }
+        }
     }
 
     private boolean eligibleCoborrower(CustomersController.CustomerSummary customer) {
@@ -160,7 +216,7 @@ public class AddLoanController {
 
     @FXML private void focusCoborrowerSearch() {
         javafx.application.Platform.runLater(() -> {
-            if (showingCoborrowers && !coborrowerSearch.isDisabled()) coborrowerSearch.requestFocus();
+            if (step == 1 && !coborrowerSearch.isDisabled()) coborrowerSearch.requestFocus();
         });
     }
 
