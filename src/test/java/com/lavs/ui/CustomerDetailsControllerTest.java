@@ -135,13 +135,13 @@ class CustomerDetailsControllerTest {
                 assertRow(table, index + 1, document);
                 List<Button> actions = rowLabelsAndButtons(table, index + 1).stream()
                         .filter(Button.class::isInstance).map(Button.class::cast).toList();
-                assertEquals(List.of("Download " + document[0], "Actions for " + document[0]),
+                assertEquals(List.of("Actions for " + document[0]),
                         actions.stream().map(Button::getAccessibleText).toList());
                 actions.forEach(button -> assertNotNull(button.getOnAction()));
             }
             assertEquals(4, table.getChildren().stream()
                     .mapToInt(CustomerDetailsControllerTest::rowIndex).max().orElseThrow());
-            assertNotNull(buttonWithText(content("documents"), "+  Upload Document").getOnAction());
+            assertNotNull(buttonWithText(content("documents"), "+  Add Document").getOnAction());
             return null;
         });
     }

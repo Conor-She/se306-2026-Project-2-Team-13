@@ -1,9 +1,5 @@
 package com.lavs.ui;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.*;
@@ -15,7 +11,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
-import javafx.stage.FileChooser;
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
 /** Keeps a separate editable preview for each customer during this controller's lifetime. */
@@ -440,12 +435,7 @@ final class CustomerDetailsEditing {
                 name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 24, 0, 24)); name.setMinWidth(0);
                 table.add(name, 0, row); table.add(label(record.get("type")), 1, row);
                 table.add(label(CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(record.get("date")))), 2, row);
-                Button download = new Button();
-                download.setStyle(ACTION); download.setAccessibleText("Download " + record.get("fileName"));
-                download.setGraphic(icon("M 7 0 V 10 M 3 6 L 7 10 L 11 6 M 1 10 V 13 H 13 V 10", "#747ba6"));
-                download.setOnAction(event -> download(record));
-                HBox actionBox = new HBox(8, download, actions(kind, record, "Actions for " + record.get("fileName")));
-                actionBox.setAlignment(Pos.CENTER); table.add(actionBox, 3, row);
+                table.add(actions(kind, record, "Actions for " + record.get("fileName")), 3, row);
             } else {
                 HBox name = new HBox(12, avatar(), label(fullName(record)));
                 name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 20, 0, 20)); name.setMinWidth(0);
@@ -498,20 +488,5 @@ final class CustomerDetailsEditing {
             notes.getChildren().add(row);
         }
         if (state.records.get(Kind.NOTE).isEmpty()) notes.getChildren().add(label("No notes added."));
-    }
-    private void download(Map<String, String> document) {
-        String path = document.getOrDefault("path", "");
-        if (path.isBlank()) { information("Sample document", "This sample document has no local file. Use Edit document to choose one."); return; }
-        FileChooser chooser = new FileChooser(); chooser.setTitle("Save customer document"); chooser.setInitialFileName(document.get("fileName"));
-        java.io.File destination = chooser.showSaveDialog(window());
-        if (destination != null) {
-            try { Files.copy(Path.of(path), destination.toPath(), StandardCopyOption.REPLACE_EXISTING); }
-            catch (IOException error) { information("Unable to save document", "The local file could not be copied. Check that it still exists and try again."); }
-        }
-    }
-    private void information(String title, String text) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, text, ButtonType.OK);
-        if (window() != null) alert.initOwner(window());
-        alert.setHeaderText(title); alert.show();
     }
 }

@@ -15,7 +15,7 @@ public class CustomerDraft {
             case "emails" -> List.of("email");
             case "employers" -> List.of("name", "role", "employmentType", "income", "address", "phone");
             case "notes" -> List.of("text");
-            case "documents" -> List.of("fileName", "filePath", "documentType");
+            case "documents" -> List.of("fileName", "documentType");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         return keys.stream().anyMatch(key -> !entry.getOrDefault(key, "").isBlank());
