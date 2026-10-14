@@ -82,6 +82,14 @@ final class CustomerDetailsEditing {
         return state.summary;
     }
 
+    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
+        State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
+        var draft = loan.draft();
+        target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
+                "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"), "status", draft.details.get("status")));
+        if (state == target) render();
+    }
+
     void editDetails(Kind kind) {
         State target = state;
         CustomerRecordEditor.create(window(), kind, target.details.get(kind), false, saved -> {
