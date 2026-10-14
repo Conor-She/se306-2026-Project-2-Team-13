@@ -77,9 +77,9 @@
     </VBox>
     <VBox fx:id="documentsPane" spacing="14" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">
       <Label text="Documents" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #242438;"/>
-      <Label text="Select one or more customer documents. Documents are optional." wrapText="true"/>
+      <Label text="Record document name, type and upload date. Documents are optional; no file is uploaded or stored." wrapText="true"/>
       <VBox fx:id="documentRows" spacing="12" minWidth="0"/>
-      <Button text="+ Add documents" onAction="#addDocuments" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
+      <Button text="+ Add document metadata" onAction="#addDocuments" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
     </VBox>
     <VBox fx:id="reviewPane" spacing="18" minWidth="0">
       <VBox spacing="16" minWidth="0" style="-fx-padding: 20; -fx-border-color: #d6d5e3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-background-color: white;">

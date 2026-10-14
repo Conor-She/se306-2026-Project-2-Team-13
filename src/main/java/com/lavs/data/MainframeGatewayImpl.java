@@ -1,6 +1,7 @@
 package com.lavs.data;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -23,9 +24,12 @@ import mainframe.client.Message;
 import mainframe.client.Status;
 import mainframe.client.StatusMessage;
 import mainframe.client.messages.customer.AddAddress;
+import mainframe.client.messages.customer.AddDocumentMetadata;
 import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.DeleteDocument;
 import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
+import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
 import mainframe.client.messages.loan.UpdateStatus;
 
@@ -230,20 +234,62 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public List<CustomerDocument> getDocuments(String customerId) {
+        List<CustomerDocument> documents = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerDocument.List message =
+                    new mainframe.client.messages.customerDocument.List(customerId, page, 100);
+            sendOrThrow(message);
+            mainframe.client.messages.customerDocument.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerDocument.List.Item item : items) {
+                documents.add(new CustomerDocument(Long.toString(item.getId()), customerId,
+                        item.getFileName(), item.getType(), LocalDate.parse(item.getUploadDate())));
+            }
+            if (items.length == 0 || page * 100 >= message.getTotal()) {
+                return List.copyOf(documents);
+            }
+            page++;
+        }
+    }
+
+    @Override
     public CustomerDocument addDocument(CustomerDocument document) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddDocument");
+        AddDocumentMetadata message = new AddDocumentMetadata(document.getCustomerId(),
+                document.getFileName(), document.getDocumentType(),
+                document.getUploadDate().toString());
+        sendOrThrow(message);
+        if (message.getId() == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
+                    "The mainframe did not return an ID for the new document");
+        }
+        return new CustomerDocument(Long.toString(message.getId()), document.getCustomerId(),
+                document.getFileName(), document.getDocumentType(), document.getUploadDate());
     }
 
     @Override
     public CustomerDocument updateDocument(CustomerDocument document) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateDocument");
+        long id = parseDocumentId(document.getDocumentId());
+        UpdateDocument message = new UpdateDocument(document.getCustomerId(), id,
+                document.getFileName(), document.getDocumentType(),
+                document.getUploadDate().toString());
+        sendOrThrow(message);
+        return document;
     }
 
     @Override
-    public void deleteDocument(String documentId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteDocument");
+    public void deleteDocument(String customerId, String documentId) {
+        DeleteDocument message = new DeleteDocument(customerId, parseDocumentId(documentId));
+        sendOrThrow(message);
+    }
+
+    private long parseDocumentId(String documentId) {
+        try {
+            return Long.parseLong(documentId);
+        } catch (NumberFormatException invalidId) {
+            throw new IllegalArgumentException("Document ID must be a numeric mainframe ID",
+                    invalidId);
+        }
     }
 
     @Override

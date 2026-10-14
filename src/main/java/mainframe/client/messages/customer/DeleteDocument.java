@@ -21,7 +21,9 @@ public class DeleteDocument implements Message {
         if (response.getStatus().getWasSuccessful()) {
             _customer = response.getValue("customer");
             String idValue = response.getValue("id");
-            _id = idValue == null ? null : Long.parseLong(idValue);
+            if (idValue != null) {
+                _id = Long.parseLong(idValue);
+            }
         }
         return response.getStatus();
     }

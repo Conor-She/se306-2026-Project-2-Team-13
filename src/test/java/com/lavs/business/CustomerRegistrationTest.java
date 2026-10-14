@@ -161,7 +161,7 @@ class CustomerRegistrationTest {
         assertTrue(service.validate(draft).isEmpty());
         draft.documents.add(Map.of("documentType", "Payslip"));
         var errors = service.validate(draft);
-        assertEquals(java.util.Set.of("documents.0.fileName", "documents.0.filePath"),
+        assertEquals(java.util.Set.of("documents.0.fileName", "documents.0.uploadDate"),
                 errors.stream().map(CustomerRegistrationService.ValidationError::field).collect(java.util.stream.Collectors.toSet()));
         assertTrue(errors.stream().allMatch(error -> error.step() == 4));
         assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
@@ -169,9 +169,9 @@ class CustomerRegistrationTest {
 
     @Test void multipleDocumentsCanBeRemovedAndSavedIndependently() throws Exception {
         CustomerDraft draft = validDraft();
-        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "payslip.pdf", "filePath", "C:/documents/payslip.pdf", "documentType", "Payslip")));
-        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "id.pdf", "filePath", "C:/documents/id.pdf")));
-        draft.documents.add(Map.of("fileName", "remove.pdf", "filePath", "C:/documents/remove.pdf"));
+        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "payslip.pdf", "documentType", "Payslip", "uploadDate", "2026-10-14")));
+        draft.documents.add(new java.util.LinkedHashMap<>(Map.of("fileName", "id.pdf", "documentType", "Identity", "uploadDate", "2026-10-13")));
+        draft.documents.add(Map.of("fileName", "remove.pdf", "documentType", "Other", "uploadDate", "2026-10-12"));
         draft.documents.remove(2);
         String id = service.save(draft);
         draft.documents.get(0).put("fileName", "changed.pdf");
@@ -183,7 +183,7 @@ class CustomerRegistrationTest {
         saved.documents.clear();
         assertEquals(2, service.savedCustomers().get(id).documents.size());
         CustomerDraft documentsOnly = new CustomerDraft();
-        documentsOnly.documents.add(Map.of("fileName", "id.pdf", "filePath", "C:/documents/id.pdf"));
+        documentsOnly.documents.add(Map.of("fileName", "id.pdf", "documentType", "Identity", "uploadDate", "2026-10-14"));
         assertTrue(documentsOnly.hasData());
         assertTrue(CustomerDraft.hasEntryDetails("documents", documentsOnly.documents.get(0)));
     }

@@ -54,9 +54,10 @@ public interface MainframeGateway {
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);
     void deleteNote(String noteId);
+    List<CustomerDocument> getDocuments(String customerId);
     CustomerDocument addDocument(CustomerDocument document);
     CustomerDocument updateDocument(CustomerDocument document);
-    void deleteDocument(String documentId);
+    void deleteDocument(String customerId, String documentId);
     Guarantor addGuarantor(Guarantor guarantor);
     Guarantor updateGuarantor(Guarantor guarantor);
     void deleteGuarantor(String guarantorId);
