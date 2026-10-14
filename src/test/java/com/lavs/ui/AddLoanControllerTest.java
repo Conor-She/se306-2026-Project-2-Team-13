@@ -26,6 +26,20 @@ class AddLoanControllerTest {
                     new CustomersController.CustomerSummary("C004", "Ethan Chen", "", ""),
                     new CustomersController.CustomerSummary("C005", "Isla Jones", "", "")), () -> {});
             assertNotNull(controller.validateDetails());
+            TextField primarySearch = (TextField) loader.getNamespace().get("customerSearch");
+            ListView<?> primaryResults = (ListView<?>) loader.getNamespace().get("customerResults");
+            primarySearch.setText("C003");
+            primaryResults.getSelectionModel().select(0);
+            Label guarantorNotice = (Label) loader.getNamespace().get("guarantorNotice");
+            assertTrue(guarantorNotice.isVisible());
+            assertTrue(guarantorNotice.getText().contains("Charlotte Brown"));
+            assertTrue(controller.validateDetails().contains("guarantor"));
+            ((Button) loader.getNamespace().get("next")).fire();
+            assertFalse(((javafx.scene.layout.VBox) loader.getNamespace().get("coborrowersPane")).isVisible());
+            primarySearch.setText("C004");
+            primaryResults.getSelectionModel().select(0);
+            assertFalse(guarantorNotice.isVisible());
+            assertEquals("Select a loan type.", controller.validateDetails());
             ((TextField) loader.getNamespace().get("customerSearch")).setText("c001");
             ListView<?> results = (ListView<?>) loader.getNamespace().get("customerResults");
             assertEquals(1, results.getItems().size());

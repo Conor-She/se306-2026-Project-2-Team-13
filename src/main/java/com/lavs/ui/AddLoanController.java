@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import com.lavs.model.LoanDraft;
+import com.lavs.business.StubLoanGuarantorService;
+import com.lavs.business.LoanPrerequisiteException;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -32,6 +34,8 @@ public class AddLoanController {
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
     private final LoanDraft draft = new LoanDraft();
+    private final StubLoanGuarantorService guarantorService = new StubLoanGuarantorService();
+    @FXML private Label guarantorNotice;
     private int step;
     private boolean editingReview;
     @FXML private Label reviewNotice;
@@ -85,6 +89,9 @@ public class AddLoanController {
             selectedBorrower.setVisible(true);
             selectedBorrower.setManaged(true);
             customerSearch.clear();
+            refreshGuarantorNotice();
+            message.setVisible(false);
+            message.setManaged(false);
         });
     }
 
@@ -125,6 +132,9 @@ public class AddLoanController {
         draft.primaryBorrower = null;
         selectedBorrower.setVisible(false);
         selectedBorrower.setManaged(false);
+        refreshGuarantorNotice();
+        message.setVisible(false);
+        message.setManaged(false);
         customerSearch.requestFocus();
     }
 
@@ -271,6 +281,8 @@ public class AddLoanController {
 
     String validateDetails() {
         if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
+        String guarantorError = guarantorError();
+        if (guarantorError != null) return guarantorError;
         if (draft.details.getOrDefault("loanType", "").isBlank()) return "Select a loan type.";
         if (!validNumber(draft.details.getOrDefault("principal", ""), false)) return "Enter a principal greater than zero.";
         if (!validNumber(draft.details.getOrDefault("interestRate", ""), true)) return "Enter an interest rate of zero or greater.";
@@ -287,6 +299,24 @@ public class AddLoanController {
         if (!draft.renewDate.isAfter(draft.startDate)) return "Renewal date must be after the start date.";
         if (draft.details.getOrDefault("status", "").isBlank()) return "Select a status.";
         return null;
+    }
+
+    private String guarantorError() {
+        if (draft.primaryBorrower == null) return null;
+        try {
+            guarantorService.validate(draft.primaryBorrower.customerId());
+            return null;
+        } catch (LoanPrerequisiteException exception) {
+            return draft.primaryBorrower.name() + " has no employer recorded and needs a guarantor. "
+                    + "Add a guarantor to this customer's record before continuing with the loan.";
+        }
+    }
+
+    private void refreshGuarantorNotice() {
+        String error = guarantorError();
+        guarantorNotice.setText(error == null ? "" : error);
+        guarantorNotice.setVisible(error != null);
+        guarantorNotice.setManaged(error != null);
     }
 
     private static boolean validNumber(String text, boolean allowZero) {
