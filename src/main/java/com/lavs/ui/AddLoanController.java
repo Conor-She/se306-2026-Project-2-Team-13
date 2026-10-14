@@ -3,11 +3,15 @@ package com.lavs.ui;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
+import java.util.ArrayList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.Priority;
 
-/** First step of the loan wizard. No loan is saved until the later review step exists. */
+/** Loan details and optional co-borrowers. Saving belongs to the later review step. */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
@@ -17,12 +21,34 @@ public class AddLoanController {
     @FXML private DatePicker startDate, renewDate;
     @FXML private ScrollPane loanScroll;
     @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
+    @FXML private VBox detailsPane, coborrowersPane, coborrowerRows;
+    @FXML private TextField coborrowerSearch;
+    @FXML private ListView<CustomersController.CustomerSummary> coborrowerResults;
+    @FXML private Label coborrowerCount, emptyCoborrowers, marker0, marker1, stepName0, stepName1;
+    @FXML private Button back;
+    @FXML private String coborrowerRowStyle, removeButtonStyle;
+    private final List<CustomersController.CustomerSummary> coborrowers = new ArrayList<>();
+    private boolean showingCoborrowers;
+    private String activeMarkerStyle, inactiveMarkerStyle, activeNameStyle, inactiveNameStyle;
     private CustomersController.CustomerSummary borrower;
     private List<CustomersController.CustomerSummary> customers = List.of();
     private Runnable onCancel = () -> {};
 
     @FXML private void initialize() {
         ScrollPaneAppearance.install(loanScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(customerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(coborrowerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        activeMarkerStyle = marker0.getStyle();
+        inactiveMarkerStyle = marker1.getStyle();
+        activeNameStyle = stepName0.getStyle();
+        inactiveNameStyle = stepName1.getStyle();
+        coborrowerSearch.textProperty().addListener((obs, old, value) -> searchCoborrowers());
+        coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
+            if (value == null || coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
+            coborrowers.add(value);
+            coborrowerSearch.clear();
+            renderCoborrowers();
+        });
         loanType.getItems().setAll("Table Loan", "Reducing Balance", "Interest Only");
         paymentFrequency.getItems().setAll("Weekly", "Fortnightly", "Monthly", "Yearly", "On Renewal");
         rateFrequency.getItems().setAll("Daily", "Weekly", "Fortnightly", "Monthly", "Yearly");
@@ -34,10 +60,13 @@ public class AddLoanController {
                 setText(empty || customer == null ? null : customer.name() + " | Customer ID: " + customer.customerId());
             }
         });
+        coborrowerResults.setCellFactory(customerResults.getCellFactory());
         customerSearch.textProperty().addListener((obs, old, value) -> searchCustomers());
         customerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value == null) return;
             borrower = value;
+            coborrowers.removeIf(c -> c.customerId().equals(value.customerId()));
+            renderCoborrowers();
             borrowerName.setText(value.name() + " | Customer ID: " + value.customerId());
             selectedBorrower.setVisible(true);
             selectedBorrower.setManaged(true);
@@ -76,12 +105,92 @@ public class AddLoanController {
     @FXML private void cancel() { onCancel.run(); }
 
     @FXML private void next() {
+        if (showingCoborrowers) {
+            showMessage("Co-borrowers are ready. Review will be available in the next update. No loan has been saved.");
+            return;
+        }
         String error = validateDetails();
-        message.setText(error == null
-                ? "Loan details are ready. Co-borrowers and Review will be available in the next update. No loan has been saved."
-                : error);
+        if (error != null) { showMessage(error); return; }
+        showStep(true);
+    }
+
+    private void showMessage(String text) {
+        message.setText(text);
         message.setVisible(true);
         message.setManaged(true);
+    }
+
+    @FXML private void back() { showStep(false); }
+
+    private void showStep(boolean coStep) {
+        showingCoborrowers = coStep;
+        detailsPane.setVisible(!coStep);
+        detailsPane.setManaged(!coStep);
+        coborrowersPane.setVisible(coStep);
+        coborrowersPane.setManaged(coStep);
+        back.setVisible(coStep);
+        back.setManaged(coStep);
+        marker0.setStyle(coStep ? inactiveMarkerStyle : activeMarkerStyle);
+        marker1.setStyle(coStep ? activeMarkerStyle : inactiveMarkerStyle);
+        stepName0.setStyle(coStep ? inactiveNameStyle : activeNameStyle);
+        stepName1.setStyle(coStep ? activeNameStyle : inactiveNameStyle);
+        message.setVisible(false);
+        message.setManaged(false);
+        loanScroll.setVvalue(0);
+        if (coStep) {
+            renderCoborrowers();
+            focusCoborrowerSearch();
+        } else focusBorrowerSearch();
+    }
+
+    private boolean eligibleCoborrower(CustomersController.CustomerSummary customer) {
+        return (borrower == null || !borrower.customerId().equals(customer.customerId()))
+                && coborrowers.stream().noneMatch(c -> c.customerId().equals(customer.customerId()));
+    }
+
+    private void searchCoborrowers() {
+        String query = coborrowerSearch.getText().strip().toLowerCase(Locale.ROOT);
+        coborrowerResults.getItems().setAll(query.isEmpty() || coborrowers.size() >= 3 ? List.of()
+                : customers.stream().filter(this::eligibleCoborrower)
+                .filter(c -> c.name().toLowerCase(Locale.ROOT).contains(query)
+                        || c.customerId().toLowerCase(Locale.ROOT).contains(query)).toList());
+        coborrowerResults.setVisible(!query.isEmpty() && coborrowers.size() < 3);
+        coborrowerResults.setManaged(coborrowerResults.isVisible());
+    }
+
+    @FXML private void focusCoborrowerSearch() {
+        javafx.application.Platform.runLater(() -> {
+            if (showingCoborrowers && !coborrowerSearch.isDisabled()) coborrowerSearch.requestFocus();
+        });
+    }
+
+    private void renderCoborrowers() {
+        coborrowerRows.getChildren().clear();
+        for (var customer : coborrowers) {
+            Label name = new Label(customer.name() + " | Customer ID: " + customer.customerId());
+            name.setWrapText(true);
+            name.setMinWidth(0);
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Button remove = new Button("Remove");
+            remove.setStyle(removeButtonStyle);
+            remove.setMinWidth(Region.USE_PREF_SIZE);
+            remove.setAccessibleText("Remove " + customer.name() + " as co-borrower");
+            remove.setOnAction(event -> {
+                coborrowers.remove(customer);
+                renderCoborrowers();
+                searchCoborrowers();
+                focusCoborrowerSearch();
+            });
+            HBox row = new HBox(12, name, spacer, remove);
+            row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            row.setStyle(coborrowerRowStyle);
+            coborrowerRows.getChildren().add(row);
+        }
+        coborrowerCount.setText("Added co-borrowers (" + coborrowers.size() + "/3)");
+        emptyCoborrowers.setVisible(coborrowers.isEmpty());
+        emptyCoborrowers.setManaged(coborrowers.isEmpty());
+        coborrowerSearch.setDisable(coborrowers.size() >= 3);
     }
 
     String validateDetails() {
