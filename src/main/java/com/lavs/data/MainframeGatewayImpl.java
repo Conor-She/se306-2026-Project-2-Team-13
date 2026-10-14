@@ -45,13 +45,18 @@ public class MainframeGatewayImpl implements MainframeGateway {
     private static final long CATEGORY_PAGE_SIZE = 100;
 
     private final Connection connection;
-    private final String organisationName;
+    private final Long organisationNumber;
     private static final String PAYMENTS_READ_ONLY_MESSAGE = "Not supported by the mainframe: "
             + "its loanPayment messages only list and retrieve payments";
 
+    public MainframeGatewayImpl(Connection connection, long organisationNumber) {
+        this.connection = connection;
+        this.organisationNumber = organisationNumber;
+    }
+
     public MainframeGatewayImpl(Connection connection, String organisationName) {
         this.connection = connection;
-        this.organisationName = organisationName;
+        this.organisationNumber = null;
     }
 
     @Override
@@ -70,8 +75,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Customer createCustomer(Customer customer) {
-        long organisationId = findOrganisationId(organisationName);
-
+        long organisationId = requireOrganisationNumber();
         Create message = new Create(
                 customer.getDateOfBirth() == null ? null : customer.getDateOfBirth().toString(),
                 customer.getLastName(),
@@ -87,6 +91,17 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 customer.getDateOfBirth(), // mainframe returns a String, Customer wants LocalDate -
                                             // needs a parser once dateOfBirth format is confirmed
                 message.getNationality());
+    }
+
+    // The organisation number is needed to create a customer. A gateway built
+    // from a name doesn't have one.
+    private long requireOrganisationNumber() {
+        if (organisationNumber == null) {
+            throw new IllegalStateException(
+                    "Creating a customer needs the organisation number. Build the gateway "
+                            + "with the number, not the name.");
+        }
+        return organisationNumber;
     }
 
     @Override
@@ -614,22 +629,6 @@ public class MainframeGatewayImpl implements MainframeGateway {
             return new MainframeException(MainframeException.Type.UNAVAILABLE,
                     StatusMessage.NETWORK_FAILURE_UNAVAILABLE.getCode(), cause.getMessage());
     }
-
-    private long findOrganisationId(String organisationName) {
-        mainframe.client.messages.organisation.List message =
-                new mainframe.client.messages.organisation.List(1, 100);
-        sendOrThrow(message);
-
-        for (mainframe.client.messages.organisation.List.Item item : message.getItems()) {
-            if (organisationName.equals(item.getName())) {
-                return item.getId();
-            }
-        }
-
-        throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
-                "Organisation '" + organisationName + "' not found on the mainframe");
-    }
-
 
     // Interest-Only is the one loan type the mainframe can represent. Table
     // Loan vs Reducing Balance is not stored by the mainframe (team decision),
