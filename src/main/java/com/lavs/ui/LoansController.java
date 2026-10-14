@@ -32,6 +32,21 @@ public class LoansController {
     @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
+    private VBox addLoanView;
+
+    @FXML private void openAddLoan() throws java.io.IOException {
+        var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addLoan.fxml"));
+        VBox editor = loader.load();
+        AddLoanController controller = loader.getController();
+        controller.configure(new CustomersController().loadCustomers(), this::showListAndFocusSearch);
+        showList(true);
+        listView.setVisible(false);
+        listView.setManaged(false);
+        addLoanView = editor;
+        VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
+        ((VBox) listView.getParent()).getChildren().add(editor);
+        controller.focusBorrowerSearch();
+    }
 
     @FXML private void initialize() {
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));
@@ -99,6 +114,10 @@ public class LoansController {
         Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
     }
     private void showList(boolean visible) {
+        if (addLoanView != null) {
+            ((VBox) listView.getParent()).getChildren().remove(addLoanView);
+            addLoanView = null;
+        }
         listView.setVisible(visible);
         listView.setManaged(visible);
         detailsView.setVisible(!visible);
