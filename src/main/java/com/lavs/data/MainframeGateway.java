@@ -72,7 +72,7 @@ public interface MainframeGateway {
 
     // Manage Co-borrowers
     CoBorrower addCoBorrower(CoBorrower coBorrower);
-    void deleteCoBorrower(String coBorrowerId);
+    void deleteCoBorrower(String loanId, String coBorrowerId);
     int getCoBorrowerCount(String loanId);
     List<CoBorrower> getCoBorrowers(String loanId);
 
@@ -87,7 +87,8 @@ public interface MainframeGateway {
     // Manage Payments
     Payment addPayment(Payment payment);
     Payment updatePayment(Payment payment);
-    void deletePayment(String paymentId);
+    void deletePayment(String loanId, String paymentId);
+    List<Payment> getPayments(String loanId);
 
     // Retrieve Category Values
     List<String> getCategoryValues(String categoryType);

@@ -20,6 +20,7 @@ public class LoanService {
     static final String TERM_REQUIRED_MESSAGE = "A loan term is required!";
     static final String CUSTOMER_CHANGE_MESSAGE =
             "A loan's customer can't be changed by editing the loan";
+    static final String PAYMENT_AMOUNT_MESSAGE = "The payment amount must be greater than zero";
 
     // Stands in for the real ID during create's dry run, since the mainframe
     // hasn't assigned one yet
@@ -58,6 +59,7 @@ public class LoanService {
         }
 
         requireTerm(loan);
+        requirePaymentAmount(loan);
         checkPrerequisites(loan.getCustomerId());
 
         // The calculators reject some terms (e.g. "on renewal" payments), so
@@ -79,6 +81,7 @@ public class LoanService {
         }
 
         requireTerm(loan);
+        requirePaymentAmount(loan);
 
         Loan existing = gateway.getLoan(loan.getLoanId());
         if (existing.getStatus() != loan.getStatus()) {
@@ -177,6 +180,14 @@ public class LoanService {
     private void requireTerm(Loan loan) {
         if (loan.getTermMonths() == null) {
             throw new IllegalArgumentException(TERM_REQUIRED_MESSAGE);
+        }
+    }
+
+    // The product owner suggested a payment amount above zero as a reasonable
+    // rule. Written so that a missing number (NaN) is refused too.
+    private void requirePaymentAmount(Loan loan) {
+        if (!(loan.getPaymentAmount() > 0)) {
+            throw new IllegalArgumentException(PAYMENT_AMOUNT_MESSAGE);
         }
     }
 

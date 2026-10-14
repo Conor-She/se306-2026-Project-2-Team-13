@@ -185,7 +185,7 @@ class CoBorrowerServiceTest {
         List<CoBorrower> added = addCoBorrowers(3);
 
         for (int remaining = 2; remaining >= 0; remaining--) {
-            service.removeCoBorrower(added.get(remaining).getCoBorrowerId());
+            service.removeCoBorrower(loanId, added.get(remaining).getCoBorrowerId());
 
             assertEquals(remaining, gateway.getCoBorrowerCount(loanId));
         }
@@ -198,7 +198,7 @@ class CoBorrowerServiceTest {
         assertThrows(CoBorrowerLimitException.class,
                 () -> service.addCoBorrower(loanId, "C005"));
 
-        service.removeCoBorrower(added.get(0).getCoBorrowerId());
+        service.removeCoBorrower(loanId, added.get(0).getCoBorrowerId());
 
         assertDoesNotThrow(() -> service.addCoBorrower(loanId, "C005"));
         assertEquals(3, gateway.getCoBorrowerCount(loanId));
@@ -207,14 +207,30 @@ class CoBorrowerServiceTest {
     @Test
     void removingAnUnknownCoBorrowerIsABusinessError() {
         MainframeException exception = assertThrows(MainframeException.class,
-                () -> service.removeCoBorrower("MISSING"));
+                () -> service.removeCoBorrower(loanId, "MISSING"));
 
         assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
 
     @Test
-    void removeRejectsMissingId() {
-        assertThrows(IllegalArgumentException.class, () -> service.removeCoBorrower(null));
-        assertThrows(IllegalArgumentException.class, () -> service.removeCoBorrower(" "));
+    void removeRejectsMissingIds() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.removeCoBorrower(loanId, null));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.removeCoBorrower(loanId, " "));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.removeCoBorrower(null, "CB1"));
+    }
+
+    // Removing needs the right loan, so naming a different loan is refused
+    @Test
+    void removingUnderTheWrongLoanIsABusinessError() {
+        String otherLoanId = createLoan();
+        CoBorrower added = service.addCoBorrower(loanId, "C002");
+
+        assertThrows(MainframeException.class,
+                () -> service.removeCoBorrower(otherLoanId, added.getCoBorrowerId()));
+
+        assertEquals(1, gateway.getCoBorrowerCount(loanId));
     }
 }

@@ -13,8 +13,8 @@ public class Payment {
     public Payment(String paymentId, String loanId, String repaymentId, LocalDate paymentDate,
             double amountPaid) {
         // Basic structural checks
-        if (paymentId == null || paymentId.isBlank()) {
-            throw new IllegalArgumentException("paymentId must not be null or blank");
+        if (paymentId != null && paymentId.isBlank()) {
+            throw new IllegalArgumentException("paymentId must not be blank");
         }
         if (loanId == null || loanId.isBlank()) {
             throw new IllegalArgumentException("loanId must not be null or blank");

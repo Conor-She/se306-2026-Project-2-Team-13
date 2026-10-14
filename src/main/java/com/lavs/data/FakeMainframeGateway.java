@@ -33,6 +33,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private final Map<String, List<Email>> emails = new HashMap<>();
     private final Map<String, List<Employer>> employers = new HashMap<>();
     private final Map<String, List<Guarantor>> guarantors = new HashMap<>();
+    private final Map<String, Payment> payments = new HashMap<>();
     private final Map<String, List<CustomerDocument>> documents = new HashMap<>();
 
     private boolean unavailable = false;
@@ -40,6 +41,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private int nextLoanNumber = 1;
     private int nextCoBorrowerNumber = 1;
     private int nextGuarantorNumber = 1;
+    private int nextPaymentNumber = 1;
     private int nextDocumentNumber = 1;
 
     // Stores an item under its customer, creating that customer's list on first use
@@ -234,12 +236,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deleteCoBorrower(String coBorrowerId) {
+    public void deleteCoBorrower(String loanId, String coBorrowerId) {
         checkAvailability();
-        if (coBorrowers.remove(coBorrowerId) == null) {
+        CoBorrower existing = coBorrowers.get(coBorrowerId);
+        if (existing == null || !existing.getLoanId().equals(loanId)) {
             throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
-                    "Co-borrower '" + coBorrowerId + "' not found");
+                    "Co-borrower '" + coBorrowerId + "' not found on loan '" + loanId + "'");
         }
+        coBorrowers.remove(coBorrowerId);
     }
 
     @Override
@@ -462,18 +466,49 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Payment addPayment(Payment payment) {
         checkAvailability();
-        return payment;
+        // The real mainframe assigns the ID, so the fake does too
+        String paymentId = payment.getPaymentId() != null
+                ? payment.getPaymentId()
+                : "FAKE-PAYMENT-" + nextPaymentNumber++;
+        Payment stored = withPaymentId(payment, paymentId);
+        payments.put(paymentId, stored);
+        return stored;
     }
 
     @Override
     public Payment updatePayment(Payment payment) {
         checkAvailability();
+        if (!payments.containsKey(payment.getPaymentId())) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Payment '" + payment.getPaymentId() + "' not found");
+        }
+        payments.put(payment.getPaymentId(), payment);
         return payment;
     }
 
     @Override
-    public void deletePayment(String paymentId) {
+    public void deletePayment(String loanId, String paymentId) {
         checkAvailability();
+        Payment existing = payments.get(paymentId);
+        if (existing == null || !existing.getLoanId().equals(loanId)) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                    "Payment '" + paymentId + "' not found on loan '" + loanId + "'");
+        }
+        payments.remove(paymentId);
+    }
+
+    @Override
+    public List<Payment> getPayments(String loanId) {
+        checkAvailability();
+        return payments.values().stream()
+                .filter(payment -> loanId.equals(payment.getLoanId()))
+                .toList();
+    }
+
+    // Payment is immutable, so "changing" the ID means building a copy
+    private Payment withPaymentId(Payment payment, String paymentId) {
+        return new Payment(paymentId, payment.getLoanId(), payment.getRepaymentId(),
+                payment.getPaymentDate(), payment.getAmountPaid());
     }
 
     @Override

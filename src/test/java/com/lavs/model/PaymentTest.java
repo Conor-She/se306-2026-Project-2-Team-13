@@ -19,7 +19,8 @@ class PaymentTest {
         assertEquals("R001", payment.getRepaymentId());
     }
 
-    // a payment not tied to a specific scheduled repayment must still construct cleanly
+    // A payment not tied to a specific scheduled repayment must still
+    // construct cleanly
     @Test
     void compilesAndConstructsWithNullRepaymentId() {
         Payment payment = assertDoesNotThrow(() ->
@@ -28,7 +29,22 @@ class PaymentTest {
         assertNull(payment.getRepaymentId());
     }
 
-    // A payment of zero (or less) must be rejected
+    // A payment that hasn't been recorded on the mainframe yet has no ID
+    @Test
+    void acceptsUnassignedId() {
+        Payment payment = new Payment(null, "L001", "R001", LocalDate.of(2026, 2, 1), 500);
+
+        assertNull(payment.getPaymentId());
+    }
+
+    // A blank (as opposed to missing) ID is a mistake, so it must be rejected
+    @Test
+    void rejectsBlankId() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new Payment("", "L001", "R001", LocalDate.now(), 500));
+    }
+
+    // A payment of zero (or less) isn't a real payment, so it must be rejected
     @Test
     void rejectsNonPositiveAmountPaid() {
         assertThrows(IllegalArgumentException.class, () ->
