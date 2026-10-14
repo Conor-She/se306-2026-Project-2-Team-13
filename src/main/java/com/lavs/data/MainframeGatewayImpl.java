@@ -358,20 +358,41 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<CoBorrower> getCoBorrowers(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower retrieval");
+        List<CoBorrower> coBorrowers = new ArrayList<>();
+        long page = 1;
+        long seen = 0;
+        while (true) {
+            mainframe.client.messages.loanCoborrower.List message =
+                    new mainframe.client.messages.loanCoborrower.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanCoborrower.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loanCoborrower.List.Item item : items) {
+                if (AddCoborrower.TYPE_COBORROWER.equals(item.getType())) {
+                    coBorrowers.add(new CoBorrower(String.valueOf(item.getId()), loanId,
+                            item.getCoborrowerNumber()));
+                }
+            }
+            seen += items.length;
+            if (items.length == 0 || seen >= message.getTotal()) {
+                return coBorrowers;
+            }
+            page++;
+        }
     }
 
     @Override
     public int getCoBorrowerCount(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower retrieval");
+        return getCoBorrowers(loanId).size();
     }
 
+    // The mainframe builds its own schedule from the loan's terms and has no
+    // message for storing one, so there is nothing to save. The schedule LAVS
+    // calculates is shown when the loan is created; the one read back later is
+    // the mainframe's (see getRepaymentSchedule).
     @Override
     public void saveRepaymentSchedule(String loanId, List<Repayment> schedule) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanRepaymentSchedule messages");
+        // Intentionally empty
     }
 
     // The mainframe's list only has each loan's number, principal, start date
@@ -398,8 +419,26 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Repayment> getRepaymentSchedule(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanRepaymentSchedule retrieval");
+        List<Repayment> schedule = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loanRepaymentSchedule.List message =
+                    new mainframe.client.messages.loanRepaymentSchedule.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanRepaymentSchedule.List.Item[] items =
+                    message.getItems();
+            for (mainframe.client.messages.loanRepaymentSchedule.List.Item item : items) {
+                schedule.add(new Repayment(loanId + "-repayment-" + item.getPaymentNumber(),
+                        loanId, java.time.LocalDate.parse(item.getDate()), item.getAmountPaid(),
+                        item.getPrincipalAmount(), item.getInterestAmount(),
+                        item.getAmountRemaining()));
+            }
+            if (items.length == 0 || schedule.size() >= message.getTotal()) {
+                return schedule;
+            }
+            page++;
+        }
     }
 
     @Override

@@ -207,7 +207,7 @@ class CoBorrowerServiceTest {
     @Test
     void removingAnUnknownCoBorrowerIsABusinessError() {
         MainframeException exception = assertThrows(MainframeException.class,
-                () -> service.removeCoBorrower(loanId, "MISSING")
+                () -> service.removeCoBorrower(loanId, "MISSING"));
 
         assertEquals(MainframeException.Type.BUSINESS_ERROR, exception.getType());
     }
