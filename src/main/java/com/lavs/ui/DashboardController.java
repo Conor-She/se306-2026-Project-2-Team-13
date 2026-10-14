@@ -36,6 +36,7 @@ public class DashboardController {
     private final BooleanProperty twoColumns = new SimpleBooleanProperty(false);
 
     @FXML private void initialize() {
+        loansViewController.setOnSaved(customersViewController::addSessionLoan);
         customersViewController.setOnAddLoan(customer -> {
             try {
                 loansViewController.openAddLoan(customer, () -> {

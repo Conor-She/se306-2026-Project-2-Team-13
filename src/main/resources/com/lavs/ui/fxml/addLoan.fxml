@@ -59,7 +59,7 @@
 <columns><TableColumn fx:id="dueDateColumn" text="Due date" prefWidth="160" minWidth="130"/><TableColumn fx:id="paymentColumn" text="Payment" prefWidth="170" minWidth="140"/><TableColumn fx:id="principalColumn" text="Principal" prefWidth="170" minWidth="140"/><TableColumn fx:id="interestColumn" text="Interest" prefWidth="150" minWidth="120"/><TableColumn fx:id="balanceColumn" text="Balance" prefWidth="180" minWidth="150"/></columns>
 </TableView>
 </VBox>
-<Label text="Saving loans is not connected yet. Finish will keep your details here without saving a loan." wrapText="true" style="-fx-text-fill: #393a7b;"/>
+<Label text="Finish saves this loan for the current app session. It will be lost when the app closes." wrapText="true" style="-fx-text-fill: #393a7b;"/>
 </VBox></VBox></content></ScrollPane>
 <HBox spacing="12" alignment="CENTER_LEFT"><Button fx:id="cancel" text="Cancel" onAction="#cancel" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/><Region HBox.hgrow="ALWAYS"/><Button fx:id="back" text="Back" onAction="#back" visible="false" managed="false" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/><Button fx:id="next" text="Next" onAction="#next" style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: #f8f40c; -fx-text-fill: black; -fx-border-color: #b6b309; -fx-font-weight: bold;"/></HBox>
 </VBox>

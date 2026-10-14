@@ -51,6 +51,10 @@ public class AddLoanController {
     private String activeMarkerStyle, inactiveMarkerStyle, activeNameStyle, inactiveNameStyle;
     private List<CustomersController.CustomerSummary> customers = List.of();
     private Runnable onCancel = () -> {};
+    private java.util.function.Consumer<LoanDraft> onSave;
+    private boolean saved;
+
+    public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
 
     @FXML private void initialize() {
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -187,6 +191,7 @@ public class AddLoanController {
     }
 
     @FXML private void next() {
+        if (saved) return;
         String error = validateDetails();
         if (error != null) { showMessage(error); return; }
         if (step == 2 || step == 1 || editingReview) {
@@ -200,7 +205,18 @@ public class AddLoanController {
             }
         }
         if (step == 2) {
-            showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
+            if (onSave == null) {
+                showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
+                return;
+            }
+            try {
+                next.setDisable(true);
+                onSave.accept(draft.copy());
+                saved = true;
+            } catch (IllegalArgumentException exception) {
+                next.setDisable(false);
+                showMessage(exception.getMessage());
+            }
         } else {
             int target = editingReview ? 2 : step + 1;
             editingReview = false;

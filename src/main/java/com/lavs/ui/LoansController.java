@@ -33,6 +33,13 @@ public class LoansController {
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
     private VBox addLoanView;
+    private final com.lavs.business.SessionLoanStore sessionLoans = new com.lavs.business.SessionLoanStore();
+    private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
+    private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
+
+    public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
+        this.onSaved = onSaved;
+    }
 
     @FXML private void openAddLoan() throws java.io.IOException {
         openAddLoan(null, this::showListAndFocusSearch);
@@ -48,6 +55,16 @@ public class LoansController {
             onCancel.run();
         });
         if (customer != null) controller.setPrimaryBorrower(customer);
+        controller.setOnSave(draft -> {
+            var saved = sessionLoans.save(draft);
+            var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+            loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
+                    draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),
+                    draft.details.get("loanType")));
+            onSaved.accept(saved);
+            onShown();
+            if (customer != null) onCancel.run();
+        });
         showList(true);
         listView.setVisible(false);
         listView.setManaged(false);
@@ -66,7 +83,10 @@ public class LoansController {
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));
         amountColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().amount()));
         typeColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().type()));
-        var filtered = new FilteredList<>(FXCollections.observableArrayList(loadLoans()));
+        loans.setAll(loadLoans());
+        var filtered = new FilteredList<>(loans);
+        filtered.addListener((javafx.collections.ListChangeListener<LoanSummary>) change ->
+                resultsHeading.setText((searchField.getText().isBlank() ? "All loans (" : "Search results (") + filtered.size() + ")"));
         var sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(loanTable.comparatorProperty());
         loanTable.setItems(sorted);

@@ -59,6 +59,37 @@ class CustomerAddLoanNavigationTest {
             assertFalse(loansView.isVisible());
             assertSame(ethan, details.getCustomer());
             assertTrue(customersView.lookup("#loansContent").isVisible());
+            add.fire();
+            root.applyCss();
+            root.layout();
+            for (String id : java.util.List.of("loanType", "paymentFrequency", "rateFrequency"))
+                ((javafx.scene.control.ComboBox<?>) loansView.lookup("#" + id)).getSelectionModel().selectFirst();
+            ((javafx.scene.control.TextField) loansView.lookup("#principal")).setText("12000");
+            ((javafx.scene.control.TextField) loansView.lookup("#interestRate")).setText("6.25");
+            ((javafx.scene.control.TextField) loansView.lookup("#term")).setText("12");
+            ((javafx.scene.control.DatePicker) loansView.lookup("#startDate")).setValue(java.time.LocalDate.of(2026, 10, 14));
+            ((javafx.scene.control.DatePicker) loansView.lookup("#renewDate")).setValue(java.time.LocalDate.of(2027, 10, 14));
+            Button next = (Button) loansView.lookup("#next");
+            next.fire();
+            next.fire();
+            assertEquals("Finish", next.getText());
+            next.fire();
+            next.fire(); // A second click must not create another loan.
+            assertTrue(customersView.isVisible());
+            assertTrue(customersView.lookup("#loansContent").isVisible());
+            assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
+                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+            var table = (javafx.scene.control.TableView<?>) loansView.lookup("#loanTable");
+            assertEquals(11, table.getItems().size());
+            ((LoansController) loader.getNamespace().get("loansViewController")).onShown();
+            assertEquals(11, table.getItems().size());
+            details.setCustomer(new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
+            assertFalse(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
+                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+            details.setCustomer(ethan);
+            details.showLoansTab();
+            assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
+                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
             return null;
         });
     }
