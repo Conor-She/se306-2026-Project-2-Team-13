@@ -18,8 +18,8 @@ import java.net.URI;
 public class Main extends Application {
     private static final String MAINFRAME_URL_PROPERTY = "lavs.mainframe.url";
     private static final String MAINFRAME_URL_ENV = "LAVS_MAINFRAME_URL";
-    private static final String ORGANISATION_NAME_PROPERTY = "lavs.organisation.name";
-    private static final String ORGANISATION_NAME_ENV = "LAVS_ORGANISATION_NAME";
+    private static final String ORGANISATION_ID_PROPERTY = "lavs.organisation.id";
+    private static final String ORGANISATION_ID_ENV = "LAVS_ORGANISATION_ID";
 
     private Connection connection;
     private MainframeGateway gateway;
@@ -36,10 +36,11 @@ public class Main extends Application {
         boolean secureMainframeUrl = mainframeUrl != null && isSecureMainframeUrl(mainframeUrl);
         if (secureMainframeUrl) {
             connection = new HttpConnection(mainframeUrl);
-            String organisationName = configuredValue(
-                    ORGANISATION_NAME_PROPERTY, ORGANISATION_NAME_ENV);
-            gateway = new MainframeGatewayImpl(connection,
-                    organisationName == null ? "" : organisationName);
+            Long organisationNumber = parseNumber(
+                    configuredValue(ORGANISATION_ID_PROPERTY, ORGANISATION_ID_ENV));
+            gateway = organisationNumber == null
+                    ? new MainframeGatewayImpl(connection, "")
+                    : new MainframeGatewayImpl(connection, organisationNumber);
         }
 
         controller.configure((username, password) -> {
@@ -125,6 +126,18 @@ public class Main extends Application {
             value = System.getenv(environmentVariable);
         }
         return value == null || value.isBlank() ? null : value.strip();
+    }
+
+    // Reads a whole number from a setting, or null if it is missing or not a number
+    private static Long parseNumber(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     private static boolean isSecureMainframeUrl(String value) {
