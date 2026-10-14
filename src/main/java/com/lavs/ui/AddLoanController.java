@@ -3,7 +3,7 @@ package com.lavs.ui;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
-import java.util.ArrayList;
+import com.lavs.model.LoanDraft;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -31,12 +31,11 @@ public class AddLoanController {
             reviewInterest, reviewPaymentFrequency, reviewRateFrequency, reviewTerm,
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
-    private final List<CustomersController.CustomerSummary> coborrowers = new ArrayList<>();
+    private final LoanDraft draft = new LoanDraft();
     private int step;
     private boolean editingReview;
     @FXML private Label reviewNotice;
     private String activeMarkerStyle, inactiveMarkerStyle, activeNameStyle, inactiveNameStyle;
-    private CustomersController.CustomerSummary borrower;
     private List<CustomersController.CustomerSummary> customers = List.of();
     private Runnable onCancel = () -> {};
 
@@ -50,8 +49,8 @@ public class AddLoanController {
         inactiveNameStyle = stepName1.getStyle();
         coborrowerSearch.textProperty().addListener((obs, old, value) -> searchCoborrowers());
         coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
-            if (value == null || coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
-            coborrowers.add(value);
+            if (value == null || draft.coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
+            draft.coborrowers.add(new LoanDraft.Borrower(value.customerId(), value.name()));
             coborrowerSearch.clear();
             renderCoborrowers();
         });
@@ -59,6 +58,15 @@ public class AddLoanController {
         paymentFrequency.getItems().setAll("Weekly", "Fortnightly", "Monthly", "Yearly", "On Renewal");
         rateFrequency.getItems().setAll("Daily", "Weekly", "Fortnightly", "Monthly", "Yearly");
         status.getItems().setAll("New", "Pending", "Active", "Defaulted", "Cancelled");
+        bindText("principal", principal);
+        bindText("interestRate", interestRate);
+        bindText("term", term);
+        bindChoice("loanType", loanType);
+        bindChoice("paymentFrequency", paymentFrequency);
+        bindChoice("rateFrequency", rateFrequency);
+        bindChoice("status", status);
+        startDate.valueProperty().addListener((obs, old, value) -> draft.startDate = value);
+        renewDate.valueProperty().addListener((obs, old, value) -> draft.renewDate = value);
         status.setValue("New");
         customerResults.setCellFactory(list -> new ListCell<>() {
             @Override protected void updateItem(CustomersController.CustomerSummary customer, boolean empty) {
@@ -70,8 +78,8 @@ public class AddLoanController {
         customerSearch.textProperty().addListener((obs, old, value) -> searchCustomers());
         customerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value == null) return;
-            borrower = value;
-            coborrowers.removeIf(c -> c.customerId().equals(value.customerId()));
+            draft.primaryBorrower = new LoanDraft.Borrower(value.customerId(), value.name());
+            draft.coborrowers.removeIf(c -> c.customerId().equals(value.customerId()));
             renderCoborrowers();
             borrowerName.setText(value.name() + " | Customer ID: " + value.customerId());
             selectedBorrower.setVisible(true);
@@ -79,6 +87,18 @@ public class AddLoanController {
             customerSearch.clear();
         });
     }
+
+    private void bindText(String key, TextField field) {
+        draft.details.put(key, field.getText());
+        field.textProperty().addListener((obs, old, value) -> draft.details.put(key, value));
+    }
+
+    private void bindChoice(String key, ComboBox<String> field) {
+        field.valueProperty().addListener((obs, old, value) -> draft.details.put(key, value == null ? "" : value));
+    }
+
+    /** Returns an independent snapshot, including incomplete edits. */
+    public LoanDraft getDraft() { return draft.copy(); }
 
     public void configure(List<CustomersController.CustomerSummary> customers, Runnable onCancel) {
         this.customers = List.copyOf(customers);
@@ -102,7 +122,7 @@ public class AddLoanController {
     }
 
     @FXML private void clearBorrower() {
-        borrower = null;
+        draft.primaryBorrower = null;
         selectedBorrower.setVisible(false);
         selectedBorrower.setManaged(false);
         customerSearch.requestFocus();
@@ -173,24 +193,24 @@ public class AddLoanController {
     }
 
     private void renderReview() {
-        reviewBorrower.setText(borrower.name() + " | Customer ID: " + borrower.customerId());
-        reviewType.setText(loanType.getValue());
+        reviewBorrower.setText(draft.primaryBorrower.name() + " | Customer ID: " + draft.primaryBorrower.customerId());
+        reviewType.setText(draft.details.getOrDefault("loanType", ""));
         java.text.NumberFormat currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
-        reviewPrincipal.setText(currency.format(new BigDecimal(principal.getText().strip())));
-        reviewInterest.setText(new BigDecimal(interestRate.getText().strip()).stripTrailingZeros().toPlainString() + "%");
-        reviewPaymentFrequency.setText(paymentFrequency.getValue());
-        reviewRateFrequency.setText(rateFrequency.getValue());
-        reviewTerm.setText(Integer.parseInt(term.getText().strip()) + " months");
+        reviewPrincipal.setText(currency.format(new BigDecimal(draft.details.getOrDefault("principal", "").strip())));
+        reviewInterest.setText(new BigDecimal(draft.details.getOrDefault("interestRate", "").strip()).stripTrailingZeros().toPlainString() + "%");
+        reviewPaymentFrequency.setText(draft.details.getOrDefault("paymentFrequency", ""));
+        reviewRateFrequency.setText(draft.details.getOrDefault("rateFrequency", ""));
+        reviewTerm.setText(Integer.parseInt(draft.details.getOrDefault("term", "").strip()) + " months");
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        reviewStartDate.setText(startDate.getValue().format(dateFormat));
-        reviewRenewDate.setText(renewDate.getValue().format(dateFormat));
-        reviewStatus.setText(status.getValue());
-        reviewCoborrowerCount.setText("Co-borrowers (" + coborrowers.size() + "/3)");
+        reviewStartDate.setText(draft.startDate.format(dateFormat));
+        reviewRenewDate.setText(draft.renewDate.format(dateFormat));
+        reviewStatus.setText(draft.details.getOrDefault("status", ""));
+        reviewCoborrowerCount.setText("Co-borrowers (" + draft.coborrowers.size() + "/3)");
         reviewCoborrowers.getChildren().clear();
-        if (coborrowers.isEmpty()) {
+        if (draft.coborrowers.isEmpty()) {
             reviewCoborrowers.getChildren().add(new Label("No co-borrowers added."));
         } else {
-            for (var customer : coborrowers) {
+            for (var customer : draft.coborrowers) {
                 Label name = new Label(customer.name() + " | Customer ID: " + customer.customerId());
                 name.setWrapText(true);
                 name.setMinWidth(0);
@@ -200,17 +220,17 @@ public class AddLoanController {
     }
 
     private boolean eligibleCoborrower(CustomersController.CustomerSummary customer) {
-        return (borrower == null || !borrower.customerId().equals(customer.customerId()))
-                && coborrowers.stream().noneMatch(c -> c.customerId().equals(customer.customerId()));
+        return (draft.primaryBorrower == null || !draft.primaryBorrower.customerId().equals(customer.customerId()))
+                && draft.coborrowers.stream().noneMatch(c -> c.customerId().equals(customer.customerId()));
     }
 
     private void searchCoborrowers() {
         String query = coborrowerSearch.getText().strip().toLowerCase(Locale.ROOT);
-        coborrowerResults.getItems().setAll(query.isEmpty() || coborrowers.size() >= 3 ? List.of()
+        coborrowerResults.getItems().setAll(query.isEmpty() || draft.coborrowers.size() >= 3 ? List.of()
                 : customers.stream().filter(this::eligibleCoborrower)
                 .filter(c -> c.name().toLowerCase(Locale.ROOT).contains(query)
                         || c.customerId().toLowerCase(Locale.ROOT).contains(query)).toList());
-        coborrowerResults.setVisible(!query.isEmpty() && coborrowers.size() < 3);
+        coborrowerResults.setVisible(!query.isEmpty() && draft.coborrowers.size() < 3);
         coborrowerResults.setManaged(coborrowerResults.isVisible());
     }
 
@@ -222,7 +242,7 @@ public class AddLoanController {
 
     private void renderCoborrowers() {
         coborrowerRows.getChildren().clear();
-        for (var customer : coborrowers) {
+        for (var customer : draft.coborrowers) {
             Label name = new Label(customer.name() + " | Customer ID: " + customer.customerId());
             name.setWrapText(true);
             name.setMinWidth(0);
@@ -233,7 +253,7 @@ public class AddLoanController {
             remove.setMinWidth(Region.USE_PREF_SIZE);
             remove.setAccessibleText("Remove " + customer.name() + " as co-borrower");
             remove.setOnAction(event -> {
-                coborrowers.remove(customer);
+                draft.coborrowers.remove(customer);
                 renderCoborrowers();
                 searchCoborrowers();
                 focusCoborrowerSearch();
@@ -243,29 +263,29 @@ public class AddLoanController {
             row.setStyle(coborrowerRowStyle);
             coborrowerRows.getChildren().add(row);
         }
-        coborrowerCount.setText("Added co-borrowers (" + coborrowers.size() + "/3)");
-        emptyCoborrowers.setVisible(coborrowers.isEmpty());
-        emptyCoborrowers.setManaged(coborrowers.isEmpty());
-        coborrowerSearch.setDisable(coborrowers.size() >= 3);
+        coborrowerCount.setText("Added co-borrowers (" + draft.coborrowers.size() + "/3)");
+        emptyCoborrowers.setVisible(draft.coborrowers.isEmpty());
+        emptyCoborrowers.setManaged(draft.coborrowers.isEmpty());
+        coborrowerSearch.setDisable(draft.coborrowers.size() >= 3);
     }
 
     String validateDetails() {
-        if (borrower == null) return "Select a primary borrower from the customer search results.";
-        if (loanType.getValue() == null) return "Select a loan type.";
-        if (!validNumber(principal.getText(), false)) return "Enter a principal greater than zero.";
-        if (!validNumber(interestRate.getText(), true)) return "Enter an interest rate of zero or greater.";
-        if (paymentFrequency.getValue() == null) return "Select a payment frequency.";
-        if (rateFrequency.getValue() == null) return "Select a rate frequency.";
+        if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
+        if (draft.details.getOrDefault("loanType", "").isBlank()) return "Select a loan type.";
+        if (!validNumber(draft.details.getOrDefault("principal", ""), false)) return "Enter a principal greater than zero.";
+        if (!validNumber(draft.details.getOrDefault("interestRate", ""), true)) return "Enter an interest rate of zero or greater.";
+        if (draft.details.getOrDefault("paymentFrequency", "").isBlank()) return "Select a payment frequency.";
+        if (draft.details.getOrDefault("rateFrequency", "").isBlank()) return "Select a rate frequency.";
         try {
-            if (Integer.parseInt(term.getText().strip()) <= 0) return "Enter a term greater than zero in months.";
+            if (Integer.parseInt(draft.details.getOrDefault("term", "").strip()) <= 0) return "Enter a term greater than zero in months.";
         } catch (NumberFormatException exception) { return "Enter the term as a whole number of months."; }
         try {
             startDate.commitValue();
             renewDate.commitValue();
         } catch (RuntimeException exception) { return "Enter valid start and renewal dates."; }
-        if (startDate.getValue() == null || renewDate.getValue() == null) return "Choose start and renewal dates.";
-        if (!renewDate.getValue().isAfter(startDate.getValue())) return "Renewal date must be after the start date.";
-        if (status.getValue() == null) return "Select a status.";
+        if (draft.startDate == null || draft.renewDate == null) return "Choose start and renewal dates.";
+        if (!draft.renewDate.isAfter(draft.startDate)) return "Renewal date must be after the start date.";
+        if (draft.details.getOrDefault("status", "").isBlank()) return "Select a status.";
         return null;
     }
 

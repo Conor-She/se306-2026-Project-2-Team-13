@@ -38,6 +38,12 @@ class AddLoanControllerTest {
             ((DatePicker) loader.getNamespace().get("startDate")).setValue(LocalDate.of(2026, 10, 14));
             ((DatePicker) loader.getNamespace().get("renewDate")).setValue(LocalDate.of(2031, 10, 14));
             assertNull(controller.validateDetails());
+            var snapshot = controller.getDraft();
+            assertEquals("C001", snapshot.primaryBorrower.customerId());
+            assertEquals("500000", snapshot.details.get("principal"));
+            assertEquals(LocalDate.of(2026, 10, 14), snapshot.startDate);
+            snapshot.details.put("principal", "1");
+            assertEquals("500000", controller.getDraft().details.get("principal"));
             ((Button) loader.getNamespace().get("next")).fire();
             var coPane = (javafx.scene.layout.VBox) loader.getNamespace().get("coborrowersPane");
             assertTrue(coPane.isVisible());
@@ -56,6 +62,7 @@ class AddLoanControllerTest {
             assertTrue(coSearch.isDisabled());
             var rows = (javafx.scene.layout.VBox) loader.getNamespace().get("coborrowerRows");
             assertEquals(3, rows.getChildren().size());
+            assertEquals(3, controller.getDraft().coborrowers.size());
             ((Button) loader.getNamespace().get("back")).fire();
             assertFalse(coPane.isVisible());
             assertEquals("500000", ((TextField) loader.getNamespace().get("principal")).getText());
@@ -114,6 +121,7 @@ class AddLoanControllerTest {
             next.fire();
             assertTrue(((Label) loader.getNamespace().get("message")).getText().contains("No loan has been saved"));
             ((TextField) loader.getNamespace().get("principal")).setText("NaN");
+            assertEquals("NaN", controller.getDraft().details.get("principal"));
             assertNotNull(controller.validateDetails());
             return null;
         });
