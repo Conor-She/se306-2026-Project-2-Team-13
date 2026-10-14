@@ -27,6 +27,10 @@ import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
 import mainframe.client.messages.customer.Update;
 import mainframe.client.messages.loan.UpdateStatus;
+import mainframe.client.messages.loan.AddCoborrower;
+import mainframe.client.messages.loan.AddPayment;
+import mainframe.client.messages.loan.DeleteCoborrower;
+import mainframe.client.messages.loan.DeletePayment;
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -339,13 +343,17 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public CoBorrower addCoBorrower(CoBorrower coBorrower) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanCoborrower.Add");
+        AddCoborrower message = new AddCoborrower(
+                coBorrower.getCustomerId(), coBorrower.getLoanId(), AddCoborrower.TYPE_COBORROWER);
+        sendOrThrow(message);
+
+        return new CoBorrower(String.valueOf(message.getId()), message.getLoanNumber(),
+                message.getCoborrowerNumber());
     }
 
     @Override
-    public void deleteCoBorrower(String coBorrowerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower.Delete");
+    public void deleteCoBorrower(String loanId, String coBorrowerId) {
+        sendOrThrow(new DeleteCoborrower(Long.parseLong(coBorrowerId), loanId));
     }
 
     @Override
@@ -366,9 +374,26 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 "Not yet implemented - needs loanRepaymentSchedule messages");
     }
 
+    // The mainframe's list only has each loan's number, principal, start date
+    // and status, so each loan is then fetched in full
     @Override
     public List<Loan> findLoansByCustomer(String customerId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loan.Search");
+        List<Loan> loans = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loan.List message =
+                    new mainframe.client.messages.loan.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loan.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loan.List.Item item : items) {
+                loans.add(getLoan(item.getLoanNumber()));
+            }
+            if (items.length == 0 || loans.size() >= message.getTotal()) {
+                return loans;
+            }
+            page++;
+        }
     }
 
     @Override
@@ -376,26 +401,56 @@ public class MainframeGatewayImpl implements MainframeGateway {
         throw new UnsupportedOperationException(
                 "Not yet implemented - needs loanRepaymentSchedule retrieval");
     }
-    
+
     @Override
     public Payment addPayment(Payment payment) {
-        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
+        AddPayment message = new AddPayment(
+                payment.getAmountPaid(), payment.getPaymentDate().toString(),
+                payment.getLoanId());
+        sendOrThrow(message);
+
+        // The mainframe has no field for a repayment, so that link isn't kept
+        return new Payment(String.valueOf(message.getId()), message.getLoanNumber(), null,
+                java.time.LocalDate.parse(message.getDate()), message.getAmountPaid());
     }
 
+    // The mainframe has no update message, so an edit adds the new version and
+    // then deletes the old one, and the new payment gets a new ID. Adding first
+    // means a failure can't lose a payment; the cost is that a failed delete
+    // leaves the old payment alongside the new one.
     @Override
     public Payment updatePayment(Payment payment) {
-        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
+        Payment replacement = addPayment(new Payment(null, payment.getLoanId(), null,
+                payment.getPaymentDate(), payment.getAmountPaid()));
+        deletePayment(payment.getLoanId(), payment.getPaymentId());
+        return replacement;
     }
 
     @Override
-    public void deletePayment(String paymentId) {
-        throw new UnsupportedOperationException(PAYMENTS_READ_ONLY_MESSAGE);
+    public void deletePayment(String loanId, String paymentId) {
+        sendOrThrow(new DeletePayment(Long.parseLong(paymentId), loanId));
     }
 
+    // Reads every page of a loan's payments. The mainframe's ID is a number, kept here as text.
     @Override
     public List<Payment> getPayments(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - can be built from loanPayment.List");
+        List<Payment> payments = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loanPayment.List message =
+                    new mainframe.client.messages.loanPayment.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanPayment.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loanPayment.List.Item item : items) {
+                payments.add(new Payment(String.valueOf(item.getId()), loanId, null,
+                        java.time.LocalDate.parse(item.getDate()), item.getAmountPaid()));
+            }
+            if (items.length == 0 || payments.size() >= message.getTotal()) {
+                return payments;
+            }
+            page++;
+        }
     }
 
     @Override
