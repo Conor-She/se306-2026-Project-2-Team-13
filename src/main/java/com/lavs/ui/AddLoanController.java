@@ -6,6 +6,10 @@ import java.util.Locale;
 import com.lavs.model.LoanDraft;
 import com.lavs.business.StubLoanGuarantorService;
 import com.lavs.business.LoanPrerequisiteException;
+import com.lavs.business.LoanSchedulePreviewService;
+import com.lavs.business.LoanSummary;
+import com.lavs.model.Repayment;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -36,6 +40,10 @@ public class AddLoanController {
     private final LoanDraft draft = new LoanDraft();
     private final StubLoanGuarantorService guarantorService = new StubLoanGuarantorService();
     @FXML private Label guarantorNotice;
+    private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
+    @FXML private TableView<Repayment> repaymentTable;
+    @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn, interestColumn, balanceColumn;
+    @FXML private Label repaymentCount, totalRepayable, totalInterest;
     private int step;
     private boolean editingReview;
     @FXML private Label reviewNotice;
@@ -44,6 +52,14 @@ public class AddLoanController {
     private Runnable onCancel = () -> {};
 
     @FXML private void initialize() {
+        var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+        dueDateColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().getDueDate().format(dateFormat)));
+        paymentColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getAmountDue())));
+        principalColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getPrincipalComponent())));
+        interestColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getInterestComponent())));
+        balanceColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getRemainingBalance())));
+        ScrollPaneAppearance.install(repaymentTable, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(loanScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(customerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(coborrowerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
@@ -143,6 +159,16 @@ public class AddLoanController {
     @FXML private void next() {
         String error = validateDetails();
         if (error != null) { showMessage(error); return; }
+        if (step == 2 || step == 1 || editingReview) {
+            try {
+                updateSchedule();
+            } catch (IllegalArgumentException | ArithmeticException exception) {
+                repaymentTable.getItems().clear();
+                showMessage("Unable to generate repayment schedule: " + exception.getMessage()
+                        + ". Please edit the loan details and try again.");
+                return;
+            }
+        }
         if (step == 2) {
             showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
         } else {
@@ -227,6 +253,16 @@ public class AddLoanController {
                 reviewCoborrowers.getChildren().add(name);
             }
         }
+    }
+
+    private void updateSchedule() {
+        List<Repayment> schedule = previewService.generate(draft.copy());
+        repaymentTable.getItems().setAll(schedule);
+        LoanSummary summary = LoanSummary.fromSchedule(schedule);
+        var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+        repaymentCount.setText(schedule.size() + " repayments");
+        totalRepayable.setText(currency.format(summary.getTotalRepayable()));
+        totalInterest.setText(currency.format(summary.getTotalInterest()));
     }
 
     private boolean eligibleCoborrower(CustomersController.CustomerSummary customer) {

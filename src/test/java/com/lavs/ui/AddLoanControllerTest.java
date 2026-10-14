@@ -92,6 +92,10 @@ class AddLoanControllerTest {
             assertTrue(((javafx.scene.layout.VBox) loader.getNamespace().get("reviewPane")).isVisible());
             assertFalse(coPane.isVisible());
             assertEquals("Finish", next.getText());
+            TableView<?> repaymentTable = (TableView<?>) loader.getNamespace().get("repaymentTable");
+            assertEquals(1560, repaymentTable.getItems().size());
+            var firstRepayment = (com.lavs.model.Repayment) repaymentTable.getItems().get(0);
+            assertEquals(LocalDate.of(2026, 10, 21), firstRepayment.getDueDate());
             assertEquals("Amelia Adams | Customer ID: C001", ((Label) loader.getNamespace().get("reviewBorrower")).getText());
             assertEquals("$500,000.00", ((Label) loader.getNamespace().get("reviewPrincipal")).getText());
             assertEquals("6.25%", ((Label) loader.getNamespace().get("reviewInterest")).getText());
@@ -108,6 +112,7 @@ class AddLoanControllerTest {
             ((TextField) loader.getNamespace().get("principal")).setText("550000");
             next.fire();
             assertEquals("$550,000.00", ((Label) loader.getNamespace().get("reviewPrincipal")).getText());
+            assertTrue(((com.lavs.model.Repayment) repaymentTable.getItems().get(0)).getAmountDue() > firstRepayment.getAmountDue());
             assertEquals("Finish", next.getText());
             ((Button) loader.getNamespace().get("editCoborrowers")).fire();
             assertTrue(coPane.isVisible());
@@ -134,6 +139,12 @@ class AddLoanControllerTest {
             assertEquals("Co-borrowers (0/3)", ((Label) loader.getNamespace().get("reviewCoborrowerCount")).getText());
             next.fire();
             assertTrue(((Label) loader.getNamespace().get("message")).getText().contains("No loan has been saved"));
+            ((Button) loader.getNamespace().get("editLoanDetails")).fire();
+            ((ComboBox<?>) loader.getNamespace().get("paymentFrequency")).getSelectionModel().select(4);
+            next.fire();
+            assertFalse(((javafx.scene.layout.VBox) loader.getNamespace().get("reviewPane")).isVisible());
+            assertTrue(((Label) loader.getNamespace().get("message")).getText().contains("Unable to generate repayment schedule"));
+            assertTrue(repaymentTable.getItems().isEmpty());
             ((TextField) loader.getNamespace().get("principal")).setText("NaN");
             assertEquals("NaN", controller.getDraft().details.get("principal"));
             assertNotNull(controller.validateDetails());
