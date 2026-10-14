@@ -123,7 +123,7 @@ class CustomerEditingTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"loans,+  Add Loan,id,LN00999", "notes,+  Add Note,title,New note", "guarantors,+  Add Guarantor,firstName,Jane"})
+    @CsvSource({"notes,+  Add Note,title,New note", "guarantors,+  Add Guarantor,firstName,Jane"})
     void addingRecordsAppendsToSelectedTab(String tab, String action, String key, String expected) throws Exception {
         JavaFxTestSupport.run(() -> {
             ((ToggleButton) loader.getNamespace().get(tab + "Tab")).fire();

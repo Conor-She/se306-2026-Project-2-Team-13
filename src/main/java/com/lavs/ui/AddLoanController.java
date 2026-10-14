@@ -98,17 +98,25 @@ public class AddLoanController {
         customerSearch.textProperty().addListener((obs, old, value) -> searchCustomers());
         customerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value == null) return;
-            draft.primaryBorrower = new LoanDraft.Borrower(value.customerId(), value.name());
-            draft.coborrowers.removeIf(c -> c.customerId().equals(value.customerId()));
-            renderCoborrowers();
-            borrowerName.setText(value.name() + " | Customer ID: " + value.customerId());
-            selectedBorrower.setVisible(true);
-            selectedBorrower.setManaged(true);
-            customerSearch.clear();
-            refreshGuarantorNotice();
-            message.setVisible(false);
-            message.setManaged(false);
+            setPrimaryBorrower(value);
         });
+    }
+
+    public void setPrimaryBorrower(CustomersController.CustomerSummary customer) {
+        draft.primaryBorrower = new LoanDraft.Borrower(customer.customerId(), customer.name());
+        draft.coborrowers.removeIf(c -> c.customerId().equals(customer.customerId()));
+        renderCoborrowers();
+        borrowerName.setText(customer.name() + " | Customer ID: " + customer.customerId());
+        selectedBorrower.setVisible(true);
+        selectedBorrower.setManaged(true);
+        customerSearch.clear();
+        refreshGuarantorNotice();
+        message.setVisible(false);
+        message.setManaged(false);
+    }
+
+    public void focusLoanType() {
+        javafx.application.Platform.runLater(loanType::requestFocus);
     }
 
     private void bindText(String key, TextField field) {

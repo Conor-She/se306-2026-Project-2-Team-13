@@ -35,18 +35,30 @@ public class LoansController {
     private VBox addLoanView;
 
     @FXML private void openAddLoan() throws java.io.IOException {
+        openAddLoan(null, this::showListAndFocusSearch);
+    }
+
+    public void openAddLoan(CustomersController.CustomerSummary customer, Runnable onCancel) throws java.io.IOException {
         var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addLoan.fxml"));
+        loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
-        controller.configure(new CustomersController().loadCustomers(), this::showListAndFocusSearch);
+        controller.configure(new CustomersController().loadCustomers(), () -> {
+            showList(true);
+            onCancel.run();
+        });
+        if (customer != null) controller.setPrimaryBorrower(customer);
         showList(true);
         listView.setVisible(false);
         listView.setManaged(false);
         addLoanView = editor;
         VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
         ((VBox) listView.getParent()).getChildren().add(editor);
-        controller.focusBorrowerSearch();
+        if (customer == null) controller.focusBorrowerSearch();
+        else controller.focusLoanType();
     }
+
+    protected AddLoanController createAddLoanController() { return new AddLoanController(); }
 
     @FXML private void initialize() {
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));

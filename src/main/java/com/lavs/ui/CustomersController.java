@@ -107,6 +107,15 @@ public class CustomersController {
         return addCustomerController == null || addCustomerController.confirmLeave();
     }
 
+    public void setOnAddLoan(java.util.function.Consumer<CustomerSummary> action) {
+        detailsViewController.setOnAddLoan(action);
+    }
+
+    public void showCustomerLoans() {
+        showList(false);
+        detailsViewController.showLoansTab();
+    }
+
     @FXML public void openAddCustomer() {
         if (addCustomerView != null && !confirmLeave()) return;
         closeEditor();

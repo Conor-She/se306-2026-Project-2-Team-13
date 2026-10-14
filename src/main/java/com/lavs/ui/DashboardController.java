@@ -36,6 +36,22 @@ public class DashboardController {
     private final BooleanProperty twoColumns = new SimpleBooleanProperty(false);
 
     @FXML private void initialize() {
+        customersViewController.setOnAddLoan(customer -> {
+            try {
+                loansViewController.openAddLoan(customer, () -> {
+                    navigate(customersNav, customersView);
+                    customersViewController.showCustomerLoans();
+                });
+                navigate(loansNav, loansView);
+            } catch (java.io.IOException exception) {
+                var error = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
+                        "Unable to open Add Loan. Please try again.");
+                error.setHeaderText("Loan form could not be opened");
+                if (content.getScene() != null && content.getScene().getWindow() != null)
+                    error.initOwner(content.getScene().getWindow());
+                error.showAndWait();
+            }
+        });
         content.paddingProperty().bind(Bindings.createObjectBinding(() -> {
             double padding = Math.round(Math.max(12, Math.min(36, content.getWidth() * 0.06)));
             return new Insets(padding);

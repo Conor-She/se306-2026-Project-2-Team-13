@@ -40,6 +40,7 @@ public class CustomerDetailsController {
     @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
     private CustomersController.CustomerSummary customer;
     private Runnable onBack;
+    private Consumer<CustomersController.CustomerSummary> onAddLoan = customer -> {};
 
     @FXML private void initialize() {
         int[] currentColumns = {0};
@@ -123,6 +124,13 @@ public class CustomerDetailsController {
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
     public void setOnBack(Runnable onBack) { this.onBack = onBack; }
+    public void setOnAddLoan(Consumer<CustomersController.CustomerSummary> onAddLoan) {
+        this.onAddLoan = onAddLoan;
+    }
+    public void showLoansTab() {
+        customerTabs.getToggles().stream().filter(toggle -> "Loans".equals(((ToggleButton) toggle).getText()))
+                .findFirst().ifPresent(customerTabs::selectToggle);
+    }
     public void setOnCustomerChanged(Consumer<CustomersController.CustomerSummary> onCustomerChanged) {
         this.onCustomerChanged = onCustomerChanged;
     }
@@ -137,7 +145,7 @@ public class CustomerDetailsController {
     @FXML private void deleteEmployer() { editing.deleteEmployer(); }
     @FXML private void addEmployer() { editing.add(Kind.EMPLOYMENT); }
     @FXML private void editEmployment() { editing.editDetails(Kind.EMPLOYMENT); }
-    @FXML private void addLoan() { editing.add(Kind.LOAN); }
+    @FXML private void addLoan() { if (customer != null) onAddLoan.accept(customer); }
     @FXML private void addNote() { editing.add(Kind.NOTE); }
     @FXML private void addDocument() { editing.add(Kind.DOCUMENT); }
     @FXML private void addGuarantor() { editing.add(Kind.GUARANTOR); }
