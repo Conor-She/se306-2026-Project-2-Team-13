@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lavs.ui.LoansController" minWidth="0" minHeight="0">
       <VBox fx:id="listView" spacing="18" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS">
-            <Label text="Search Loans" styleClass="heading"
-                  style="-fx-font-size: 28; -fx-font-weight: bold;" />
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                  <Label text="Search Loans" styleClass="heading"
+                        style="-fx-font-size: 28; -fx-font-weight: bold;" />
+                  <Region HBox.hgrow="ALWAYS"/>
+                  <Button text="+ Add Loan" onAction="#openAddLoan"
+                        style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: #f8f40c; -fx-text-fill: black; -fx-border-color: #b6b309; -fx-font-weight: bold;"/>
+            </HBox>
             <TextField fx:id="searchField"
                   promptText="Search by loan ID, customer ID, status or amount"
                   accessibleText="Search by loan ID, customer ID, status or amount"

@@ -5,15 +5,14 @@ import com.lavs.business.CustomerRegistrationService.ValidationError;
 import com.lavs.model.CustomerDraft;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.time.LocalDate;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import java.io.IOException;
-import java.io.File;
 import java.io.UncheckedIOException;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
 
 /** Resizable six-step editor. Business rules are supplied by the registration service. */
 public class AddCustomerController {
@@ -181,19 +180,7 @@ public class AddCustomerController {
     @FXML private void addEmail() { addEntry("emails", draft.emails); }
     @FXML private void addEmployer() { addEntry("employers", draft.employers); }
     @FXML private void addNote() { addEntry("notes", draft.notes); }
-    @FXML private void addDocuments() {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Add customer documents");
-        List<File> selected = chooser.showOpenMultipleDialog(view.getScene().getWindow());
-        if (selected == null) return;
-        for (File file : selected) {
-            Map<String, String> document = new LinkedHashMap<>();
-            document.put("fileName", file.getName());
-            document.put("filePath", file.getAbsolutePath());
-            draft.documents.add(document);
-        }
-        render();
-    }
+    @FXML private void addDocuments() { addEntry("documents", draft.documents); }
     @FXML private void editPersonal() { editStep(0); }
     @FXML private void editContact() { editStep(1); }
     @FXML private void editEmployment() { editStep(2); }
@@ -220,6 +207,7 @@ public class AddCustomerController {
         Optional<String> openEntry = expanded.stream().filter(path -> step == 3
             ? path.startsWith("notes.") : step == 2
             ? path.startsWith("employers.")
+            : step == 4 ? path.startsWith("documents.")
             : path.startsWith("addresses.") || path.startsWith("phones.") || path.startsWith("emails."))
             .findFirst();
         if (openEntry.isPresent()) {
@@ -231,6 +219,7 @@ public class AddCustomerController {
         }
         Map<String, String> value = new LinkedHashMap<>();
         if (kind.equals("phones")) value.put("type", "Mobile");
+        if (kind.equals("documents")) value.put("uploadDate", LocalDate.now().toString());
         values.add(value);
         String path = kind + "." + (values.size() - 1);
         expanded.add(path);
@@ -241,6 +230,7 @@ public class AddCustomerController {
             case "emails" -> "email";
             case "employers" -> "name";
             case "notes" -> "text";
+            case "documents" -> "fileName";
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         fields.get(path + "." + firstField).requestFocus();
@@ -325,17 +315,7 @@ public class AddCustomerController {
                         bindField(path + "." + key, input, (Label) editorNodes.get(key + "Error"), value, key);
                     }
                 }
-                if (kind.equals("documents")) {
-                    ((Button) editorNodes.get("chooseFile")).setOnAction(event -> {
-                        FileChooser chooser = new FileChooser();
-                        chooser.setTitle("Replace customer document");
-                        File selected = chooser.showOpenDialog(view.getScene().getWindow());
-                        if (selected == null) return;
-                        value.put("fileName", selected.getName());
-                        value.put("filePath", selected.getAbsolutePath());
-                        render();
-                    });
-                } else if (kind.equals("phones")) {
+                if (kind.equals("phones")) {
                     @SuppressWarnings("unchecked") ComboBox<String> type = (ComboBox<String>) editorNodes.get("type");
                     type.setValue(value.getOrDefault("type", "Mobile"));
                     type.valueProperty().addListener((o, a, b) -> value.put("type", b));
@@ -415,7 +395,7 @@ public class AddCustomerController {
     private static String describe(String kind, Map<String, String> value) {
         String result = switch (kind) {
             case "notes" -> value.getOrDefault("text", "");
-            case "documents" -> join(value.get("fileName"), value.get("documentType"));
+            case "documents" -> join(value.get("fileName"), value.get("documentType"), value.get("uploadDate"));
             case "addresses" -> join(value.get("street"), value.get("suburb"), value.get("city"), value.get("postcode"), value.get("country")) + ("true".equals(value.get("mailing")) ? "  • Mailing" : "");
             case "phones" -> join(value.get("type"), value.get("number")) + ("true".equals(value.get("primary")) ? "  • Primary" : "") + ("true".equals(value.get("texts")) ? "  • Send TXT" : "");
             case "emails" -> value.getOrDefault("email", "") + ("true".equals(value.get("primary")) ? "  • Primary" : "");

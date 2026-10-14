@@ -107,6 +107,22 @@ public class CustomersController {
         return addCustomerController == null || addCustomerController.confirmLeave();
     }
 
+    public void setOnAddLoan(java.util.function.Consumer<CustomerSummary> action) {
+        detailsViewController.setOnAddLoan(action);
+    }
+
+    public void addSessionLoan(com.lavs.business.SessionLoanStore.SavedLoan loan) {
+        var borrower = loan.draft().primaryBorrower;
+        CustomerSummary customer = customers.stream().filter(c -> c.customerId().equals(borrower.customerId()))
+                .findFirst().orElse(new CustomerSummary(borrower.customerId(), borrower.name(), "", ""));
+        detailsViewController.addSessionLoan(customer, loan);
+    }
+
+    public void showCustomerLoans() {
+        showList(false);
+        detailsViewController.showLoansTab();
+    }
+
     @FXML public void openAddCustomer() {
         if (addCustomerView != null && !confirmLeave()) return;
         closeEditor();

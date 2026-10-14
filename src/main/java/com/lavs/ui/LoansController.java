@@ -32,6 +32,50 @@ public class LoansController {
     @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
+    private VBox addLoanView;
+    private final com.lavs.business.SessionLoanStore sessionLoans = new com.lavs.business.SessionLoanStore();
+    private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
+    private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
+
+    public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
+        this.onSaved = onSaved;
+    }
+
+    @FXML private void openAddLoan() throws java.io.IOException {
+        openAddLoan(null, this::showListAndFocusSearch);
+    }
+
+    public void openAddLoan(CustomersController.CustomerSummary customer, Runnable onCancel) throws java.io.IOException {
+        var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addLoan.fxml"));
+        loader.setControllerFactory(type -> createAddLoanController());
+        VBox editor = loader.load();
+        AddLoanController controller = loader.getController();
+        controller.configure(new CustomersController().loadCustomers(), () -> {
+            showList(true);
+            onCancel.run();
+        });
+        if (customer != null) controller.setPrimaryBorrower(customer);
+        controller.setOnSave(draft -> {
+            var saved = sessionLoans.save(draft);
+            var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+            loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
+                    draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),
+                    draft.details.get("loanType")));
+            onSaved.accept(saved);
+            onShown();
+            if (customer != null) onCancel.run();
+        });
+        showList(true);
+        listView.setVisible(false);
+        listView.setManaged(false);
+        addLoanView = editor;
+        VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
+        ((VBox) listView.getParent()).getChildren().add(editor);
+        if (customer == null) controller.focusBorrowerSearch();
+        else controller.focusLoanType();
+    }
+
+    protected AddLoanController createAddLoanController() { return new AddLoanController(); }
 
     @FXML private void initialize() {
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));
@@ -39,7 +83,10 @@ public class LoansController {
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));
         amountColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().amount()));
         typeColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().type()));
-        var filtered = new FilteredList<>(FXCollections.observableArrayList(loadLoans()));
+        loans.setAll(loadLoans());
+        var filtered = new FilteredList<>(loans);
+        filtered.addListener((javafx.collections.ListChangeListener<LoanSummary>) change ->
+                resultsHeading.setText((searchField.getText().isBlank() ? "All loans (" : "Search results (") + filtered.size() + ")"));
         var sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(loanTable.comparatorProperty());
         loanTable.setItems(sorted);
@@ -99,6 +146,10 @@ public class LoansController {
         Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
     }
     private void showList(boolean visible) {
+        if (addLoanView != null) {
+            ((VBox) listView.getParent()).getChildren().remove(addLoanView);
+            addLoanView = null;
+        }
         listView.setVisible(visible);
         listView.setManaged(visible);
         detailsView.setVisible(!visible);

@@ -3,6 +3,7 @@ package com.lavs.ui;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -123,7 +124,7 @@ class CustomerEditingTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"loans,+  Add Loan,id,LN00999", "notes,+  Add Note,title,New note", "guarantors,+  Add Guarantor,firstName,Jane"})
+    @CsvSource({"notes,+  Add Note,title,New note", "guarantors,+  Add Guarantor,firstName,Jane"})
     void addingRecordsAppendsToSelectedTab(String tab, String action, String key, String expected) throws Exception {
         JavaFxTestSupport.run(() -> {
             ((ToggleButton) loader.getNamespace().get(tab + "Tab")).fire();
@@ -158,18 +159,52 @@ class CustomerEditingTest {
         });
     }
 
-    @Test void documentUploadRequiresFileAndCancelLeavesListUnchanged() throws Exception {
+    @Test void addsDocumentUsingMetadataWithoutSelectingAFile() throws Exception {
         JavaFxTestSupport.run(() -> {
             ((ToggleButton) loader.getNamespace().get("documentsTab")).fire();
             nodes(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
-                    .filter(button -> button.getText().equals("+  Upload Document")).findFirst().orElseThrow().fire();
+                    .filter(button -> button.getText().equals("+  Add Document")).findFirst().orElseThrow().fire();
             DialogPane pane = editor();
-            ((TextField) pane.lookup("#edit_fileName")).setText("Missing file.pdf");
+            ((TextField) pane.lookup("#edit_fileName")).setText("insurance.pdf");
+            ((ComboBox<String>) pane.lookup("#edit_type")).setValue("Other");
+            ((DatePicker) pane.lookup("#edit_date")).setValue(LocalDate.of(2026, 10, 14));
+            assertNull(pane.lookup("#edit_path"));
             dialogButton(pane, "Save").fire();
-            assertSame(pane, editor());
-            assertTrue(pane.lookup("#error_path").isVisible());
+            assertNull(findEditor());
+            assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .anyMatch(label -> label.getText().equals("insurance.pdf")));
+            assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .anyMatch(label -> label.getText().equals("14 Oct 2026")));
+            return null;
+        });
+    }
+
+    @Test void editsDocumentTypeAndUploadDate() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            openEditor("documents", "Actions for ID - Passport.pdf");
+            DialogPane pane = editor();
+            ((ComboBox<String>) pane.lookup("#edit_type")).setValue("Other");
+            ((DatePicker) pane.lookup("#edit_date")).setValue(LocalDate.of(2026, 9, 1));
+            dialogButton(pane, "Save").fire();
+
+            assertNull(findEditor());
+            assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .anyMatch(label -> label.getText().equals("1 Sep 2026")));
+            return null;
+        });
+    }
+
+    @Test void deletesDocumentFromCustomer() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            ((ToggleButton) loader.getNamespace().get("documentsTab")).fire();
+            Button actions = nodes(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
+                    .filter(button -> "Actions for Payslip.pdf".equals(button.getAccessibleText()))
+                    .findFirst().orElseThrow();
+            javafx.application.Platform.runLater(CustomerEditingTest::confirmDeletion);
+            actions.getContextMenu().getItems().get(1).fire();
+
             assertFalse(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
-                    .anyMatch(label -> label.getText().equals("Missing file.pdf")));
+                    .anyMatch(label -> label.getText().equals("Payslip.pdf")));
             return null;
         });
     }

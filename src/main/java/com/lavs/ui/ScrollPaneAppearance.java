@@ -1,19 +1,19 @@
 package com.lavs.ui;
 
 import javafx.scene.Node;
+import javafx.scene.control.Control;
 import javafx.scene.control.ScrollBar;
-import javafx.scene.control.ScrollPane;
 
 /** Applies FXML-supplied inline styles to the scrollbar parts created by JavaFX skins. */
 final class ScrollPaneAppearance {
     private ScrollPaneAppearance() {}
 
-    static void install(ScrollPane scroll, String barStyle, String trackStyle, String thumbStyle, String buttonStyle) {
+    static void install(Control scroll, String barStyle, String trackStyle, String thumbStyle, String buttonStyle) {
         Runnable apply = () -> {
             for (Node node : scroll.lookupAll(".scroll-bar")) {
-                // A scroll pane can contain other scroll panes; each styles its own bars.
+                // Nested scroll panes and lists each style their own bars.
                 Node parent = node.getParent();
-                while (parent != null && !(parent instanceof ScrollPane)) parent = parent.getParent();
+                while (parent != null && !(parent instanceof Control)) parent = parent.getParent();
                 if (parent != scroll || !(node instanceof ScrollBar bar)) continue;
                 if (Boolean.TRUE.equals(bar.getProperties().put("minimalAppearanceInstalled", true))) continue;
                 bar.setStyle(barStyle);

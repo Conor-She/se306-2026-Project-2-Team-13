@@ -3,13 +3,12 @@
 <?import javafx.scene.layout.*?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="12" minWidth="0">
   <Label text="File name" style="-fx-font-weight: bold;"/>
-  <TextField fx:id="fileName" accessibleText="File name" editable="false" maxWidth="Infinity"/>
+  <TextField fx:id="fileName" accessibleText="File name" promptText="e.g. payslip.pdf" maxWidth="Infinity"/>
   <Label fx:id="fileNameError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
-  <Label text="File location" style="-fx-font-weight: bold;"/>
-  <TextField fx:id="filePath" accessibleText="File location" editable="false" maxWidth="Infinity"/>
-  <Label fx:id="filePathError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
-  <Button fx:id="chooseFile" text="Choose another file" style="-fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-background-color: white; -fx-border-color: #9693ca; -fx-text-fill: #393a7b;"/>
-  <Label text="Document type (optional)" style="-fx-font-weight: bold;"/>
+  <Label text="Document type" style="-fx-font-weight: bold;"/>
   <TextField fx:id="documentType" accessibleText="Document type" promptText="e.g. Payslip or proof of identity" maxWidth="Infinity"/>
   <Label fx:id="documentTypeError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
+  <Label text="Upload date (yyyy-MM-dd)" style="-fx-font-weight: bold;"/>
+  <TextField fx:id="uploadDate" accessibleText="Upload date" promptText="yyyy-MM-dd" maxWidth="Infinity"/>
+  <Label fx:id="uploadDateError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
 </VBox>

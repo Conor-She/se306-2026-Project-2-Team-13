@@ -12,7 +12,6 @@ import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 /** Shared session-only editor for the records displayed on a customer page. */
@@ -35,7 +34,8 @@ final class CustomerRecordEditor {
                 field("status", "Status", "Active", "Pending", "Closed"))),
         NOTE("note", List.of(field("title", "Title"), field("text", "Note"), field("author", "Author"))),
         DOCUMENT("document", List.of(field("fileName", "Document name"),
-                field("type", "Document type", "Identity", "Address", "Income", "Bank Statement", "Other"))),
+                field("type", "Document type", "Identity", "Address", "Income", "Bank Statement", "Other"),
+                field("date", "Upload date"))),
         GUARANTOR("guarantor", List.of(field("firstName", "First name"), field("lastName", "Last name"), field("relationship", "Relationship"),
                 field("phone", "Phone"), field("email", "Email"), field("status", "Status", "Active", "Inactive")));
 
@@ -89,6 +89,10 @@ final class CustomerRecordEditor {
                 choices.setValue(value.isBlank() ? field.options.get(0) : value);
                 choices.setMaxWidth(Double.MAX_VALUE);
                 input = choices;
+            } else if (field.key.equals("date")) {
+                DatePicker date = new DatePicker(value.isBlank() ? null : LocalDate.parse(value));
+                date.setMaxWidth(Double.MAX_VALUE);
+                input = date;
             } else if (field.key.equals("text") || field.key.equals("address")) {
                 TextArea text = new TextArea(value);
                 text.setWrapText(true);
@@ -132,38 +136,6 @@ final class CustomerRecordEditor {
             updatePreferences.run();
             form.getChildren().addAll(primary, texts);
         }
-        if (kind == Kind.DOCUMENT) {
-            TextField path = new TextField(original.getOrDefault("path", ""));
-            path.setId("edit_path");
-            path.setEditable(false);
-            path.setPromptText("No local file selected");
-            path.setAccessibleText("Selected document file");
-            path.setStyle(INPUT_STYLE);
-            Button choose = new Button("Choose file");
-            choose.setOnAction(event -> {
-                FileChooser chooser = new FileChooser();
-                chooser.setTitle("Choose customer document");
-                java.io.File file = chooser.showOpenDialog(pane.getScene().getWindow());
-                if (file != null) {
-                    draft.put("path", file.getAbsolutePath());
-                    path.setText(file.getAbsolutePath());
-                    ((TextField) inputs.get("fileName")).setText(file.getName());
-                }
-            });
-            Label fileLabel = adding ? requiredLabel("Local file") : new Label("Local file");
-            fileLabel.setLabelFor(path);
-            form.getChildren().addAll(fileLabel, path, choose);
-            if (adding) {
-                Label error = new Label();
-                error.setId("error_path");
-                error.setWrapText(true);
-                error.setStyle("-fx-text-fill: #b42318; -fx-font-size: 12px;");
-                error.setVisible(false);
-                error.setManaged(false);
-                errors.put("path", error);
-                form.getChildren().add(error);
-            }
-        }
         ScrollPane scroll = new ScrollPane(form);
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -174,8 +146,15 @@ final class CustomerRecordEditor {
         saveButton.setStyle("-fx-background-color: #5b56b5; -fx-text-fill: white; -fx-background-radius: 6;");
         saveButton.addEventFilter(ActionEvent.ACTION, event -> {
             Map<String, String> values = new LinkedHashMap<>(draft);
-            inputs.forEach((key, input) -> values.put(key, input instanceof TextInputControl text
-                    ? text.getText().strip() : String.valueOf(((ComboBox<?>) input).getValue())));
+            inputs.forEach((key, input) -> {
+                String value;
+                if (input instanceof TextInputControl text) value = text.getText().strip();
+                else if (input instanceof ComboBox<?> choices) value = String.valueOf(choices.getValue());
+                else if (input instanceof DatePicker date) value = date.getValue() == null
+                        ? "" : date.getValue().toString();
+                else throw new IllegalStateException("Unsupported editor control: " + input.getClass());
+                values.put(key, value);
+            });
             if (kind == Kind.CONTACT_RECORD) {
                 values.put("primary", Boolean.toString(primary.isSelected()));
                 values.put("texts", Boolean.toString("Phone".equals(values.get("contactType")) && texts.isSelected()));
@@ -246,6 +225,12 @@ final class CustomerRecordEditor {
                     if (!LocalDate.parse(value, BIRTH_DATE).isBefore(LocalDate.now()))
                         errors.put(field.key, "Enter a date before today.");
                 } catch (java.time.DateTimeException invalid) { errors.put(field.key, "Use a valid date in dd-MM-yyyy format."); }
+            } else if (field.key.equals("date")) {
+                try {
+                    LocalDate.parse(value);
+                } catch (java.time.DateTimeException invalid) {
+                    errors.put("date", "Choose a valid upload date.");
+                }
             } else if (!field.options.isEmpty() && !field.options.contains(value)) {
                 errors.put(field.key, "Select a value from the list.");
             }
@@ -258,8 +243,6 @@ final class CustomerRecordEditor {
             if (!value.isBlank() && type.equals("Phone") && !value.matches("\\+?[0-9 ()-]{7,20}"))
                 errors.put("value", "Enter a valid phone number.");
         }
-        if (kind == Kind.DOCUMENT && adding && values.getOrDefault("path", "").isBlank())
-            errors.put("path", "Choose a file to add this document.");
         return errors;
     }
 }
