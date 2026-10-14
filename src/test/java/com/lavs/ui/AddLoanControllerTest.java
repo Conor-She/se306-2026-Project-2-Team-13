@@ -11,6 +11,35 @@ import static org.junit.jupiter.api.Assertions.*;
 class AddLoanControllerTest {
     @BeforeAll static void startToolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void cancelRequiresConfirmationForEnteredDetails(boolean discard) throws Exception {
+        JavaFxTestSupport.run(() -> {
+            int[] confirmations = {0};
+            int[] cancellations = {0};
+            AddLoanController controller = new AddLoanController() {
+                @Override protected boolean confirmDiscardDetails() {
+                    confirmations[0]++;
+                    return discard;
+                }
+            };
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            loader.setControllerFactory(type -> controller);
+            loader.load();
+            controller.configure(List.of(), () -> cancellations[0]++);
+            Button cancel = (Button) loader.getNamespace().get("cancel");
+            cancel.fire();
+            assertEquals(0, confirmations[0], "Empty forms can cancel immediately");
+            assertEquals(1, cancellations[0]);
+            ((TextField) loader.getNamespace().get("principal")).setText("500000");
+            cancel.fire();
+            assertEquals(1, confirmations[0]);
+            assertEquals(discard ? 2 : 1, cancellations[0]);
+            assertEquals("500000", controller.getDraft().details.get("principal"));
+            return null;
+        });
+    }
+
     @Test void searchesBorrowerAndValidatesDetailsWithoutSaving() throws Exception {
         JavaFxTestSupport.run(() -> {
             var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));

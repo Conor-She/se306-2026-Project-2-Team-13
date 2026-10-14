@@ -154,7 +154,28 @@ public class AddLoanController {
         customerSearch.requestFocus();
     }
 
-    @FXML private void cancel() { onCancel.run(); }
+    @FXML private void cancel() {
+        if (confirmLeave()) onCancel.run();
+    }
+
+    public boolean confirmLeave() {
+        boolean hasUncommittedDate = !startDate.getEditor().getText().isBlank()
+                || !renewDate.getEditor().getText().isBlank();
+        if (!draft.hasData() && !hasUncommittedDate) return true;
+        return confirmDiscardDetails();
+    }
+
+    protected boolean confirmDiscardDetails() {
+        ButtonType keepEditing = new ButtonType("Keep editing", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType discard = new ButtonType("Discard loan", ButtonBar.ButtonData.OK_DONE);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "The loan has not been saved. Discard the entered details?", keepEditing, discard);
+        alert.setTitle("Discard loan details?");
+        alert.setHeaderText("Cancel creating this loan?");
+        if (loanScroll.getScene() != null && loanScroll.getScene().getWindow() != null)
+            alert.initOwner(loanScroll.getScene().getWindow());
+        return alert.showAndWait().orElse(keepEditing) == discard;
+    }
 
     @FXML private void next() {
         String error = validateDetails();
