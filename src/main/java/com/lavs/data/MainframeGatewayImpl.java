@@ -2,6 +2,7 @@ package com.lavs.data;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.lavs.model.Address;
@@ -36,6 +37,8 @@ import mainframe.client.messages.loan.DeletePayment;
 // HttpConnection). Translates between domain objects and the mainframe's
 // Message classes.
 public class MainframeGatewayImpl implements MainframeGateway {
+
+    private static final long CATEGORY_PAGE_SIZE = 100;
 
     private final Connection connection;
     private final String organisationName;
@@ -494,8 +497,52 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<String> getCategoryValues(String categoryType) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs constantCategory/constantItem messages");
+        Long categoryId = findCategoryId(categoryType);
+        if (categoryId == null) {
+            return List.of();
+        }
+
+        List<mainframe.client.messages.constantItem.List.Item> items = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.constantItem.List message =
+                    new mainframe.client.messages.constantItem.List(
+                            categoryId, page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(message);
+            List<mainframe.client.messages.constantItem.List.Item> pageItems =
+                    List.of(message.getItems());
+            items.addAll(pageItems);
+
+            if (pageItems.isEmpty() || page * CATEGORY_PAGE_SIZE >= message.getTotal()) {
+                break;
+            }
+            page++;
+        }
+
+        items.sort(Comparator.comparingLong(item -> item.getOrder()));
+        return items.stream().map(item -> item.getName()).toList();
+    }
+
+    private Long findCategoryId(String categoryType) {
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.constantCategory.List message =
+                    new mainframe.client.messages.constantCategory.List(
+                            page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(message);
+            mainframe.client.messages.constantCategory.List.Item[] items = message.getItems();
+
+            for (mainframe.client.messages.constantCategory.List.Item item : items) {
+                if (categoryType.equalsIgnoreCase(item.getName())) {
+                    return item.getId();
+                }
+            }
+
+            if (items.length == 0 || page * CATEGORY_PAGE_SIZE >= message.getTotal()) {
+                return null;
+            }
+            page++;
+        }
     }
 
     private void sendOrThrow(Message message) {
