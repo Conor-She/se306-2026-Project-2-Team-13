@@ -44,6 +44,7 @@ public class AddCustomerController {
     private int renderedStep = -1;
     private boolean editingReview;
     private boolean showErrors;
+    private boolean saving;
 
     public AddCustomerController(CustomerRegistrationService service, Runnable onCancel,
                                  BiConsumer<String, CustomerDraft> onSaved) {
@@ -114,6 +115,10 @@ public class AddCustomerController {
     }
 
     public boolean confirmLeave() {
+        if (saving) {
+            setMessage("Please wait until saving finishes.");
+            return false;
+        }
         if (!draft.hasData()) return true;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
                 "The customer has not been saved. Discard the entered details?", ButtonType.CANCEL, ButtonType.OK);
@@ -476,18 +481,33 @@ public class AddCustomerController {
     }
 
     private void save() {
+        if (saving) return;
         List<ValidationError> errors = validate();
         if (!errors.isEmpty()) { showFailure(errors); return; }
-        next.setDisable(true);
-        try {
-            String id = service.save(draft.copy());
-            onSaved.accept(id, draft.copy());
-        } catch (CustomerRegistrationService.RegistrationException exception) {
-            showFailure(exception.errors().isEmpty() ? List.of(new ValidationError(step, "", "Customer could not be saved. Please try again.")) : exception.errors());
-        } catch (RuntimeException exception) {
-            next.setDisable(false);
-            setMessage("Customer could not be saved. Your details are kept. Please try again.");
-        }
+        CustomerDraft submitted = draft.copy();
+        saving = true;
+        view.setDisable(true);
+        setMessage("Saving customer…");
+        javafx.concurrent.Task<String> task = new javafx.concurrent.Task<>() {
+            @Override protected String call() throws Exception { return service.save(submitted); }
+        };
+        task.setOnSucceeded(event -> {
+            saving = false;
+            view.setDisable(false);
+            onSaved.accept(task.getValue(), submitted);
+        });
+        task.setOnFailed(event -> {
+            saving = false;
+            view.setDisable(false);
+            if (task.getException() instanceof CustomerRegistrationService.RegistrationException exception) {
+                showFailure(exception.errors().isEmpty() ? List.of(new ValidationError(step, "", "Customer could not be saved. Please try again.")) : exception.errors());
+            } else {
+                setMessage("Customer could not be saved. Your details are kept. Please try again.");
+            }
+        });
+        Thread thread = new Thread(task, "lavs-register-customer");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void showFailure(List<ValidationError> errors) {
@@ -495,7 +515,7 @@ public class AddCustomerController {
             int lastDot = error.field().lastIndexOf('.');
             if (lastDot > 0) expanded.add(error.field().substring(0, lastDot));
         }
-        step = Math.max(0, Math.min(REVIEW_STEP - 1, errors.get(0).step()));
+        step = Math.max(0, Math.min(REVIEW_STEP, errors.get(0).step()));
         editingReview = step < REVIEW_STEP;
         showErrors = true;
         render();

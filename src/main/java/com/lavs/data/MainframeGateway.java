@@ -32,16 +32,16 @@ public interface MainframeGateway {
     Customer updateCustomer(Customer customer);
     Address addAddress(Address address);
     Address updateAddress(Address address);
-    void deleteAddress(String customerId, String addressId);
+    void deleteAddress(String customerId, Long addressId);
     Phone addPhone(Phone phone);
     Phone updatePhone(Phone phone);
-    void deletePhone(String customerId, String phoneId);
+    void deletePhone(String customerId, Long phoneId);
     Email addEmail(Email email);
     Email updateEmail(Email email);
-    void deleteEmail(String customerId, String emailId);
+    void deleteEmail(String customerId, Long emailId);
     Employer addEmployer(Employer employer);
     Employer updateEmployer(Employer employer);
-    void deleteEmployer(String customerId, String employerId);
+    void deleteEmployer(String customerId, Long employerId);
 
     // Read a customer's child records (for checking a loan's prerequisites)
     List<Address> getAddresses(String customerId);

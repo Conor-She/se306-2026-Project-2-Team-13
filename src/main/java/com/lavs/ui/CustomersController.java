@@ -13,7 +13,7 @@ import javafx.scene.layout.VBox;
 
 /** Searchable customer list with a details placeholder. */
 public class CustomersController {
-    private final com.lavs.business.CustomerRegistrationService registrationService;
+    private java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> registrationServiceFactory;
     private final javafx.collections.ObservableList<CustomerSummary> customers = FXCollections.observableArrayList();
     private VBox addCustomerView;
     private AddCustomerController addCustomerController;
@@ -23,7 +23,12 @@ public class CustomersController {
     }
 
     public CustomersController(com.lavs.business.CustomerRegistrationService registrationService) {
-        this.registrationService = java.util.Objects.requireNonNull(registrationService);
+        java.util.Objects.requireNonNull(registrationService);
+        this.registrationServiceFactory = () -> registrationService;
+    }
+
+    public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
+        this.registrationServiceFactory = java.util.Objects.requireNonNull(factory);
     }
     public record CustomerSummary(String customerId, String name, String phone, String email) {
         boolean matches(String query) {
@@ -130,7 +135,7 @@ public class CustomersController {
         listView.setManaged(false);
         detailsView.setVisible(false);
         detailsView.setManaged(false);
-        addCustomerController = new AddCustomerController(registrationService, this::onShown, (id, draft) -> {
+        addCustomerController = new AddCustomerController(registrationServiceFactory.get(), this::onShown, (id, draft) -> {
             customers.add(new CustomerSummary(id,
                 draft.personal.getOrDefault("firstName", "") + " " + draft.personal.getOrDefault("lastName", ""),
                 primaryContact(draft.phones, "number"),

@@ -198,8 +198,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
-    public void deleteAddress(String customerId, String addressId) {
-        sendOrThrow(new DeleteAddress(customerId, parseNumericId(addressId, "Address ID")));
+    public void deleteAddress(String customerId, Long addressId) {
+        sendOrThrow(new DeleteAddress(customerId, addressId));
     }
 
     // The mainframe's IDs are numbers, but LAVS keeps them as text
@@ -245,8 +245,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
-    public void deletePhone(String customerId, String phoneId) {
-        sendOrThrow(new DeletePhoneNumber(customerId, parseNumericId(phoneId, "Phone ID")));
+    public void deletePhone(String customerId, Long phoneId) {
+        sendOrThrow(new DeletePhoneNumber(customerId, phoneId));
     }
 
     @Override
@@ -280,8 +280,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
-    public void deleteEmail(String customerId, String emailId) {
-        sendOrThrow(new DeleteEmail(customerId, parseNumericId(emailId, "Email ID")));
+    public void deleteEmail(String customerId, Long emailId) {
+        sendOrThrow(new DeleteEmail(customerId, emailId));
     }
 
     @Override
@@ -400,8 +400,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
-    public void deleteEmployer(String customerId, String employerId) {
-        sendOrThrow(new DeleteEmployer(customerId, parseNumericId(employerId, "Employer ID")));
+    public void deleteEmployer(String customerId, Long employerId) {
+        sendOrThrow(new DeleteEmployer(customerId, employerId));
     }
 
     @Override

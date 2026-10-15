@@ -121,6 +121,10 @@ public class DashboardController {
         showHome();
     }
 
+    public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
+        customersViewController.setRegistrationServiceFactory(factory);
+    }
+
     private void navigate(Button selected, VBox view) {
         dashboardScroll.setFitToHeight(view == customersView || view == loansView);
         for (Button button : List.of(homeNav, customersNav, loansNav)) {
