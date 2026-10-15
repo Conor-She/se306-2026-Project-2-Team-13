@@ -62,7 +62,7 @@ class GuarantorServiceTest {
     void deletesExistingGuarantor() {
         Guarantor added = service.addGuarantor("C001", "C002", "Parent");
 
-        service.deleteGuarantor(added.getGuarantorId());
+        service.deleteGuarantor("C001", added.getGuarantorId());
 
         assertTrue(gateway.getGuarantors("C001").isEmpty());
     }
@@ -111,7 +111,10 @@ class GuarantorServiceTest {
                                 " ", "C001", "C002", "Parent")),
                 () -> assertThrows(
                         IllegalArgumentException.class,
-                        () -> service.deleteGuarantor(null)));
+                        () -> service.deleteGuarantor("C001", null)),
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.deleteGuarantor(null, "G1")));
     }
 
     @Test
@@ -123,7 +126,7 @@ class GuarantorServiceTest {
                                 "MISSING", "C001", "C002", "Parent")),
                 () -> assertThrows(
                         MainframeException.class,
-                        () -> service.deleteGuarantor("MISSING")));
+                        () -> service.deleteGuarantor("C001", "MISSING")));
     }
 
     @Test
@@ -135,6 +138,21 @@ class GuarantorServiceTest {
                 () -> service.addGuarantor("C001", "C002", "Parent"));
 
         assertEquals(MainframeException.Type.UNAVAILABLE, exception.getType());
+    }
+
+    /**
+     * The mainframe needs the right customer for a delete, so naming a
+     * different customer must not delete the guarantor
+     */
+    @Test
+    void deleteUnderTheWrongCustomerIsRejected() {
+        Guarantor added = service.addGuarantor("C001", "C002", "Parent");
+
+        assertThrows(
+                MainframeException.class,
+                () -> service.deleteGuarantor("C003", added.getGuarantorId()));
+
+        assertEquals(1, gateway.getGuarantors("C001").size());
     }
 
     private Customer customer(String customerId, String firstName) {
