@@ -43,6 +43,8 @@ class MainframeGatewayPhoneTest {
         assertEquals("C001", request.getValue().getValue("customer"));
         assertEquals("0211234567", request.getValue().getValue("number"));
         assertEquals("y", request.getValue().getValue("canTxt"));
+        assertEquals(MainframeGatewayImpl.DEFAULT_PHONE_COUNTRY_CODE,
+                request.getValue().getValue("countryCode"));
         assertEquals("y", request.getValue().getValue("isPrimary"));
         assertEquals("Mobile", request.getValue().getValue("type"));
     }

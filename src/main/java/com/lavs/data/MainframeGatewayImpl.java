@@ -49,6 +49,7 @@ import mainframe.client.messages.loan.DeletePayment;
 public class MainframeGatewayImpl implements MainframeGateway {
 
     private static final long CATEGORY_PAGE_SIZE = 100;
+    static final String DEFAULT_PHONE_COUNTRY_CODE = "+64";
 
     private final Connection connection;
     private final Long organisationNumber;
@@ -205,8 +206,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
     @Override
     public Phone addPhone(Phone phone) {
         AddPhoneNumber message = new AddPhoneNumber(
-                phone.isSendTXT(), null, phone.getCustomerId(), phone.isPrimary(),
-                phone.getNumber(), null, AddPhoneNumber.TYPE_MOBILE);
+                phone.isSendTXT(), DEFAULT_PHONE_COUNTRY_CODE, phone.getCustomerId(),
+                phone.isPrimary(), phone.getNumber(), null, AddPhoneNumber.TYPE_MOBILE);
         sendOrThrow(message);
 
         return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
