@@ -14,6 +14,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DashboardControllerTest {
+    @Test void addCustomerUsesConfiguredRegistrationService() throws Exception {
+        JavaFxTestSupport.startToolkit();
+        var service = org.mockito.Mockito.mock(com.lavs.business.CustomerRegistrationService.class);
+        org.mockito.Mockito.when(service.validate(org.mockito.ArgumentMatchers.any())).thenReturn(java.util.List.of());
+        fx(() -> {
+            FXMLLoader loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
+            Parent root = loader.load();
+            new Scene(root, 900, 560);
+            DashboardController controller = loader.getController();
+            controller.setRegistrationServiceFactory(() -> service);
+            CustomersController customers = (CustomersController) loader.getNamespace().get("customersViewController");
+            customers.openAddCustomer();
+            return null;
+        });
+        org.mockito.Mockito.verify(service, org.mockito.Mockito.atLeastOnce()).validate(org.mockito.ArgumentMatchers.any());
+    }
+
     private static <T> T fx(Callable<T> action) throws Exception {
         return JavaFxTestSupport.run(action);
     }
