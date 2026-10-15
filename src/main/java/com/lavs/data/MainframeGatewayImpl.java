@@ -33,6 +33,9 @@ import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
 import mainframe.client.messages.customer.DeleteAddress;
 import mainframe.client.messages.customer.UpdateAddress;
+import mainframe.client.messages.customer.AddPhoneNumber;
+import mainframe.client.messages.customer.DeletePhoneNumber;
+import mainframe.client.messages.customer.UpdatePhoneNumber;
 import mainframe.client.messages.loan.UpdateStatus;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
@@ -201,20 +204,39 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Phone addPhone(Phone phone) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.AddPhoneNumber");
+        AddPhoneNumber message = new AddPhoneNumber(
+                phone.isSendTXT(), null, phone.getCustomerId(), phone.isPrimary(),
+                phone.getNumber(), null, AddPhoneNumber.TYPE_MOBILE);
+        sendOrThrow(message);
+
+        return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
     public Phone updatePhone(Phone phone) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdatePhoneNumber");
+        Long phoneId = phone.getPhoneId();
+        if (phoneId == null) {
+            throw new IllegalArgumentException("An existing phone with a phoneId is required");
+        }
+
+        mainframe.client.messages.customerPhoneNumber.Retrieve current =
+                new mainframe.client.messages.customerPhoneNumber.Retrieve(
+                        phoneId, phone.getCustomerId());
+        sendOrThrow(current);
+
+        UpdatePhoneNumber message = new UpdatePhoneNumber(
+                phone.isSendTXT(), current.getCountryCode(), phone.getCustomerId(), phoneId,
+                phone.isPrimary(), phone.getNumber(), current.getOtherType(), current.getType());
+        sendOrThrow(message);
+
+        return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
-    public void deletePhone(String phoneId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeletePhoneNumber");
+    public void deletePhone(String customerId, String phoneId) {
+        sendOrThrow(new DeletePhoneNumber(customerId, parseNumericId(phoneId, "Phone ID")));
     }
 
     @Override
@@ -266,8 +288,31 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Phone> getPhones(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerPhoneNumber retrieval");
+        List<Phone> phones = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerPhoneNumber.List message =
+                    new mainframe.client.messages.customerPhoneNumber.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerPhoneNumber.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerPhoneNumber.List.Item item : items) {
+                phones.add(getPhone(customerId, item.getId()));
+            }
+            if (items.length == 0 || phones.size() >= message.getTotal()) {
+                return phones;
+            }
+            page++;
+        }
+    }
+
+    private Phone getPhone(String customerId, long phoneId) {
+        mainframe.client.messages.customerPhoneNumber.Retrieve message =
+                new mainframe.client.messages.customerPhoneNumber.Retrieve(phoneId, customerId);
+        sendOrThrow(message);
+
+        return new Phone(message.getId(), customerId, message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override

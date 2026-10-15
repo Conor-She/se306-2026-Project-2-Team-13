@@ -35,7 +35,7 @@ public interface MainframeGateway {
     void deleteAddress(String customerId, String addressId);
     Phone addPhone(Phone phone);
     Phone updatePhone(Phone phone);
-    void deletePhone(String phoneId);
+    void deletePhone(String customerId, String phoneId);
     Email addEmail(Email email);
     Email updateEmail(Email email);
     void deleteEmail(String emailId);

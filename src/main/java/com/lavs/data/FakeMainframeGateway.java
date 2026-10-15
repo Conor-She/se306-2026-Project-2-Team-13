@@ -166,7 +166,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deletePhone(String phoneId) {
+    public void deletePhone(String customerId, String phoneId) {
         checkAvailability();
     }
 
