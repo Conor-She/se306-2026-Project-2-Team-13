@@ -39,9 +39,10 @@ public class GuarantorService {
                         relationshipType));
     }
 
-    public void deleteGuarantor(String guarantorId) {
+    public void deleteGuarantor(String customerId, String guarantorId) {
+        requireNotBlank(customerId, "customerId");
         requireNotBlank(guarantorId, "guarantorId");
-        gateway.deleteGuarantor(guarantorId);
+        gateway.deleteGuarantor(customerId, guarantorId);
     }
 
     private void validateRelationship(

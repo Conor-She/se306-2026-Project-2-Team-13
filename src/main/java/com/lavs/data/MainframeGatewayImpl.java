@@ -25,17 +25,32 @@ import mainframe.client.Status;
 import mainframe.client.StatusMessage;
 import mainframe.client.messages.customer.AddAddress;
 import mainframe.client.messages.customer.AddDocumentMetadata;
+import mainframe.client.messages.customer.AddEmail;
+import mainframe.client.messages.customer.AddEmployer;
+import mainframe.client.messages.customer.AddPhoneNumber;
+import mainframe.client.messages.customer.AddRelationship;
 import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.DeleteAddress;
 import mainframe.client.messages.customer.DeleteDocument;
+import mainframe.client.messages.customer.DeleteEmail;
+import mainframe.client.messages.customer.DeleteEmployer;
+import mainframe.client.messages.customer.DeletePhoneNumber;
+import mainframe.client.messages.customer.DeleteRelationship;
 import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
-import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
-import mainframe.client.messages.loan.UpdateStatus;
+import mainframe.client.messages.customer.UpdateAddress;
+import mainframe.client.messages.customer.UpdateDocument;
+import mainframe.client.messages.customer.UpdateEmail;
+import mainframe.client.messages.customer.UpdateEmployer;
+import mainframe.client.messages.customer.UpdatePhoneNumber;
+import mainframe.client.messages.customer.UpdateRelationship;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
 import mainframe.client.messages.loan.DeleteCoborrower;
 import mainframe.client.messages.loan.DeletePayment;
+import mainframe.client.messages.loan.UpdateStatus;
+
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -43,11 +58,10 @@ import mainframe.client.messages.loan.DeletePayment;
 public class MainframeGatewayImpl implements MainframeGateway {
 
     private static final long CATEGORY_PAGE_SIZE = 100;
+    static final String DEFAULT_PHONE_COUNTRY_CODE = "+64";
 
     private final Connection connection;
     private final Long organisationNumber;
-    private static final String PAYMENTS_READ_ONLY_MESSAGE = "Not supported by the mainframe: "
-            + "its loanPayment messages only list and retrieve payments";
 
     public MainframeGatewayImpl(Connection connection, long organisationNumber) {
         this.connection = connection;
@@ -169,13 +183,23 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Address updateAddress(Address address) {
-        mainframe.client.messages.customer.UpdateAddress message =
-                new mainframe.client.messages.customer.UpdateAddress(
-                        address.getCity(), address.getCountry(), address.getCustomerId(),
-                        address.getAddressId(), address.isMailing(), false, address.getStreet(),
-                        null, null, address.getPostCode(), address.getSuburb(),
-                        mainframe.client.messages.customer.UpdateAddress.TYPE_RESIDENTIAL);
+        Long addressId = address.getAddressId();
+        if (addressId == null) {
+            throw new IllegalArgumentException("An existing address with an addressId is required");
+        }
+
+        mainframe.client.messages.customerAddress.Retrieve current =
+                new mainframe.client.messages.customerAddress.Retrieve(
+                        addressId, address.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateAddress message = new UpdateAddress(
+                address.getCity(), address.getCountry(), address.getCustomerId(), addressId,
+                address.isMailing(), current.getIsPrimary(), address.getStreet(),
+                current.getLine2(), current.getOtherType(), address.getPostCode(),
+                address.getSuburb(), current.getType());
         sendOrThrow(message);
+
         return new Address(message.getId(), message.getCustomer(), message.getLine1(),
                 message.getSuburb(), message.getCity(), message.getPostCode(),
                 message.getCountry(), message.getIsMailing());
@@ -183,130 +207,168 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public void deleteAddress(String customerId, Long addressId) {
-        sendOrThrow(new mainframe.client.messages.customer.DeleteAddress(customerId, addressId));
+        sendOrThrow(new DeleteAddress(customerId, addressId));
+    }
+
+    // The mainframe's IDs are numbers, but LAVS keeps them as text
+    private long parseNumericId(String id, String name) {
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException invalidId) {
+            throw new IllegalArgumentException(name + " must be a numeric mainframe ID",
+                    invalidId);
+        }
     }
 
     @Override
     public Phone addPhone(Phone phone) {
-        mainframe.client.messages.customer.AddPhoneNumber message =
-                new mainframe.client.messages.customer.AddPhoneNumber(
-                        phone.isSendTXT(), null, phone.getCustomerId(), phone.isPrimary(),
-                        phone.getNumber(), null,
-                        mainframe.client.messages.customer.AddPhoneNumber.TYPE_MOBILE);
+        AddPhoneNumber message = new AddPhoneNumber(
+                phone.isSendTXT(), DEFAULT_PHONE_COUNTRY_CODE, phone.getCustomerId(),
+                phone.isPrimary(), phone.getNumber(), null, AddPhoneNumber.TYPE_MOBILE);
         sendOrThrow(message);
+
         return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
                 message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
     public Phone updatePhone(Phone phone) {
-        mainframe.client.messages.customer.UpdatePhoneNumber message =
-                new mainframe.client.messages.customer.UpdatePhoneNumber(
-                        phone.isSendTXT(), null, phone.getCustomerId(), phone.getPhoneId(),
-                        phone.isPrimary(), phone.getNumber(), null,
-                        mainframe.client.messages.customer.UpdatePhoneNumber.TYPE_MOBILE);
+        Long phoneId = phone.getPhoneId();
+        if (phoneId == null) {
+            throw new IllegalArgumentException("An existing phone with a phoneId is required");
+        }
+
+        mainframe.client.messages.customerPhoneNumber.Retrieve current =
+                new mainframe.client.messages.customerPhoneNumber.Retrieve(
+                        phoneId, phone.getCustomerId());
+        sendOrThrow(current);
+
+        UpdatePhoneNumber message = new UpdatePhoneNumber(
+                phone.isSendTXT(), current.getCountryCode(), phone.getCustomerId(), phoneId,
+                phone.isPrimary(), phone.getNumber(), current.getOtherType(), current.getType());
         sendOrThrow(message);
+
         return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
                 message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
     public void deletePhone(String customerId, Long phoneId) {
-        sendOrThrow(
-                new mainframe.client.messages.customer.DeletePhoneNumber(customerId, phoneId));
+        sendOrThrow(new DeletePhoneNumber(customerId, phoneId));
     }
 
     @Override
     public Email addEmail(Email email) {
-        mainframe.client.messages.customer.AddEmail message =
-                new mainframe.client.messages.customer.AddEmail(
-                        email.getEmailAddress(), email.getCustomerId(), email.isPrimary(), null,
-                        mainframe.client.messages.customer.AddEmail.TYPE_PERSONAL);
+        AddEmail message = new AddEmail(email.getEmailAddress(), email.getCustomerId(),
+                email.isPrimary(), null, AddEmail.TYPE_PERSONAL);
         sendOrThrow(message);
+
         return new Email(message.getId(), message.getCustomer(), message.getAddress(),
                 message.getIsPrimary());
     }
 
     @Override
     public Email updateEmail(Email email) {
-        mainframe.client.messages.customer.UpdateEmail message =
-                new mainframe.client.messages.customer.UpdateEmail(
-                        email.getEmailAddress(), email.getCustomerId(), email.getEmailId(),
-                        email.isPrimary(), null,
-                        mainframe.client.messages.customer.UpdateEmail.TYPE_PERSONAL);
+        Long emailId = email.getEmailId();
+        if (emailId == null) {
+            throw new IllegalArgumentException("An existing email with an emailId is required");
+        }
+
+        mainframe.client.messages.customerEmail.Retrieve current =
+                new mainframe.client.messages.customerEmail.Retrieve(
+                        emailId, email.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateEmail message = new UpdateEmail(email.getEmailAddress(), email.getCustomerId(),
+                emailId, email.isPrimary(), current.getOtherType(), current.getType());
         sendOrThrow(message);
+
         return new Email(message.getId(), message.getCustomer(), message.getAddress(),
                 message.getIsPrimary());
     }
 
     @Override
     public void deleteEmail(String customerId, Long emailId) {
-        sendOrThrow(new mainframe.client.messages.customer.DeleteEmail(customerId, emailId));
+        sendOrThrow(new DeleteEmail(customerId, emailId));
     }
 
     @Override
     public List<Address> getAddresses(String customerId) {
-        List<Address> results = new ArrayList<>();
+        List<Address> addresses = new ArrayList<>();
         long page = 1;
         while (true) {
-            mainframe.client.messages.customerAddress.List list =
-                    new mainframe.client.messages.customerAddress.List(
-                            customerId, page, CATEGORY_PAGE_SIZE);
-            sendOrThrow(list);
-            for (mainframe.client.messages.customerAddress.List.Item item : list.getItems()) {
-                mainframe.client.messages.customerAddress.Retrieve retrieve =
-                        new mainframe.client.messages.customerAddress.Retrieve(
-                                item.getId(), customerId);
-                sendOrThrow(retrieve);
-                results.add(new Address(retrieve.getId(), retrieve.getCustomerNumber(),
-                        retrieve.getLine1(), retrieve.getSuburb(), retrieve.getCity(),
-                        retrieve.getPostCode(), retrieve.getCountry(), retrieve.getIsMailing()));
+            mainframe.client.messages.customerAddress.List message =
+                    new mainframe.client.messages.customerAddress.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerAddress.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerAddress.List.Item item : items) {
+                addresses.add(getAddress(customerId, item.getId()));
             }
-            if (list.getItems().length == 0
-                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
-                return results;
+            if (items.length == 0 || addresses.size() >= message.getTotal()) {
+                return addresses;
             }
             page++;
         }
+    }
+
+    // One address in full. Only the fields LAVS models are kept: the second
+    // address line, the type and the primary flag are not.
+    private Address getAddress(String customerId, long addressId) {
+        mainframe.client.messages.customerAddress.Retrieve message =
+                new mainframe.client.messages.customerAddress.Retrieve(addressId, customerId);
+        sendOrThrow(message);
+
+        return new Address(message.getId(), customerId, message.getLine1(), message.getSuburb(),
+                message.getCity(), message.getPostCode(), message.getCountry(),
+                message.getIsMailing());
     }
 
     @Override
     public List<Phone> getPhones(String customerId) {
-        List<Phone> results = new ArrayList<>();
+        List<Phone> phones = new ArrayList<>();
         long page = 1;
         while (true) {
-            mainframe.client.messages.customerPhoneNumber.List list =
-                    new mainframe.client.messages.customerPhoneNumber.List(
-                            customerId, page, CATEGORY_PAGE_SIZE);
-            sendOrThrow(list);
-            for (mainframe.client.messages.customerPhoneNumber.List.Item item : list.getItems()) {
-                results.add(new Phone(item.getId(), customerId, item.getNumber(),
-                        yes(item.getIsPrimary()), yes(item.getCanTxt())));
+            mainframe.client.messages.customerPhoneNumber.List message =
+                    new mainframe.client.messages.customerPhoneNumber.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerPhoneNumber.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerPhoneNumber.List.Item item : items) {
+                phones.add(getPhone(customerId, item.getId()));
             }
-            if (list.getItems().length == 0
-                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
-                return results;
+            if (items.length == 0 || phones.size() >= message.getTotal()) {
+                return phones;
             }
             page++;
         }
     }
 
+    private Phone getPhone(String customerId, long phoneId) {
+        mainframe.client.messages.customerPhoneNumber.Retrieve message =
+                new mainframe.client.messages.customerPhoneNumber.Retrieve(phoneId, customerId);
+        sendOrThrow(message);
+
+        return new Phone(message.getId(), customerId, message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
+    }
+
     @Override
     public List<Email> getEmails(String customerId) {
-        List<Email> results = new ArrayList<>();
+        List<Email> emails = new ArrayList<>();
         long page = 1;
         while (true) {
-            mainframe.client.messages.customerEmail.List list =
-                    new mainframe.client.messages.customerEmail.List(
-                            customerId, page, CATEGORY_PAGE_SIZE);
-            sendOrThrow(list);
-            for (mainframe.client.messages.customerEmail.List.Item item : list.getItems()) {
-                results.add(new Email(item.getId(), customerId, item.getAddress(),
-                        yes(item.getIsPrimary())));
+            mainframe.client.messages.customerEmail.List message =
+                    new mainframe.client.messages.customerEmail.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerEmail.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerEmail.List.Item item : items) {
+                emails.add(new Email(item.getId(), customerId, item.getAddress(),
+                        "y".equals(item.getIsPrimary())));
             }
-            if (list.getItems().length == 0
-                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
-                return results;
+            if (items.length == 0 || emails.size() >= message.getTotal()) {
+                return emails;
             }
             page++;
         }
@@ -314,31 +376,40 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Employer addEmployer(Employer employer) {
-        mainframe.client.messages.customer.AddEmployer message =
-                new mainframe.client.messages.customer.AddEmployer(
-                        employer.getCustomerId(), employer.getCompanyName(), employer.getJobTitle(),
-                        employer.getIncome(), employer.getEmploymentType());
+        AddEmployer message = new AddEmployer(employer.getCustomerId(),
+                employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                AddEmployer.TYPE_PRIMARY);
         sendOrThrow(message);
+
         return new Employer(message.getId(), message.getCustomer(), message.getName(),
-                message.getPosition(), message.getSalary(), message.getType());
+                message.getPosition(), message.getSalary(), employer.getEmploymentType());
     }
 
     @Override
     public Employer updateEmployer(Employer employer) {
-        mainframe.client.messages.customer.UpdateEmployer message =
-                new mainframe.client.messages.customer.UpdateEmployer(
-                        employer.getCustomerId(), employer.getEmployerId(),
-                        employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
-                        employer.getEmploymentType());
+        Long employerId = employer.getEmployerId();
+        if (employerId == null) {
+            throw new IllegalArgumentException(
+                    "An existing employer with an employerId is required");
+        }
+
+        mainframe.client.messages.customerEmployer.Retrieve current =
+                new mainframe.client.messages.customerEmployer.Retrieve(
+                        employerId, employer.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateEmployer message = new UpdateEmployer(employer.getCustomerId(), employerId,
+                employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                current.getType());
         sendOrThrow(message);
+
         return new Employer(message.getId(), message.getCustomer(), message.getName(),
-                message.getPosition(), message.getSalary(), message.getType());
+                message.getPosition(), message.getSalary(), employer.getEmploymentType());
     }
 
     @Override
     public void deleteEmployer(String customerId, Long employerId) {
-        sendOrThrow(new mainframe.client.messages.customer.DeleteEmployer(
-                customerId, employerId));
+        sendOrThrow(new DeleteEmployer(customerId, employerId));
     }
 
     @Override
@@ -417,52 +488,130 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.AddRelationship");
+        AddRelationship message = new AddRelationship(guarantor.getCustomerId(),
+                toMainframeOtherType(guarantor.getRelationshipType()),
+                guarantor.getGuarantorCustomerId(),
+                toMainframeRelationshipType(guarantor.getRelationshipType()));
+        sendOrThrow(message);
+
+        return new Guarantor(String.valueOf(message.getId()), guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(), guarantor.getRelationshipType());
     }
 
     @Override
     public Guarantor updateGuarantor(Guarantor guarantor) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateRelationship");
+        UpdateRelationship message = new UpdateRelationship(guarantor.getCustomerId(),
+                parseNumericId(guarantor.getGuarantorId(), "Guarantor ID"),
+                toMainframeOtherType(guarantor.getRelationshipType()),
+                guarantor.getGuarantorCustomerId(),
+                toMainframeRelationshipType(guarantor.getRelationshipType()));
+        sendOrThrow(message);
+
+        return new Guarantor(guarantor.getGuarantorId(), guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(), guarantor.getRelationshipType());
     }
 
     @Override
-    public void deleteGuarantor(String guarantorId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteRelationship");
+    public void deleteGuarantor(String customerId, String guarantorId) {
+        sendOrThrow(new DeleteRelationship(customerId,
+                parseNumericId(guarantorId, "Guarantor ID")));
     }
 
     @Override
     public List<Employer> getEmployers(String customerId) {
-        List<Employer> results = new ArrayList<>();
+        List<Employer> employers = new ArrayList<>();
         long page = 1;
         while (true) {
-            mainframe.client.messages.customerEmployer.List list =
-                    new mainframe.client.messages.customerEmployer.List(
-                            customerId, page, CATEGORY_PAGE_SIZE);
-            sendOrThrow(list);
-            for (mainframe.client.messages.customerEmployer.List.Item item : list.getItems()) {
-                mainframe.client.messages.customerEmployer.Retrieve retrieve =
-                        new mainframe.client.messages.customerEmployer.Retrieve(
-                                item.getId(), customerId);
-                sendOrThrow(retrieve);
-                results.add(new Employer(retrieve.getId(), retrieve.getCustomerNumber(),
-                        retrieve.getName(), retrieve.getPosition(), retrieve.getSalary(),
-                        retrieve.getType()));
+            mainframe.client.messages.customerEmployer.List message =
+                    new mainframe.client.messages.customerEmployer.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerEmployer.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerEmployer.List.Item item : items) {
+                employers.add(getEmployer(customerId, item.getId()));
             }
-            if (list.getItems().length == 0
-                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
-                return results;
+            if (items.length == 0 || employers.size() >= message.getTotal()) {
+                return employers;
             }
             page++;
         }
     }
 
+    private Employer getEmployer(String customerId, long employerId) {
+        mainframe.client.messages.customerEmployer.Retrieve message =
+                new mainframe.client.messages.customerEmployer.Retrieve(employerId, customerId);
+        sendOrThrow(message);
+
+        return new Employer(message.getId(), customerId, message.getName(),
+                message.getPosition(), message.getSalary(), null);
+    }
+
     @Override
     public List<Guarantor> getGuarantors(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerRelationship retrieval");
+        List<Guarantor> guarantors = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerRelationship.List message =
+                    new mainframe.client.messages.customerRelationship.List(
+                            customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerRelationship.List.Item[] items =
+                    message.getItems();
+            for (mainframe.client.messages.customerRelationship.List.Item item : items) {
+                guarantors.add(toGuarantor(item.getId(), customerId,
+                        item.getSecondaryCustomerNumber(), item.getType(),
+                        otherTypeOf(customerId, item.getId(), item.getType())));
+            }
+            if (items.length == 0 || guarantors.size() >= message.getTotal()) {
+                return guarantors;
+            }
+            page++;
+        }
+    }
+
+    // The mainframe's list doesn't have a relationship's other-type text, so it
+    // is only fetched for the ones that need it (type Other)
+    private String otherTypeOf(String customerId, long relationshipId, String type) {
+        if (!AddRelationship.TYPE_OTHER.equals(type)) {
+            return null;
+        }
+        mainframe.client.messages.customerRelationship.Retrieve message =
+                new mainframe.client.messages.customerRelationship.Retrieve(
+                        relationshipId, customerId);
+        sendOrThrow(message);
+        return message.getOtherType();
+    }
+
+    // The mainframe's relationship type is a fixed set (Parent, Spouse,
+    // LegalAuthority, Other) while LAVS's is free text. Text that matches a
+    // fixed type, ignoring case and spaces, uses it; anything else is Other.
+    private String toMainframeRelationshipType(String relationshipType) {
+        String normalised = relationshipType.replace(" ", "").toLowerCase();
+        for (String known : List.of(AddRelationship.TYPE_PARENT, AddRelationship.TYPE_SPOUSE,
+                AddRelationship.TYPE_LEGALAUTHORITY)) {
+            if (known.toLowerCase().equals(normalised)) {
+                return known;
+            }
+        }
+        return AddRelationship.TYPE_OTHER;
+    }
+
+    // The other-type text goes with the type Other, and carries the free text
+    private String toMainframeOtherType(String relationshipType) {
+        return AddRelationship.TYPE_OTHER.equals(toMainframeRelationshipType(relationshipType))
+                ? relationshipType
+                : null;
+    }
+
+    // Back to LAVS: for the type Other, the relationship type is the text that
+    // was stored with it
+    private Guarantor toGuarantor(Long id, String customerId, String guarantorCustomerId,
+            String type, String otherType) {
+        boolean hasOtherText = AddRelationship.TYPE_OTHER.equals(type)
+                && otherType != null && !otherType.isBlank();
+        return new Guarantor(String.valueOf(id), customerId, guarantorCustomerId,
+                hasOtherText ? otherType : type);
     }
 
     @Override
@@ -507,14 +656,16 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
                 toMainframeRateType(loan), loan.getRenewDate().toString(),
                 loan.getStartDate().toString());
-
         sendOrThrow(message);
 
-        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
-                message.getPrincipal(), message.getRateAmount(), message.getRateType(),
-                message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
-                message.getPaymentFrequency(), message.getRateFrequency(), loan.getType(),
-                loan.getTermMonths());
+        Loan stored = getLoan(loan.getLoanId());
+        Loan.Type type = stored.getType() == Loan.Type.INTEREST_ONLY
+                ? Loan.Type.INTEREST_ONLY
+                : loan.getType();
+        return new Loan(stored.getLoanId(), stored.getCustomerId(), stored.getStatus(),
+                stored.getPrincipal(), stored.getInterestRate(), type, stored.isFloating(),
+                stored.getStartDate(), stored.getRenewDate(), stored.getPaymentAmount(),
+                stored.getPaymentFrequency(), stored.getRateFrequency(), loan.getTermMonths());
     }
 
     @Override
@@ -522,9 +673,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
         UpdateStatus message = new UpdateStatus(loanId, toMainframeStatus(newStatus));
         sendOrThrow(message);
 
-        // UpdateStatus only returns loanNumber and status, not the full loan,
-        // so we re-fetch to return a complete Loan matching the other methods
-        return getLoan(message.getLoanNumber());
+        // The reply only has the loan number and status,
+        // so the loan is re-fetched using the number we sent
+        return getLoan(loanId);
     }
 
     @Override
@@ -533,8 +684,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 coBorrower.getCustomerId(), coBorrower.getLoanId(), AddCoborrower.TYPE_COBORROWER);
         sendOrThrow(message);
 
-        return new CoBorrower(String.valueOf(message.getId()), message.getLoanNumber(),
-                message.getCoborrowerNumber());
+        return new CoBorrower(String.valueOf(message.getId()), coBorrower.getLoanId(),
+                coBorrower.getCustomerId());
     }
 
     @Override
@@ -635,8 +786,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
         sendOrThrow(message);
 
         // The mainframe has no field for a repayment, so that link isn't kept
-        return new Payment(String.valueOf(message.getId()), message.getLoanNumber(), null,
-                java.time.LocalDate.parse(message.getDate()), message.getAmountPaid());
+        return new Payment(String.valueOf(message.getId()), payment.getLoanId(), null,
+                payment.getPaymentDate(), payment.getAmountPaid());
     }
 
     // The mainframe has no update message, so an edit adds the new version and
@@ -750,10 +901,6 @@ public class MainframeGatewayImpl implements MainframeGateway {
     private MainframeException unavailable(IOException cause) {
             return new MainframeException(MainframeException.Type.UNAVAILABLE,
                     StatusMessage.NETWORK_FAILURE_UNAVAILABLE.getCode(), cause.getMessage());
-    }
-
-    private boolean yes(String value) {
-        return "y".equalsIgnoreCase(value);
     }
 
     // Interest-Only is the one loan type the mainframe can represent. Table
