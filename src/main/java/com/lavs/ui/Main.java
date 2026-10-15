@@ -88,9 +88,11 @@ public class Main extends Application {
                 FXMLLoader dashboardLoader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
                 Parent dashboard = dashboardLoader.load();
                 DashboardController dashboardController = dashboardLoader.getController();
+                dashboardController.setCustomerService(new com.lavs.business.CustomerService(gateway));
                 dashboardController.setRegistrationServiceFactory(
                         () -> new com.lavs.business.MainframeCustomerRegistrationService(gateway));
                 dashboardController.configure(loginName[0], () -> {
+                    dashboardController.dispose();
                     gateway.logout();
                     loginName[0] = null;
                     scene.setRoot(root);

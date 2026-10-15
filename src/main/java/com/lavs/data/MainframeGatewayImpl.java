@@ -124,16 +124,20 @@ public class MainframeGatewayImpl implements MainframeGateway {
         
     @Override
     public List<Customer> searchCustomers(String query) {
-        Search message = new Search(1, query, 50);
-        sendOrThrow(message);
-
         List<Customer> results = new ArrayList<>();
-        for (Search.Item item : message.getItems()) {
-            results.add(new Customer(item.getNumber(), item.getTitle(), item.getFirstName(),
-                    item.getFamilyName(), null, // dateOfBirth parsing TBD - see createCustomer's TODO
-                    null)); // nationality not returned by Search - only available via Retrieve
+        long page = 1;
+        while (true) {
+            Search message = new Search(page, query, CATEGORY_PAGE_SIZE);
+            sendOrThrow(message);
+            for (Search.Item item : message.getItems()) {
+                results.add(new Customer(item.getNumber(), item.getTitle(), item.getFirstName(),
+                        item.getFamilyName(), null, null));
+            }
+            if (message.getItems().length == 0 || page * CATEGORY_PAGE_SIZE >= message.getTotal()) {
+                return results;
+            }
+            page++;
         }
-        return results;
     }
 
     @Override

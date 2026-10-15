@@ -13,7 +13,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
-/** Keeps a separate editable preview for each customer during this controller's lifetime. */
+/** Renders retrieved details and keeps local editor state for standalone previews. */
 final class CustomerDetailsEditing {
     private static final String CELL = "-fx-font-size: 12px; -fx-text-fill: #55558d;";
     private static final String ACTION = "-fx-background-color: transparent; -fx-text-fill: #747ba6; "
@@ -29,6 +29,7 @@ final class CustomerDetailsEditing {
     private final Consumer<CustomersController.CustomerSummary> onChange;
     private final Map<String, State> sessions = new HashMap<>();
     private State state;
+    private boolean readOnly;
 
     private static final class State {
         CustomersController.CustomerSummary summary;
@@ -36,25 +37,12 @@ final class CustomerDetailsEditing {
         final Map<Kind, List<Map<String, String>>> records = new EnumMap<>(Kind.class);
         State(CustomersController.CustomerSummary customer) {
             summary = customer;
-            details.put(Kind.PERSONAL, values("title", "Mrs", "firstName", firstName(customer.name()), "lastName", lastName(customer.name()), "birthDate", "14-03-1990", "nationality", "New Zealand"));
-            details.put(Kind.CONTACT, values("email", customer.email(), "phone", customer.phone(), "address", "12 Koru Street, Whero, Auckland, 0945"));
-            details.put(Kind.EMPLOYMENT, values("employer", "Smith Consulting", "role", "Consultant", "employmentType", "Full-time", "income", "85000"));
-            records.put(Kind.CONTACT_RECORD, new ArrayList<>());
-            records.put(Kind.EMPLOYMENT, new ArrayList<>());
-            records.put(Kind.LOAN, new ArrayList<>(List.of(
-                    values("id", "LN00123", "type", "Home Loan", "amount", "450000", "rate", "4.95", "status", "Active"),
-                    values("id", "LN00456", "type", "Personal Loan", "amount", "15000", "rate", "12.50", "status", "Active"),
-                    values("id", "LN00789", "type", "Car Loan", "amount", "30000", "rate", "6.75", "status", "Active"))));
-            records.put(Kind.NOTE, new ArrayList<>(List.of(
-                    values("title", "Loan discussion", "text", "Customer is looking to consolidate existing loans.", "date", "2025-09-12", "author", "Jack Slater"),
-                    values("title", "Follow up", "text", "Called customer to confirm documents received.", "date", "2025-08-03", "author", "Sarah Lee"),
-                    values("title", "General note", "text", "Customer is happy with the current service.", "date", "2025-06-21", "author", "Jack Slater"))));
-            records.put(Kind.DOCUMENT, new ArrayList<>(List.of(
-                    values("fileName", "ID - Passport.pdf", "type", "Identity", "date", "2025-09-12"),
-                    values("fileName", "Proof of Address.pdf", "type", "Address", "date", "2025-08-03"),
-                    values("fileName", "Payslip.pdf", "type", "Income", "date", "2025-06-21"),
-                    values("fileName", "Bank Statement.pdf", "type", "Bank Statement", "date", "2025-05-10"))));
-            records.put(Kind.GUARANTOR, new ArrayList<>(List.of(values("firstName", "Michael", "lastName", "Johnson", "relationship", "Brother", "phone", "021 987 6543", "email", "michael.johnson@email.com", "status", "Active"))));
+            details.put(Kind.PERSONAL, values("title", "", "firstName", firstName(customer.name()),
+                    "lastName", lastName(customer.name()), "birthDate", "", "nationality", ""));
+            details.put(Kind.CONTACT, values("email", customer.email(), "phone", customer.phone(), "address", ""));
+            for (Kind kind : List.of(Kind.CONTACT_RECORD, Kind.EMPLOYMENT, Kind.LOAN, Kind.NOTE,
+                    Kind.DOCUMENT, Kind.GUARANTOR)) records.put(kind, new ArrayList<>());
+
         }
     }
 
@@ -72,10 +60,58 @@ final class CustomerDetailsEditing {
     }
 
     CustomersController.CustomerSummary select(CustomersController.CustomerSummary customer) {
+        readOnly = false;
         state = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
         render();
         return state.summary;
     }
+
+    CustomersController.CustomerSummary select(com.lavs.model.CustomerDetails details) {
+        var customer = details.customer();
+        State loaded = new State(new CustomersController.CustomerSummary(customer.getCustomerId(),
+                (text(customer.getFirstName()) + " " + text(customer.getLastName())).strip(), "", ""));
+        loaded.details.put(Kind.PERSONAL, values("title", text(customer.getTitle()),
+                "firstName", text(customer.getFirstName()), "lastName", text(customer.getLastName()),
+                "birthDate", customer.getDateOfBirth() == null ? "" : CustomerRecordEditor.BIRTH_DATE.format(customer.getDateOfBirth()),
+                "nationality", text(customer.getNationality())));
+        var contacts = loaded.records.get(Kind.CONTACT_RECORD);
+        details.emails().forEach(email -> contacts.add(values("contactType", "Email", "value", text(email.getEmailAddress()),
+                "primary", Boolean.toString(email.isPrimary()))));
+        details.phones().forEach(phone -> contacts.add(values("contactType", "Phone", "value", text(phone.getNumber()),
+                "primary", Boolean.toString(phone.isPrimary()), "texts", Boolean.toString(phone.isSendTXT()))));
+        details.addresses().forEach(address -> contacts.add(values("contactType", "Address", "value",
+                java.util.stream.Stream.of(address.getStreet(), address.getSuburb(), address.getCity(), address.getPostCode(), address.getCountry())
+                        .filter(value -> value != null && !value.isBlank()).collect(java.util.stream.Collectors.joining(", ")),
+                "primary", Boolean.toString(address.isMailing()))));
+        for (String type : List.of("Email", "Phone", "Address")) {
+            var entries = contacts.stream().filter(record -> type.equals(record.get("contactType"))).toList();
+            var primary = entries.stream().filter(record -> Boolean.parseBoolean(record.get("primary")))
+                    .findFirst().orElse(entries.isEmpty() ? null : entries.get(0));
+            if (primary != null) {
+                loaded.details.get(Kind.CONTACT).put(contactKey(type), primary.get("value"));
+                if (type.equals("Phone")) loaded.details.get(Kind.CONTACT).put("texts", primary.get("texts"));
+                contacts.remove(primary);
+            }
+        }
+        details.employers().forEach(employer -> {
+            var record = values("employer", text(employer.getCompanyName()), "role", text(employer.getJobTitle()),
+                    "employmentType", text(employer.getEmploymentType()), "income", Double.toString(employer.getIncome()));
+            if (!loaded.details.containsKey(Kind.EMPLOYMENT)) loaded.details.put(Kind.EMPLOYMENT, record);
+            else loaded.records.get(Kind.EMPLOYMENT).add(record);
+        });
+        var contact = loaded.details.get(Kind.CONTACT);
+        loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
+                contact.get("phone"), contact.get("email"));
+        State previous = sessions.get(customer.getCustomerId());
+        if (previous != null) loaded.records.get(Kind.LOAN).addAll(previous.records.get(Kind.LOAN));
+        state = loaded;
+        sessions.put(customer.getCustomerId(), loaded);
+        readOnly = true;
+        render();
+        return loaded.summary;
+    }
+
+    private static String text(String value) { return value == null ? "" : value; }
 
     void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
@@ -230,6 +266,8 @@ final class CustomerDetailsEditing {
         edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6", "#55558d"));
         edit.setOnAction(event -> editContact(type, record, () -> populateContacts(type, list)));
         VBox actions = new VBox(5, edit);
+        actions.setVisible(!readOnly);
+        actions.setManaged(!readOnly);
         if (record != null) {
             State target = state;
             Button primary = new Button("Make primary");
@@ -248,6 +286,7 @@ final class CustomerDetailsEditing {
                 if (record == null) state.details.get(Kind.CONTACT).put("texts", Boolean.toString(texts.isSelected()));
                 else record.put("texts", Boolean.toString(texts.isSelected()));
             });
+            texts.setDisable(readOnly);
             text.getChildren().add(texts);
         }
         State target = state;
@@ -297,7 +336,9 @@ final class CustomerDetailsEditing {
         set("firstNameValue", personal.get("firstName"));
         set("lastNameValue", personal.get("lastName"));
         set("titleValue", personal.get("title"));
-        set("birthDateValue", CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(personal.get("birthDate"), CustomerRecordEditor.BIRTH_DATE)));
+        String birthDate = personal.get("birthDate");
+        set("birthDateValue", birthDate == null || birthDate.isBlank() ? "Not provided"
+                : CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(birthDate, CustomerRecordEditor.BIRTH_DATE)));
         set("nationalityValue", personal.get("nationality"));
         set("emailValue", contactDisplay(contact.get("email"), "No email address"));
         set("phoneValue", contactDisplay(contact.get("phone"), "No phone number"));
@@ -360,6 +401,8 @@ final class CustomerDetailsEditing {
             }));
             delete.setStyle(((Button) primaryEmployerRow.getChildren().get(2)).getStyle());
             ((SVGPath) delete.getGraphic()).setStrokeWidth(1.5);
+            edit.setVisible(!readOnly); edit.setManaged(!readOnly);
+            delete.setVisible(!readOnly); delete.setManaged(!readOnly);
             HBox row = new HBox(primaryEmployerRow.getSpacing(), text, edit, delete);
             row.setAlignment(primaryEmployerRow.getAlignment());
             row.setStyle(primaryEmployerRow.getStyle());
@@ -446,7 +489,7 @@ final class CustomerDetailsEditing {
             }
         }
         if (records.isEmpty()) {
-            Label empty = label("No " + (kind == Kind.LOAN ? "loans" : kind == Kind.DOCUMENT ? "documents" : "guarantors") + " added.");
+            Label empty = label("No " + (kind == Kind.LOAN ? "loans" : kind == Kind.DOCUMENT ? "documents" : "guarantors") + (readOnly ? " loaded." : " added."));
             empty.setPadding(new Insets(20)); table.add(empty, 0, 1, columns, 1);
         }
     }

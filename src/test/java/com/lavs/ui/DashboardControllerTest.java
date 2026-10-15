@@ -43,6 +43,7 @@ class DashboardControllerTest {
             Parent view = loader.load();
             new Scene(view, 900, 560);
             DashboardController controller = loader.getController();
+            controller.setRegistrationServiceFactory(com.lavs.business.StubCustomerRegistrationService::new);
             controller.configure("Alyza", () -> loggedOut[0] = true);
             view.applyCss();
             view.layout();
@@ -113,31 +114,9 @@ class DashboardControllerTest {
             @SuppressWarnings("unchecked")
             TableView<CustomersController.CustomerSummary> table =
                     (TableView<CustomersController.CustomerSummary>) root.lookup("#customerTable");
-            assertEquals("Search by customer ID, name or contact details", search.getPromptText());
-            assertEquals(10, table.getItems().size());
-            assertEquals("Amelia Adams", table.getItems().get(0).name());
-            for (String query : new String[] {"c001", "AMELIA", "0101", "AMELIA.ADAMS@EXAMPLE.COM"}) {
-                search.setText(query);
-                assertEquals(1, table.getItems().size(), query);
-                assertEquals("C001", table.getItems().get(0).customerId());
-                assertEquals("Search results (1)", ((Label) root.lookup("#resultsHeading")).getText());
-            }
-            search.setText("no matching customer");
-            assertTrue(table.getItems().isEmpty());
-            assertEquals("No customers found", ((Label) table.getPlaceholder()).getText());
-            search.clear();
-            assertEquals(10, table.getItems().size());
-            TableRow<CustomersController.CustomerSummary> row = table.getRowFactory().call(table);
-            row.updateTableView(table);
-            row.updateIndex(0);
-            row.getOnMouseClicked().handle(new javafx.scene.input.MouseEvent(
-                    javafx.scene.input.MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0,
-                    javafx.scene.input.MouseButton.PRIMARY, 1, false, false, false, false,
-                    true, false, false, false, false, true, null));
-            assertTrue(root.lookup("#detailsView").isVisible());
-            assertFalse(root.lookup("#listView").isVisible());
-            ((Button) ((VBox) root.lookup("#detailsView")).getChildren().get(0)).fire();
-            assertTrue(root.lookup("#listView").isVisible());
+            assertEquals("Search customers", search.getPromptText());
+            assertTrue(table.getItems().isEmpty(), "An unconnected screen must not display sample customers");
+            assertEquals("Enter a customer name or ID to search", ((Label) table.getPlaceholder()).getText());
             assertNull(root.lookup(".list-view"));
             return null;
         });

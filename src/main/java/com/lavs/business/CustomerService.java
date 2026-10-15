@@ -28,7 +28,7 @@ public class CustomerService {
         this.gateway = Objects.requireNonNull(gateway, "gateway must not be null");
     }
 
-    /** Returns previews matching the gateway's search rules; an empty query lists customers. */
+    /** Returns previews matching the gateway's search rules. */
     public List<CustomerPreview> search(String query) {
         Objects.requireNonNull(query, "query must not be null");
         return gateway.searchCustomers(query.strip()).stream()
