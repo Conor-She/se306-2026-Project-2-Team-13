@@ -136,82 +136,176 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Address updateAddress(Address address) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateAddress");
+        mainframe.client.messages.customer.UpdateAddress message =
+                new mainframe.client.messages.customer.UpdateAddress(
+                        address.getCity(), address.getCountry(), address.getCustomerId(),
+                        address.getAddressId(), address.isMailing(), false, address.getStreet(),
+                        null, null, address.getPostCode(), address.getSuburb(),
+                        mainframe.client.messages.customer.UpdateAddress.TYPE_RESIDENTIAL);
+        sendOrThrow(message);
+        return new Address(message.getId(), message.getCustomer(), message.getLine1(),
+                message.getSuburb(), message.getCity(), message.getPostCode(),
+                message.getCountry(), message.getIsMailing());
     }
 
     @Override
-    public void deleteAddress(String addressId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteAddress");
+    public void deleteAddress(String customerId, Long addressId) {
+        sendOrThrow(new mainframe.client.messages.customer.DeleteAddress(customerId, addressId));
     }
 
     @Override
     public Phone addPhone(Phone phone) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.AddPhoneNumber");
+        mainframe.client.messages.customer.AddPhoneNumber message =
+                new mainframe.client.messages.customer.AddPhoneNumber(
+                        phone.isSendTXT(), null, phone.getCustomerId(), phone.isPrimary(),
+                        phone.getNumber(), null,
+                        mainframe.client.messages.customer.AddPhoneNumber.TYPE_MOBILE);
+        sendOrThrow(message);
+        return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
     public Phone updatePhone(Phone phone) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdatePhoneNumber");
+        mainframe.client.messages.customer.UpdatePhoneNumber message =
+                new mainframe.client.messages.customer.UpdatePhoneNumber(
+                        phone.isSendTXT(), null, phone.getCustomerId(), phone.getPhoneId(),
+                        phone.isPrimary(), phone.getNumber(), null,
+                        mainframe.client.messages.customer.UpdatePhoneNumber.TYPE_MOBILE);
+        sendOrThrow(message);
+        return new Phone(message.getId(), message.getCustomer(), message.getNumber(),
+                message.getIsPrimary(), message.getCanTxt());
     }
 
     @Override
-    public void deletePhone(String phoneId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeletePhoneNumber");
+    public void deletePhone(String customerId, Long phoneId) {
+        sendOrThrow(
+                new mainframe.client.messages.customer.DeletePhoneNumber(customerId, phoneId));
     }
 
     @Override
     public Email addEmail(Email email) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmail");
+        mainframe.client.messages.customer.AddEmail message =
+                new mainframe.client.messages.customer.AddEmail(
+                        email.getEmailAddress(), email.getCustomerId(), email.isPrimary(), null,
+                        mainframe.client.messages.customer.AddEmail.TYPE_PERSONAL);
+        sendOrThrow(message);
+        return new Email(message.getId(), message.getCustomer(), message.getAddress(),
+                message.getIsPrimary());
     }
 
     @Override
     public Email updateEmail(Email email) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.UpdateEmail");
+        mainframe.client.messages.customer.UpdateEmail message =
+                new mainframe.client.messages.customer.UpdateEmail(
+                        email.getEmailAddress(), email.getCustomerId(), email.getEmailId(),
+                        email.isPrimary(), null,
+                        mainframe.client.messages.customer.UpdateEmail.TYPE_PERSONAL);
+        sendOrThrow(message);
+        return new Email(message.getId(), message.getCustomer(), message.getAddress(),
+                message.getIsPrimary());
     }
 
     @Override
-    public void deleteEmail(String emailId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.DeleteEmail");
+    public void deleteEmail(String customerId, Long emailId) {
+        sendOrThrow(new mainframe.client.messages.customer.DeleteEmail(customerId, emailId));
     }
 
     @Override
     public List<Address> getAddresses(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerAddress retrieval");
+        List<Address> results = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerAddress.List list =
+                    new mainframe.client.messages.customerAddress.List(
+                            customerId, page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(list);
+            for (mainframe.client.messages.customerAddress.List.Item item : list.getItems()) {
+                mainframe.client.messages.customerAddress.Retrieve retrieve =
+                        new mainframe.client.messages.customerAddress.Retrieve(
+                                item.getId(), customerId);
+                sendOrThrow(retrieve);
+                results.add(new Address(retrieve.getId(), retrieve.getCustomerNumber(),
+                        retrieve.getLine1(), retrieve.getSuburb(), retrieve.getCity(),
+                        retrieve.getPostCode(), retrieve.getCountry(), retrieve.getIsMailing()));
+            }
+            if (list.getItems().length == 0
+                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
+                return results;
+            }
+            page++;
+        }
     }
 
     @Override
     public List<Phone> getPhones(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerPhoneNumber retrieval");
+        List<Phone> results = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerPhoneNumber.List list =
+                    new mainframe.client.messages.customerPhoneNumber.List(
+                            customerId, page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(list);
+            for (mainframe.client.messages.customerPhoneNumber.List.Item item : list.getItems()) {
+                results.add(new Phone(item.getId(), customerId, item.getNumber(),
+                        yes(item.getIsPrimary()), yes(item.getCanTxt())));
+            }
+            if (list.getItems().length == 0
+                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
+                return results;
+            }
+            page++;
+        }
     }
 
     @Override
     public List<Email> getEmails(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerEmail retrieval");
+        List<Email> results = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerEmail.List list =
+                    new mainframe.client.messages.customerEmail.List(
+                            customerId, page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(list);
+            for (mainframe.client.messages.customerEmail.List.Item item : list.getItems()) {
+                results.add(new Email(item.getId(), customerId, item.getAddress(),
+                        yes(item.getIsPrimary())));
+            }
+            if (list.getItems().length == 0
+                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
+                return results;
+            }
+            page++;
+        }
     }
 
     @Override
     public Employer addEmployer(Employer employer) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmployer");
+        mainframe.client.messages.customer.AddEmployer message =
+                new mainframe.client.messages.customer.AddEmployer(
+                        employer.getCustomerId(), employer.getCompanyName(), employer.getJobTitle(),
+                        employer.getIncome(), employer.getEmploymentType());
+        sendOrThrow(message);
+        return new Employer(message.getId(), message.getCustomer(), message.getName(),
+                message.getPosition(), message.getSalary(), message.getType());
     }
 
     @Override
     public Employer updateEmployer(Employer employer) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateEmployer");
+        mainframe.client.messages.customer.UpdateEmployer message =
+                new mainframe.client.messages.customer.UpdateEmployer(
+                        employer.getCustomerId(), employer.getEmployerId(),
+                        employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                        employer.getEmploymentType());
+        sendOrThrow(message);
+        return new Employer(message.getId(), message.getCustomer(), message.getName(),
+                message.getPosition(), message.getSalary(), message.getType());
     }
 
     @Override
-    public void deleteEmployer(String employerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteEmployer");
+    public void deleteEmployer(String customerId, Long employerId) {
+        sendOrThrow(new mainframe.client.messages.customer.DeleteEmployer(
+                customerId, employerId));
     }
 
     @Override
@@ -266,8 +360,28 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Employer> getEmployers(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerEmployer retrieval");
+        List<Employer> results = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerEmployer.List list =
+                    new mainframe.client.messages.customerEmployer.List(
+                            customerId, page, CATEGORY_PAGE_SIZE);
+            sendOrThrow(list);
+            for (mainframe.client.messages.customerEmployer.List.Item item : list.getItems()) {
+                mainframe.client.messages.customerEmployer.Retrieve retrieve =
+                        new mainframe.client.messages.customerEmployer.Retrieve(
+                                item.getId(), customerId);
+                sendOrThrow(retrieve);
+                results.add(new Employer(retrieve.getId(), retrieve.getCustomerNumber(),
+                        retrieve.getName(), retrieve.getPosition(), retrieve.getSalary(),
+                        retrieve.getType()));
+            }
+            if (list.getItems().length == 0
+                    || page * CATEGORY_PAGE_SIZE >= list.getTotal()) {
+                return results;
+            }
+            page++;
+        }
     }
 
     @Override
@@ -465,6 +579,10 @@ public class MainframeGatewayImpl implements MainframeGateway {
     private MainframeException unavailable(IOException cause) {
             return new MainframeException(MainframeException.Type.UNAVAILABLE,
                     StatusMessage.NETWORK_FAILURE_UNAVAILABLE.getCode(), cause.getMessage());
+    }
+
+    private boolean yes(String value) {
+        return "y".equalsIgnoreCase(value);
     }
 
     private long findOrganisationId(String organisationName) {
