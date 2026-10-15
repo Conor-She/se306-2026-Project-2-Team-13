@@ -142,7 +142,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
         sendOrThrow(message);
 
         return new Customer(message.getNumber(), message.getTitle(), message.getFirstName(),
-                message.getFamilyName(), null, // dateOfBirth parsing TBD
+                message.getFamilyName(),
+                message.getDateOfBirth() == null || message.getDateOfBirth().isBlank()
+                        ? null : LocalDate.parse(message.getDateOfBirth()),
                 message.getNationality());
     }
 
