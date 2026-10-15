@@ -363,16 +363,14 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deleteGuarantor(String guarantorId) {
+    public void deleteGuarantor(String customerId, String guarantorId) {
         checkAvailability();
-        for (List<Guarantor> stored : guarantors.values()) {
-            boolean removed = stored.removeIf(
-                    guarantor -> guarantor.getGuarantorId().equals(guarantorId));
-            if (removed) {
-                return;
-            }
+        List<Guarantor> stored = guarantors.get(customerId);
+        boolean removed = stored != null && stored.removeIf(
+                guarantor -> guarantor.getGuarantorId().equals(guarantorId));
+        if (!removed) {
+            throw guarantorNotFound(guarantorId);
         }
-        throw guarantorNotFound(guarantorId);
     }
 
     @Override

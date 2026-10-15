@@ -60,7 +60,7 @@ public interface MainframeGateway {
     void deleteDocument(String customerId, String documentId);
     Guarantor addGuarantor(Guarantor guarantor);
     Guarantor updateGuarantor(Guarantor guarantor);
-    void deleteGuarantor(String guarantorId);
+    void deleteGuarantor(String customerId, String guarantorId);
 
     // Create a Loan
     Loan createLoan(Loan loan);

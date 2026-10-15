@@ -25,28 +25,31 @@ import mainframe.client.Status;
 import mainframe.client.StatusMessage;
 import mainframe.client.messages.customer.AddAddress;
 import mainframe.client.messages.customer.AddDocumentMetadata;
+import mainframe.client.messages.customer.AddEmail;
+import mainframe.client.messages.customer.AddEmployer;
+import mainframe.client.messages.customer.AddPhoneNumber;
+import mainframe.client.messages.customer.AddRelationship;
 import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.DeleteAddress;
 import mainframe.client.messages.customer.DeleteDocument;
+import mainframe.client.messages.customer.DeleteEmail;
+import mainframe.client.messages.customer.DeleteEmployer;
+import mainframe.client.messages.customer.DeletePhoneNumber;
+import mainframe.client.messages.customer.DeleteRelationship;
 import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
-import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
-import mainframe.client.messages.customer.DeleteAddress;
 import mainframe.client.messages.customer.UpdateAddress;
-import mainframe.client.messages.customer.AddPhoneNumber;
-import mainframe.client.messages.customer.DeletePhoneNumber;
-import mainframe.client.messages.customer.UpdatePhoneNumber;
-import mainframe.client.messages.customer.AddEmail;
-import mainframe.client.messages.customer.DeleteEmail;
+import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.UpdateEmail;
-import mainframe.client.messages.customer.AddEmployer;
-import mainframe.client.messages.customer.DeleteEmployer;
 import mainframe.client.messages.customer.UpdateEmployer;
-import mainframe.client.messages.loan.UpdateStatus;
+import mainframe.client.messages.customer.UpdatePhoneNumber;
+import mainframe.client.messages.customer.UpdateRelationship;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
 import mainframe.client.messages.loan.DeleteCoborrower;
 import mainframe.client.messages.loan.DeletePayment;
+import mainframe.client.messages.loan.UpdateStatus;
 
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
@@ -474,23 +477,37 @@ public class MainframeGatewayImpl implements MainframeGateway {
                     invalidId);
         }
     }
-
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.AddRelationship");
+        AddRelationship message = new AddRelationship(guarantor.getCustomerId(),
+                toMainframeOtherType(guarantor.getRelationshipType()),
+                guarantor.getGuarantorCustomerId(),
+                toMainframeRelationshipType(guarantor.getRelationshipType()));
+        sendOrThrow(message);
+
+        return toGuarantor(message.getId(), message.getCustomer(),
+                message.getSecondaryCustomerNumber(), message.getType(),
+                message.getOtherType());
     }
 
     @Override
     public Guarantor updateGuarantor(Guarantor guarantor) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateRelationship");
+        UpdateRelationship message = new UpdateRelationship(guarantor.getCustomerId(),
+                parseNumericId(guarantor.getGuarantorId(), "Guarantor ID"),
+                toMainframeOtherType(guarantor.getRelationshipType()),
+                guarantor.getGuarantorCustomerId(),
+                toMainframeRelationshipType(guarantor.getRelationshipType()));
+        sendOrThrow(message);
+
+        return toGuarantor(message.getId(), message.getCustomer(),
+                message.getSecondaryCustomerNumber(), message.getType(),
+                message.getOtherType());
     }
 
     @Override
-    public void deleteGuarantor(String guarantorId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteRelationship");
+    public void deleteGuarantor(String customerId, String guarantorId) {
+        sendOrThrow(new DeleteRelationship(customerId,
+                parseNumericId(guarantorId, "Guarantor ID")));
     }
 
     @Override
@@ -524,8 +541,70 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Guarantor> getGuarantors(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerRelationship retrieval");
+        List<Guarantor> guarantors = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerRelationship.List message =
+                    new mainframe.client.messages.customerRelationship.List(
+                            customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerRelationship.List.Item[] items =
+                    message.getItems();
+            for (mainframe.client.messages.customerRelationship.List.Item item : items) {
+                guarantors.add(toGuarantor(item.getId(), customerId,
+                        item.getSecondaryCustomerNumber(), item.getType(),
+                        otherTypeOf(customerId, item.getId(), item.getType())));
+            }
+            if (items.length == 0 || guarantors.size() >= message.getTotal()) {
+                return guarantors;
+            }
+            page++;
+        }
+    }
+
+    // The mainframe's list doesn't have a relationship's other-type text, so it
+    // is only fetched for the ones that need it (type Other)
+    private String otherTypeOf(String customerId, long relationshipId, String type) {
+        if (!AddRelationship.TYPE_OTHER.equals(type)) {
+            return null;
+        }
+        mainframe.client.messages.customerRelationship.Retrieve message =
+                new mainframe.client.messages.customerRelationship.Retrieve(
+                        relationshipId, customerId);
+        sendOrThrow(message);
+        return message.getOtherType();
+    }
+
+    // The mainframe's relationship type is a fixed set (Parent, Spouse,
+    // LegalAuthority, Other) while LAVS's is free text. Text that matches a
+    // fixed type, ignoring case and spaces, uses it; anything else is Other.
+    private String toMainframeRelationshipType(String relationshipType) {
+        String normalised = relationshipType.replace(" ", "").toLowerCase();
+        for (String known : List.of(AddRelationship.TYPE_PARENT, AddRelationship.TYPE_SPOUSE,
+                AddRelationship.TYPE_LEGALAUTHORITY)) {
+            if (known.toLowerCase().equals(normalised)) {
+                return known;
+            }
+        }
+        return AddRelationship.TYPE_OTHER;
+    }
+
+    // The other-type text goes with the type Other, and carries the free text
+    private String toMainframeOtherType(String relationshipType) {
+        return AddRelationship.TYPE_OTHER.equals(toMainframeRelationshipType(relationshipType))
+                ? relationshipType
+                : null;
+    }
+
+    // Back to LAVS: for the type Other, the relationship type is the text that
+    // was stored with it
+    private Guarantor toGuarantor(Long id, String customerId, String guarantorCustomerId,
+            String type, String otherType) {
+        boolean hasOtherText = AddRelationship.TYPE_OTHER.equals(type)
+                && otherType != null && !otherType.isBlank();
+        return new Guarantor(String.valueOf(id), customerId, guarantorCustomerId,
+                hasOtherText ? otherType : type);
     }
 
     @Override
