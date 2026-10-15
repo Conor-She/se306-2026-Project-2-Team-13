@@ -33,7 +33,7 @@ class CustomerEditingTest {
             loader = new FXMLLoader(Main.class.getResource("fxml/customerDetails.fxml"));
             root = loader.load();
             controller = loader.getController();
-            controller.setCustomer(sarah);
+            CustomerUiFixtures.seed(controller, sarah);
             stage = new Stage();
             stage.setScene(new Scene(root, 1008, 662));
             stage.show();
@@ -265,7 +265,8 @@ class CustomerEditingTest {
                 assertEquals("Second Company", ((TextField) pane.lookup("#edit_employer")).getText());
                 dialogButton(pane, "Cancel").fire();
                 controller.setCustomer(new CustomersController.CustomerSummary("C001", "Amelia Adams", "021 555 0101", "amelia@example.com"));
-                assertEquals(0, list.getChildrenUnmodifiable().size());
+                assertEquals(1, list.getChildrenUnmodifiable().size());
+                assertEquals("No employers added.", ((Label) list.getChildrenUnmodifiable().get(0)).getText());
                 controller.setCustomer(sarah);
                 assertEquals(1, list.getChildrenUnmodifiable().size());
             }

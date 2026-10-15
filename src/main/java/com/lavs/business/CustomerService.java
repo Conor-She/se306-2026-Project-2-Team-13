@@ -3,6 +3,9 @@ package com.lavs.business;
 import com.lavs.data.MainframeGateway;
 import com.lavs.model.Address;
 import com.lavs.model.Customer;
+import com.lavs.model.CustomerDetails;
+import com.lavs.model.CustomerId;
+import com.lavs.model.CustomerPreview;
 import com.lavs.model.Email;
 import com.lavs.model.Employer;
 import com.lavs.model.Phone;
@@ -16,13 +19,36 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-// Business logic for creating and editing a customer and their contact details.
+// Business logic for searching, retrieving, creating and editing customers.
 public class CustomerService {
 
     private final MainframeGateway gateway;
 
     public CustomerService(MainframeGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway, "gateway must not be null");
+    }
+
+    /** Returns previews matching the gateway's search rules. */
+    public List<CustomerPreview> search(String query) {
+        Objects.requireNonNull(query, "query must not be null");
+        return gateway.searchCustomers(query.strip()).stream()
+                .map(customer -> new CustomerPreview(new CustomerId(customer.getCustomerId()),
+                        customer.getTitle(), customer.getFirstName(), customer.getLastName(),
+                        customer.getDateOfBirth()))
+                .toList();
+    }
+
+    /** Retrieves personal details and every address, phone, email and employer record. */
+    public CustomerDetails getById(CustomerId id) {
+        Objects.requireNonNull(id, "id must not be null");
+        String customerId = id.value();
+        Customer customer = gateway.getCustomer(customerId);
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer '" + customerId + "' does not exist");
+        }
+        return new CustomerDetails(customer, gateway.getAddresses(customerId),
+                gateway.getPhones(customerId), gateway.getEmails(customerId),
+                gateway.getEmployers(customerId));
     }
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,

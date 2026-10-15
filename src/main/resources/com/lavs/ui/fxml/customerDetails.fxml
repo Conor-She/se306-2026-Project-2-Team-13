@@ -120,34 +120,14 @@
      <ColumnConstraints percentWidth="20"/><ColumnConstraints percentWidth="20"/>
      <ColumnConstraints percentWidth="17"/><ColumnConstraints percentWidth="8" halignment="CENTER"/>
     </columnConstraints>
-    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="44"/><RowConstraints minHeight="44"/><RowConstraints minHeight="44"/></rowConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/></rowConstraints>
     <Region GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
-    <Region GridPane.rowIndex="1" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"/>
-    <Region GridPane.rowIndex="2" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"/>
     <Label text="Loan ID" style="$loanHeaderStyle"><padding><Insets left="16"/></padding></Label>
     <Label text="Loan Type" GridPane.columnIndex="1" style="$loanHeaderStyle"/>
     <Label text="Amount" GridPane.columnIndex="2" style="$loanHeaderStyle"/>
     <Label text="Interest Rate" GridPane.columnIndex="3" style="$loanHeaderStyle"/>
     <Label text="Status" GridPane.columnIndex="4" style="$loanHeaderStyle"/>
     <Label text="Actions" GridPane.columnIndex="5" style="$loanHeaderStyle"/>
-    <Label text="LN00123" GridPane.rowIndex="1" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
-    <Label text="Home Loan" GridPane.rowIndex="1" GridPane.columnIndex="1" style="$loanCellStyle"/>
-    <Label text="\$450,000" GridPane.rowIndex="1" GridPane.columnIndex="2" style="$loanCellStyle"/>
-    <Label text="4.95%" GridPane.rowIndex="1" GridPane.columnIndex="3" style="$loanCellStyle"/>
-    <Label text="Active" GridPane.rowIndex="1" GridPane.columnIndex="4" style="$loanStatusStyle"/>
-    <Button text="&#x22EE;" accessibleText="Actions for loan LN00123" GridPane.rowIndex="1" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
-    <Label text="LN00456" GridPane.rowIndex="2" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
-    <Label text="Personal Loan" GridPane.rowIndex="2" GridPane.columnIndex="1" style="$loanCellStyle"/>
-    <Label text="\$15,000" GridPane.rowIndex="2" GridPane.columnIndex="2" style="$loanCellStyle"/>
-    <Label text="12.50%" GridPane.rowIndex="2" GridPane.columnIndex="3" style="$loanCellStyle"/>
-    <Label text="Active" GridPane.rowIndex="2" GridPane.columnIndex="4" style="$loanStatusStyle"/>
-    <Button text="&#x22EE;" accessibleText="Actions for loan LN00456" GridPane.rowIndex="2" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
-    <Label text="LN00789" GridPane.rowIndex="3" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #393a7b;"><padding><Insets left="16"/></padding></Label>
-    <Label text="Car Loan" GridPane.rowIndex="3" GridPane.columnIndex="1" style="$loanCellStyle"/>
-    <Label text="\$30,000" GridPane.rowIndex="3" GridPane.columnIndex="2" style="$loanCellStyle"/>
-    <Label text="6.75%" GridPane.rowIndex="3" GridPane.columnIndex="3" style="$loanCellStyle"/>
-    <Label text="Active" GridPane.rowIndex="3" GridPane.columnIndex="4" style="$loanStatusStyle"/>
-    <Button text="&#x22EE;" accessibleText="Actions for loan LN00789" GridPane.rowIndex="3" GridPane.columnIndex="5" onAction="#showStubAction" style="$loanActionStyle"/>
    </GridPane>
    <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 16 20;">
     <StackPane minWidth="24" prefWidth="24"><SVGPath content="M 7 0 A 4 4 0 1 1 7 8 A 4 4 0 1 1 7 0 Z M 17 2 A 3 3 0 1 1 17 8 A 3 3 0 1 1 17 2 Z M 0 19 C 0 7 14 7 14 19 Z M 15 10 C 23 8 24 15 24 19 H 16 Z" fill="#393A7B"/></StackPane>
@@ -171,48 +151,6 @@
     </VBox>
     <Button text="+  Add Note" onAction="#addNote" style="-fx-background-color: #5b56b5; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;"/>
    </HBox>
-   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
-    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
-     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
-    </StackPane>
-    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
-     <Label text="Loan discussion" wrapText="true" style="$noteTitleStyle"/>
-     <Label text="Customer is looking to consolidate existing loans." wrapText="true" style="$mutedStyle"/>
-    </VBox>
-    <VBox spacing="5" minWidth="145" prefWidth="145">
-     <Label text="12 Sep 2025" style="$noteMetaStyle"/>
-     <Label text="By Jack Slater" style="$noteMetaStyle"/>
-    </VBox>
-    <Button text="&#x22EE;" accessibleText="Actions for loan discussion note" onAction="#showStubAction" style="$noteActionStyle"/>
-   </HBox>
-   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
-    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
-     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
-    </StackPane>
-    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
-     <Label text="Follow up" wrapText="true" style="$noteTitleStyle"/>
-     <Label text="Called customer to confirm documents received." wrapText="true" style="$mutedStyle"/>
-    </VBox>
-    <VBox spacing="5" minWidth="145" prefWidth="145">
-     <Label text="3 Aug 2025" style="$noteMetaStyle"/>
-     <Label text="By Sarah Lee" style="$noteMetaStyle"/>
-    </VBox>
-    <Button text="&#x22EE;" accessibleText="Actions for follow up note" onAction="#showStubAction" style="$noteActionStyle"/>
-   </HBox>
-   <HBox alignment="CENTER_LEFT" spacing="16" minHeight="74" style="$noteCardStyle">
-    <StackPane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36" style="-fx-background-color: #efedff; -fx-background-radius: 18;">
-     <SVGPath content="M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8" fill="transparent" stroke="#6255cc" strokeWidth="1.5"/>
-    </StackPane>
-    <VBox spacing="5" minWidth="0" HBox.hgrow="ALWAYS">
-     <Label text="General note" wrapText="true" style="$noteTitleStyle"/>
-     <Label text="Customer is happy with the current service." wrapText="true" style="$mutedStyle"/>
-    </VBox>
-    <VBox spacing="5" minWidth="145" prefWidth="145">
-     <Label text="21 Jun 2025" style="$noteMetaStyle"/>
-     <Label text="By Jack Slater" style="$noteMetaStyle"/>
-    </VBox>
-    <Button text="&#x22EE;" accessibleText="Actions for general note note" onAction="#showStubAction" style="$noteActionStyle"/>
-   </HBox>
   </VBox></content>
  </ScrollPane>
  <ScrollPane fx:id="documentsContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
@@ -234,51 +172,12 @@
      <ColumnConstraints percentWidth="31"/><ColumnConstraints percentWidth="28"/>
      <ColumnConstraints percentWidth="26"/><ColumnConstraints percentWidth="15" halignment="CENTER"/>
     </columnConstraints>
-    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/><RowConstraints minHeight="52"/></rowConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/></rowConstraints>
     <Region GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
     <Label text="Document Name" style="$documentHeaderStyle"><padding><Insets left="24"/></padding></Label>
     <Label text="Type" GridPane.columnIndex="1" style="$documentHeaderStyle"/>
     <Label text="Uploaded Date" GridPane.columnIndex="2" style="$documentHeaderStyle"/>
     <Label text="Actions" GridPane.columnIndex="3" style="$documentHeaderStyle"/>
-    <Region GridPane.rowIndex="1" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
-    <HBox GridPane.rowIndex="1" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
-     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#7666db" strokeWidth="2"/></StackPane>
-     <Label text="ID - Passport.pdf" wrapText="true" style="$documentCellStyle"/>
-    </HBox>
-    <Label text="Identity" GridPane.rowIndex="1" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
-    <Label text="12 Sep 2025" GridPane.rowIndex="1" GridPane.columnIndex="2" style="$documentCellStyle"/>
-    <HBox GridPane.rowIndex="1" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
-    <Button text="&#x22EE;" accessibleText="Actions for ID - Passport.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
-    </HBox>
-    <Region GridPane.rowIndex="2" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
-    <HBox GridPane.rowIndex="2" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
-     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#42bda6" strokeWidth="2"/></StackPane>
-     <Label text="Proof of Address.pdf" wrapText="true" style="$documentCellStyle"/>
-    </HBox>
-    <Label text="Address" GridPane.rowIndex="2" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
-    <Label text="3 Aug 2025" GridPane.rowIndex="2" GridPane.columnIndex="2" style="$documentCellStyle"/>
-    <HBox GridPane.rowIndex="2" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
-     <Button text="&#x22EE;" accessibleText="Actions for Proof of Address.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
-    </HBox>
-    <Region GridPane.rowIndex="3" GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;"><GridPane.margin><Insets left="16" right="16"/></GridPane.margin></Region>
-    <HBox GridPane.rowIndex="3" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
-     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#ed4d94" strokeWidth="2"/></StackPane>
-     <Label text="Payslip.pdf" wrapText="true" style="$documentCellStyle"/>
-    </HBox>
-    <Label text="Income" GridPane.rowIndex="3" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
-    <Label text="21 Jun 2025" GridPane.rowIndex="3" GridPane.columnIndex="2" style="$documentCellStyle"/>
-    <HBox GridPane.rowIndex="3" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
-     <Button text="&#x22EE;" accessibleText="Actions for Payslip.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
-    </HBox>
-    <HBox GridPane.rowIndex="4" alignment="CENTER_LEFT" spacing="16" minWidth="0" style="-fx-padding: 0 24;">
-     <StackPane minWidth="18" prefWidth="18" maxWidth="18"><SVGPath content="M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9" fill="transparent" stroke="#ed4d94" strokeWidth="2"/></StackPane>
-     <Label text="Bank Statement.pdf" wrapText="true" style="$documentCellStyle"/>
-    </HBox>
-    <Label text="Bank Statement" GridPane.rowIndex="4" GridPane.columnIndex="1" wrapText="true" style="$documentCellStyle"/>
-    <Label text="10 May 2025" GridPane.rowIndex="4" GridPane.columnIndex="2" style="$documentCellStyle"/>
-    <HBox GridPane.rowIndex="4" GridPane.columnIndex="3" alignment="CENTER" spacing="8">
-     <Button text="&#x22EE;" accessibleText="Actions for Bank Statement.pdf" onAction="#showStubAction" style="$documentActionStyle"/>
-    </HBox>
    </GridPane>
   </VBox></content>
  </ScrollPane>
@@ -301,7 +200,7 @@
      <ColumnConstraints percentWidth="16"/><ColumnConstraints percentWidth="26"/>
      <ColumnConstraints percentWidth="16"/><ColumnConstraints percentWidth="7" halignment="CENTER"/>
     </columnConstraints>
-    <rowConstraints><RowConstraints minHeight="34"/><RowConstraints minHeight="60"/></rowConstraints>
+    <rowConstraints><RowConstraints minHeight="34"/></rowConstraints>
     <Region GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
     <Label text="Name" style="$guarantorHeaderStyle"><padding><Insets left="20"/></padding></Label>
     <Label text="Relationship" GridPane.columnIndex="1" style="$guarantorHeaderStyle"/>
@@ -309,19 +208,6 @@
     <Label text="Email" GridPane.columnIndex="3" style="$guarantorHeaderStyle"/>
     <Label text="Status" GridPane.columnIndex="4" style="$guarantorHeaderStyle"/>
     <Label text="Actions" GridPane.columnIndex="5" style="$guarantorHeaderStyle"/>
-    <HBox GridPane.rowIndex="1" alignment="CENTER_LEFT" spacing="12" minWidth="0" style="-fx-padding: 0 20;">
-     <Pane minWidth="36" prefWidth="36" maxWidth="36" minHeight="36" prefHeight="36" maxHeight="36">
-      <Circle centerX="18" centerY="18" radius="18" fill="#efedff"/>
-      <Circle centerX="18" centerY="13" radius="6" fill="#393a7b"/>
-      <SVGPath content="M 8 28 C 8 16 28 16 28 28 Q 18 33 8 28 Z" fill="#393a7b"/>
-     </Pane>
-     <Label text="Michael Johnson" wrapText="true" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #55558d;"/>
-    </HBox>
-    <Label text="Brother" GridPane.rowIndex="1" GridPane.columnIndex="1" style="$guarantorCellStyle"/>
-    <Label text="021 987 6543" GridPane.rowIndex="1" GridPane.columnIndex="2" wrapText="true" style="$guarantorCellStyle"/>
-    <Label text="michael.johnson@email.com" GridPane.rowIndex="1" GridPane.columnIndex="3" wrapText="true" style="$guarantorCellStyle"/>
-    <Label text="Active" GridPane.rowIndex="1" GridPane.columnIndex="4" style="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-font-size: 11px; -fx-padding: 2 16;"/>
-    <Button text="&#x22EE;" accessibleText="Actions for guarantor Michael Johnson" GridPane.rowIndex="1" GridPane.columnIndex="5" onAction="#showStubAction" style="-fx-background-color: transparent; -fx-text-fill: #747ba6; -fx-font-size: 19px; -fx-padding: 4 10; -fx-min-width: 36; -fx-min-height: 36; -fx-cursor: hand;"/>
    </GridPane>
   </VBox></content>
  </ScrollPane>

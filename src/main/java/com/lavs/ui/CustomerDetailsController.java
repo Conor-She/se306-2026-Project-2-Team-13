@@ -114,6 +114,27 @@ public class CustomerDetailsController {
 
     public void setCustomer(CustomersController.CustomerSummary customer) {
         this.customer = editing.select(customer);
+        resetView();
+    }
+
+    public void setCustomerDetails(com.lavs.model.CustomerDetails details) {
+        this.customer = editing.select(details);
+        setReadOnly(backButton.getParent());
+        resetView();
+    }
+
+    private void setReadOnly(javafx.scene.Node node) {
+        if (node instanceof Button button && button != backButton
+                && button != viewAllEmail && button != viewAllPhone && button != viewAllAddress
+                && !"+  Add Loan".equals(button.getText())) {
+            button.setDisable(true);
+            button.setTooltip(new javafx.scene.control.Tooltip("Editing existing customer records is not connected yet."));
+        }
+        if (node instanceof ScrollPane scroll && scroll.getContent() != null) setReadOnly(scroll.getContent());
+        if (node instanceof javafx.scene.Parent parent) parent.getChildrenUnmodifiable().forEach(this::setReadOnly);
+    }
+
+    private void resetView() {
         customerId.setText("Customer ID: " + this.customer.customerId());
         detailsContent.setVvalue(0);
         loansContent.setVvalue(0);

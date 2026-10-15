@@ -52,12 +52,21 @@ $env:LAVS_MAINFRAME_URL = "https://your-mainframe-url/"
 
 You can also set the Java system property `lavs.mainframe.url`. Login errors are
 shown on the form, and logging out clears the local session token before returning
-to login. `LAVS_ORGANISATION_NAME` (or the `lavs.organisation.name` system
+to login. `LAVS_ORGANISATION_ID` (or the `lavs.organisation.id` system
 property) can be set for customer creation, which uses the configured organisation.
 
 The Home screen and sidebar profile show the signed-in username. Home, Customers
-(search UI), and Loans share a persistent navigation sidebar. The Search screen
-includes an input and results area; customer search is not connected yet.
+(search UI), and Loans share a persistent navigation sidebar. The Customers screen searches the signed-in mainframe as you type and displays
+customer ID, name and date-of-birth previews. Enter a customer name or ID to search; the mainframe does not list customers for a blank query. Select
+a result to retrieve personal details and every address, phone, email and employer.
+Use the "View all" links for additional contact entries. Search and retrieval run
+in the background; failures remain on the search screen and can be retried.
+
+To manually check this flow, sign in, open Customers, search for a known customer,
+then select their row. Try a query with no matches, then search for the known customer again. Customer records contain no built-in sample data. Retrieved records are
+read-only; editing existing records is not connected yet. The Loans, Notes,
+Documents and Guarantors tabs do not retrieve existing records in this flow.
+Customer creation requires the numeric organisation ID setting above.
 
 ## Initial Repository Code
 

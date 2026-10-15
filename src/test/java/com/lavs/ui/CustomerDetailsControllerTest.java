@@ -38,7 +38,7 @@ class CustomerDetailsControllerTest {
             root = loader.load();
             new Scene(root, 1008, 662);
             controller = loader.getController();
-            controller.setCustomer(SARAH);
+            CustomerUiFixtures.seed(controller, SARAH);
             root.applyCss();
             root.layout();
             return null;

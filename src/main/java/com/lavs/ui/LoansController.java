@@ -37,6 +37,12 @@ public class LoansController {
     private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
     private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
 
+    private java.util.function.Supplier<List<CustomersController.CustomerSummary>> customerPreviews = List::of;
+
+    public void setCustomerPreviews(java.util.function.Supplier<List<CustomersController.CustomerSummary>> supplier) {
+        customerPreviews = supplier;
+    }
+
     public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
         this.onSaved = onSaved;
     }
@@ -50,7 +56,7 @@ public class LoansController {
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
-        controller.configure(new CustomersController().loadCustomers(), () -> {
+        controller.configure(customerPreviews.get(), () -> {
             showList(true);
             onCancel.run();
         });
