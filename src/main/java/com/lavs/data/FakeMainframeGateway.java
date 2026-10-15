@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
 import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
@@ -38,6 +40,11 @@ public class FakeMainframeGateway implements MainframeGateway {
 
     private boolean unavailable = false;
     private MainframeException nextFailure = null;
+    private int nextCustomerNumber = 1;
+    private long nextAddressNumber = 1;
+    private long nextPhoneNumber = 1;
+    private long nextEmailNumber = 1;
+    private long nextEmployerNumber = 1;
     private int nextLoanNumber = 1;
     private int nextCoBorrowerNumber = 1;
     private int nextGuarantorNumber = 1;
@@ -53,6 +60,35 @@ public class FakeMainframeGateway implements MainframeGateway {
     // Returns a copy of a customer's items, or an empty list if there are none
     private <T> List<T> read(Map<String, List<T>> storage, String customerId) {
         return List.copyOf(storage.getOrDefault(customerId, new ArrayList<>()));
+    }
+
+    private <T> void replace(Map<String, List<T>> storage, String customerId, Long itemId,
+            Function<T, Long> id, T replacement, String itemName) {
+        List<T> items = storage.get(customerId);
+        if (items == null) {
+            throw notFound(itemName, itemId);
+        }
+        for (int index = 0; index < items.size(); index++) {
+            if (Objects.equals(id.apply(items.get(index)), itemId)) {
+                items.set(index, replacement);
+                return;
+            }
+        }
+        throw notFound(itemName, itemId);
+    }
+
+    private <T> void delete(Map<String, List<T>> storage, String customerId, Long itemId,
+            Function<T, Long> id, String itemName) {
+        List<T> items = storage.get(customerId);
+        if (items != null && items.removeIf(item -> Objects.equals(id.apply(item), itemId))) {
+            return;
+        }
+        throw notFound(itemName, itemId);
+    }
+
+    private MainframeException notFound(String itemName, Object itemId) {
+        return new MainframeException(MainframeException.Type.BUSINESS_ERROR, 3,
+                itemName + " '" + itemId + "' not found");
     }
 
     // Configures this fake to act as though the mainframe cannot be
@@ -113,8 +149,13 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Customer createCustomer(Customer customer) {
         checkAvailability();
-        customers.put(customer.getCustomerId(), customer);
-        return customer;
+        String customerId = customer.getCustomerId() != null
+                ? customer.getCustomerId()
+                : "FAKE-CUSTOMER-" + nextCustomerNumber++;
+        Customer stored = new Customer(customerId, customer.getTitle(), customer.getFirstName(),
+                customer.getLastName(), customer.getDateOfBirth(), customer.getNationality());
+        customers.put(customerId, stored);
+        return stored;
     }
 
     @Override
@@ -126,6 +167,10 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Customer updateCustomer(Customer customer) {
         checkAvailability();
+        if (customer.getCustomerId() == null
+                || !customers.containsKey(customer.getCustomerId())) {
+            throw notFound("Customer", customer.getCustomerId());
+        }
         customers.put(customer.getCustomerId(), customer);
         return customer;
     }
@@ -133,18 +178,27 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Address addAddress(Address address) {
         checkAvailability();
-        return store(addresses, address.getCustomerId(), address);
+        Long addressId = address.getAddressId() != null
+                ? address.getAddressId()
+                : nextAddressNumber++;
+        Address stored = new Address(addressId, address.getCustomerId(), address.getStreet(),
+                address.getSuburb(), address.getCity(), address.getPostCode(),
+                address.getCountry(), address.isMailing());
+        return store(addresses, stored.getCustomerId(), stored);
     }
 
     @Override
     public Address updateAddress(Address address) {
         checkAvailability();
+        replace(addresses, address.getCustomerId(), address.getAddressId(),
+                Address::getAddressId, address, "Address");
         return address;
     }
 
     @Override
-    public void deleteAddress(String addressId) {
+    public void deleteAddress(String customerId, Long addressId) {
         checkAvailability();
+        delete(addresses, customerId, addressId, Address::getAddressId, "Address");
     }
 
     @Override
@@ -156,18 +210,24 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Phone addPhone(Phone phone) {
         checkAvailability();
-        return store(phones, phone.getCustomerId(), phone);
+        Long phoneId = phone.getPhoneId() != null ? phone.getPhoneId() : nextPhoneNumber++;
+        Phone stored = new Phone(phoneId, phone.getCustomerId(), phone.getNumber(),
+                phone.isPrimary(), phone.isSendTXT());
+        return store(phones, stored.getCustomerId(), stored);
     }
 
     @Override
     public Phone updatePhone(Phone phone) {
         checkAvailability();
+        replace(phones, phone.getCustomerId(), phone.getPhoneId(), Phone::getPhoneId,
+                phone, "Phone");
         return phone;
     }
 
     @Override
-    public void deletePhone(String phoneId) {
+    public void deletePhone(String customerId, Long phoneId) {
         checkAvailability();
+        delete(phones, customerId, phoneId, Phone::getPhoneId, "Phone");
     }
 
     @Override
@@ -179,18 +239,24 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Email addEmail(Email email) {
         checkAvailability();
-        return store(emails, email.getCustomerId(), email);
+        Long emailId = email.getEmailId() != null ? email.getEmailId() : nextEmailNumber++;
+        Email stored = new Email(emailId, email.getCustomerId(), email.getEmailAddress(),
+                email.isPrimary());
+        return store(emails, stored.getCustomerId(), stored);
     }
 
     @Override
     public Email updateEmail(Email email) {
         checkAvailability();
+        replace(emails, email.getCustomerId(), email.getEmailId(), Email::getEmailId,
+                email, "Email");
         return email;
     }
 
     @Override
-    public void deleteEmail(String emailId) {
+    public void deleteEmail(String customerId, Long emailId) {
         checkAvailability();
+        delete(emails, customerId, emailId, Email::getEmailId, "Email");
     }
 
     @Override
@@ -202,18 +268,27 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public Employer addEmployer(Employer employer) {
         checkAvailability();
-        return store(employers, employer.getCustomerId(), employer);
+        Long employerId = employer.getEmployerId() != null
+                ? employer.getEmployerId()
+                : nextEmployerNumber++;
+        Employer stored = new Employer(employerId, employer.getCustomerId(),
+                employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                employer.getEmploymentType());
+        return store(employers, stored.getCustomerId(), stored);
     }
 
     @Override
     public Employer updateEmployer(Employer employer) {
         checkAvailability();
+        replace(employers, employer.getCustomerId(), employer.getEmployerId(),
+                Employer::getEmployerId, employer, "Employer");
         return employer;
     }
 
     @Override
-    public void deleteEmployer(String employerId) {
+    public void deleteEmployer(String customerId, Long employerId) {
         checkAvailability();
+        delete(employers, customerId, employerId, Employer::getEmployerId, "Employer");
     }
 
     @Override
