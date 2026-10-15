@@ -648,14 +648,16 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
                 toMainframeRateType(loan), loan.getRenewDate().toString(),
                 loan.getStartDate().toString());
-
         sendOrThrow(message);
 
-        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
-                message.getPrincipal(), message.getRateAmount(), message.getRateType(),
-                message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
-                message.getPaymentFrequency(), message.getRateFrequency(), loan.getType(),
-                loan.getTermMonths());
+        Loan stored = getLoan(loan.getLoanId());
+        Loan.Type type = stored.getType() == Loan.Type.INTEREST_ONLY
+                ? Loan.Type.INTEREST_ONLY
+                : loan.getType();
+        return new Loan(stored.getLoanId(), stored.getCustomerId(), stored.getStatus(),
+                stored.getPrincipal(), stored.getInterestRate(), type, stored.isFloating(),
+                stored.getStartDate(), stored.getRenewDate(), stored.getPaymentAmount(),
+                stored.getPaymentFrequency(), stored.getRateFrequency(), loan.getTermMonths());
     }
 
     @Override
