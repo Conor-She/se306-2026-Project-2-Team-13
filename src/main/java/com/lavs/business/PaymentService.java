@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class PaymentService {
             "An existing payment with a paymentId is required";
     static final String PAYMENT_NOT_ON_LOAN_MESSAGE = "That payment was not found on this loan";
     static final String STATUS_INPUTS_MESSAGE =
-            "A repayment, its payments and the date to judge them on are all required";
+            "A schedule, its payments and the date to judge them on are all required";
     static final String AS_OF_REQUIRED_MESSAGE =
             "The date to judge the repayments on is required";
 
@@ -73,28 +74,44 @@ public class PaymentService {
 
     // Compares what has been paid towards one repayment with what was due.
     // Only payments linked to this repayment count, and they are added up
-    public RepaymentStatus statusOf(
-            Repayment repayment, List<Payment> payments, LocalDate asOf) {
-        if (repayment == null || payments == null || asOf == null) {
+    public Map<String, RepaymentStatus> statusesOf(
+            List<Repayment> schedule, List<Payment> payments, LocalDate asOf) {
+        if (schedule == null || payments == null || asOf == null) {
             throw new IllegalArgumentException(STATUS_INPUTS_MESSAGE);
         }
 
-        BigDecimal due = toMoney(repayment.getAmountDue());
-        BigDecimal paid = payments.stream()
-                .filter(payment -> repayment.getRepaymentId().equals(payment.getRepaymentId()))
-                .map(payment -> toMoney(payment.getAmountPaid()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (paid.signum() == 0) {
-            if (due.signum() == 0) {
-                // Nothing was owed, so nothing can be missed or coming up
-                return RepaymentStatus.ON_TIME;
+        // What has been paid towards each repayment directly, and the pool of
+        // payments that aren't linked to one
+        Map<String, BigDecimal> linkedTotals = new HashMap<>();
+        BigDecimal pool = BigDecimal.ZERO;
+        for (Payment payment : payments) {
+            BigDecimal amount = toMoney(payment.getAmountPaid());
+            if (payment.getRepaymentId() == null) {
+                pool = pool.add(amount);
+            } else {
+                linkedTotals.merge(payment.getRepaymentId(), amount, BigDecimal::add);
             }
-            return asOf.isAfter(repayment.getDueDate())
-                    ? RepaymentStatus.MISSED
-                    : RepaymentStatus.UPCOMING;
         }
-        return paid.compareTo(due) >= 0 ? RepaymentStatus.ON_TIME : RepaymentStatus.PARTIAL;
+
+        Map<String, RepaymentStatus> statuses = new LinkedHashMap<>();
+        List<Repayment> inDueOrder = schedule.stream()
+                .sorted(Comparator.comparing(Repayment::getDueDate))
+                .toList();
+        for (Repayment repayment : inDueOrder) {
+            BigDecimal due = toMoney(repayment.getAmountDue());
+            BigDecimal covered =
+                    linkedTotals.getOrDefault(repayment.getRepaymentId(), BigDecimal.ZERO);
+
+            // The pool fills whatever this repayment is still short of
+            BigDecimal shortfall = due.subtract(covered).max(BigDecimal.ZERO);
+            BigDecimal fromPool = shortfall.min(pool);
+            covered = covered.add(fromPool);
+            pool = pool.subtract(fromPool);
+
+            statuses.put(repayment.getRepaymentId(), statusFor(repayment, due, covered, asOf));
+        }
+
+        return Collections.unmodifiableMap(statuses);
     }
 
     // The status of every repayment in a loan's schedule as of a date, keyed by
@@ -108,15 +125,22 @@ public class PaymentService {
         // Fetching the loan first reports an unknown loan as an error instead
         // of as an empty schedule
         gateway.getLoan(loanId);
-        List<Payment> payments = gateway.getPayments(loanId);
+        return statusesOf(
+                gateway.getRepaymentSchedule(loanId), gateway.getPayments(loanId), asOf);
+    }
 
-        Map<String, RepaymentStatus> statuses = new LinkedHashMap<>();
-        gateway.getRepaymentSchedule(loanId).stream()
-                .sorted(Comparator.comparing(Repayment::getDueDate))
-                .forEach(repayment -> statuses.put(
-                        repayment.getRepaymentId(), statusOf(repayment, payments, asOf)));
-
-        return Collections.unmodifiableMap(statuses);
+    private RepaymentStatus statusFor(
+            Repayment repayment, BigDecimal due, BigDecimal covered, LocalDate asOf) {
+        if (covered.signum() == 0) {
+            if (due.signum() == 0) {
+                // Nothing was owed, so nothing can be missed or coming up
+                return RepaymentStatus.ON_TIME;
+            }
+            return asOf.isAfter(repayment.getDueDate())
+                    ? RepaymentStatus.MISSED
+                    : RepaymentStatus.UPCOMING;
+        }
+        return covered.compareTo(due) >= 0 ? RepaymentStatus.ON_TIME : RepaymentStatus.PARTIAL;
     }
 
     // The checks that apply to adding and to editing a payment

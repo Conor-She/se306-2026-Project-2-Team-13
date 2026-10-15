@@ -22,6 +22,7 @@ class PaymentServiceTest {
     private static final LocalDate DUE = LocalDate.of(2026, 2, 1);
     private static final LocalDate BEFORE_DUE = LocalDate.of(2026, 1, 20);
     private static final LocalDate AFTER_DUE = LocalDate.of(2026, 2, 10);
+    private static final LocalDate AFTER_BOTH = LocalDate.of(2026, 3, 15);
 
     private FakeMainframeGateway gateway;
     private PaymentService service;
@@ -61,7 +62,20 @@ class PaymentServiceTest {
 
     // The status of R1 (100.00 due on DUE) given these payments, judged on a date
     private RepaymentStatus status(List<Payment> payments, LocalDate asOf) {
-        return service.statusOf(repayment("R1", loanId, DUE, 100.00), payments, asOf);
+        return service.statusesOf(List.of(repayment("R1", loanId, DUE, 100.00)), payments, asOf)
+                .get("R1");
+    }
+
+    // R1 and R2 (100.00 each, due a month apart)
+    private List<Repayment> twoRepayments() {
+        return List.of(
+                repayment("R1", loanId, DUE, 100.00),
+                repayment("R2", loanId, DUE.plusMonths(1), 100.00));
+    }
+
+    // Both repayments judged after both are overdue
+    private Map<String, RepaymentStatus> twoRepaymentStatuses(List<Payment> payments) {
+        return service.statusesOf(twoRepayments(), payments, AFTER_BOTH);
     }
 
     // --- Recording a payment: linked to a repayment, or not ---
@@ -257,7 +271,7 @@ class PaymentServiceTest {
         assertEquals(RepaymentStatus.UPCOMING, status(List.of(), DUE));
     }
 
-    // Paying early counts: only a repayment with nothing paid is upcoming
+    // Paying early counts: only a repayment with nothing covered is upcoming
     @Test
     void payingBeforeTheDueDateStillCounts() {
         assertEquals(RepaymentStatus.ON_TIME,
@@ -274,8 +288,9 @@ class PaymentServiceTest {
     void splitPaymentsAreAddedUpExactly() {
         Repayment small = repayment("R1", loanId, DUE, 0.30);
 
-        RepaymentStatus result = service.statusOf(small,
-                List.of(payment("R1", DUE, 0.10), payment("R1", DUE, 0.20)), AFTER_DUE);
+        RepaymentStatus result = service.statusesOf(List.of(small),
+                List.of(payment("R1", DUE, 0.10), payment("R1", DUE, 0.20)), AFTER_DUE)
+                .get("R1");
 
         assertEquals(RepaymentStatus.ON_TIME, result);
     }
@@ -292,16 +307,68 @@ class PaymentServiceTest {
                 List.of(payment("R1", DUE, 30.00), payment("R1", DUE, 30.00)), AFTER_DUE));
     }
 
-    // --- Status: what doesn't count, and edge cases ---
+    // --- Status: payments with no link are applied to the earliest repayments ---
 
-    // An unlinked payment, or one linked to R2, is nothing towards R1
+    // This is how every payment from the real mainframe arrives
     @Test
-    void paymentsWithoutALinkOrLinkedElsewhereDoNotCount() {
-        List<Payment> payments = List.of(
-                payment(null, DUE, 100.00), payment("R2", DUE, 100.00));
+    void unlinkedPaymentsFillTheEarliestRepaymentFirst() {
+        Map<String, RepaymentStatus> statuses =
+                twoRepaymentStatuses(List.of(payment(null, DUE, 150.00)));
 
-        assertEquals(RepaymentStatus.MISSED, status(payments, AFTER_DUE));
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R1"));
+        assertEquals(RepaymentStatus.PARTIAL, statuses.get("R2"));
     }
+
+    @Test
+    void unlinkedPaymentsLeaveLaterRepaymentsMissed() {
+        Map<String, RepaymentStatus> statuses =
+                twoRepaymentStatuses(List.of(payment(null, DUE, 100.00)));
+
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R1"));
+        assertEquals(RepaymentStatus.MISSED, statuses.get("R2"));
+    }
+
+    // A linked payment goes to its own repayment, not to the earliest one
+    @Test
+    void linkedPaymentsCountTowardsTheirOwnRepayment() {
+        Map<String, RepaymentStatus> statuses =
+                twoRepaymentStatuses(List.of(payment("R2", DUE, 100.00)));
+
+        assertEquals(RepaymentStatus.MISSED, statuses.get("R1"));
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R2"));
+    }
+
+    // R1 has 60 linked, so 40 of the 100 unlinked completes it, and the other
+    // 60 goes to R2
+    @Test
+    void unlinkedPaymentsOnlyFillWhatLinkedOnesLeaveShort() {
+        Map<String, RepaymentStatus> statuses = twoRepaymentStatuses(
+                List.of(payment("R1", DUE, 60.00), payment(null, DUE, 100.00)));
+
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R1"));
+        assertEquals(RepaymentStatus.PARTIAL, statuses.get("R2"));
+    }
+
+    @Test
+    void moneyBeyondTheWholeScheduleIsIgnored() {
+        Map<String, RepaymentStatus> statuses =
+                twoRepaymentStatuses(List.of(payment(null, DUE, 500.00)));
+
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R1"));
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R2"));
+    }
+
+    // R9 isn't in this schedule, so a payment linked to it helps neither repayment
+    @Test
+    void paymentsLinkedToAnUnknownRepaymentAreIgnored() {
+        Map<String, RepaymentStatus> statuses =
+                twoRepaymentStatuses(List.of(payment("R9", DUE, 100.00)));
+
+        assertEquals(RepaymentStatus.MISSED, statuses.get("R1"));
+        assertEquals(RepaymentStatus.MISSED, statuses.get("R2"));
+    }
+
+    // --- Status: edge cases ---
 
     // Only the amounts are compared, so a payment made long after the due date
     // still meets the repayment
@@ -317,22 +384,22 @@ class PaymentServiceTest {
     // instalments, so they are neither missed nor coming up
     @Test
     void aRepaymentWithNothingOwedIsOnTime() {
-        Repayment free = repayment("R1", loanId, DUE, 0.00);
+        List<Repayment> free = List.of(repayment("R1", loanId, DUE, 0.00));
 
-        assertEquals(RepaymentStatus.ON_TIME, service.statusOf(free, List.of(), AFTER_DUE));
-        assertEquals(RepaymentStatus.ON_TIME, service.statusOf(free, List.of(), BEFORE_DUE));
+        assertEquals(RepaymentStatus.ON_TIME,
+                service.statusesOf(free, List.of(), AFTER_DUE).get("R1"));
+        assertEquals(RepaymentStatus.ON_TIME,
+                service.statusesOf(free, List.of(), BEFORE_DUE).get("R1"));
     }
 
     @Test
-    void statusOfRejectsMissingInputs() {
-        Repayment due = repayment("R1", loanId, DUE, 100.00);
-
+    void statusesOfRejectsMissingInputs() {
         assertThrows(IllegalArgumentException.class,
-                () -> service.statusOf(null, List.of(), AFTER_DUE));
+                () -> service.statusesOf(null, List.of(), AFTER_DUE));
         assertThrows(IllegalArgumentException.class,
-                () -> service.statusOf(due, null, AFTER_DUE));
+                () -> service.statusesOf(twoRepayments(), null, AFTER_DUE));
         assertThrows(IllegalArgumentException.class,
-                () -> service.statusOf(due, List.of(), null));
+                () -> service.statusesOf(twoRepayments(), List.of(), null));
     }
 
     // --- Status for a whole loan ---
@@ -356,6 +423,18 @@ class PaymentServiceTest {
 
         assertEquals(RepaymentStatus.MISSED, statuses.get("R1"));
         assertEquals(RepaymentStatus.UPCOMING, statuses.get("R2"));
+    }
+
+    // Payments added without a link, as the real mainframe would hold them,
+    // are judged through the service too
+    @Test
+    void unlinkedPaymentsAreJudgedThroughTheServiceToo() {
+        service.addPayment(payment(null, DUE, 150.00));
+
+        Map<String, RepaymentStatus> statuses = service.statusesFor(loanId, AFTER_BOTH);
+
+        assertEquals(RepaymentStatus.ON_TIME, statuses.get("R1"));
+        assertEquals(RepaymentStatus.PARTIAL, statuses.get("R2"));
     }
 
     @Test
