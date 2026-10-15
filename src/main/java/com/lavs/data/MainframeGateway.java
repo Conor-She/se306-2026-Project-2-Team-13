@@ -32,7 +32,7 @@ public interface MainframeGateway {
     Customer updateCustomer(Customer customer);
     Address addAddress(Address address);
     Address updateAddress(Address address);
-    void deleteAddress(String addressId);
+    void deleteAddress(String customerId, String addressId);
     Phone addPhone(Phone phone);
     Phone updatePhone(Phone phone);
     void deletePhone(String phoneId);

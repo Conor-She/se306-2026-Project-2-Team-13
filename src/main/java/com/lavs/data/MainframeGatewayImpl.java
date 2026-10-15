@@ -31,11 +31,14 @@ import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
 import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
+import mainframe.client.messages.customer.DeleteAddress;
+import mainframe.client.messages.customer.UpdateAddress;
 import mainframe.client.messages.loan.UpdateStatus;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
 import mainframe.client.messages.loan.DeleteCoborrower;
 import mainframe.client.messages.loan.DeletePayment;
+
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -46,8 +49,6 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     private final Connection connection;
     private final Long organisationNumber;
-    private static final String PAYMENTS_READ_ONLY_MESSAGE = "Not supported by the mainframe: "
-            + "its loanPayment messages only list and retrieve payments";
 
     public MainframeGatewayImpl(Connection connection, long organisationNumber) {
         this.connection = connection;
@@ -161,14 +162,41 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Address updateAddress(Address address) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateAddress");
+        Long addressId = address.getAddressId();
+        if (addressId == null) {
+            throw new IllegalArgumentException("An existing address with an addressId is required");
+        }
+
+        mainframe.client.messages.customerAddress.Retrieve current =
+                new mainframe.client.messages.customerAddress.Retrieve(
+                        addressId, address.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateAddress message = new UpdateAddress(
+                address.getCity(), address.getCountry(), address.getCustomerId(), addressId,
+                address.isMailing(), current.getIsPrimary(), address.getStreet(),
+                current.getLine2(), current.getOtherType(), address.getPostCode(),
+                address.getSuburb(), current.getType());
+        sendOrThrow(message);
+
+        return new Address(message.getId(), message.getCustomer(), message.getLine1(),
+                message.getSuburb(), message.getCity(), message.getPostCode(),
+                message.getCountry(), message.getIsMailing());
     }
 
     @Override
-    public void deleteAddress(String addressId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteAddress");
+    public void deleteAddress(String customerId, String addressId) {
+        sendOrThrow(new DeleteAddress(customerId, parseNumericId(addressId, "Address ID")));
+    }
+
+    // The mainframe's IDs are numbers, but LAVS keeps them as text
+    private long parseNumericId(String id, String name) {
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException invalidId) {
+            throw new IllegalArgumentException(name + " must be a numeric mainframe ID",
+                    invalidId);
+        }
     }
 
     @Override
@@ -206,8 +234,34 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Address> getAddresses(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerAddress retrieval");
+        List<Address> addresses = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerAddress.List message =
+                    new mainframe.client.messages.customerAddress.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerAddress.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerAddress.List.Item item : items) {
+                addresses.add(getAddress(customerId, item.getId()));
+            }
+            if (items.length == 0 || addresses.size() >= message.getTotal()) {
+                return addresses;
+            }
+            page++;
+        }
+    }
+
+    // One address in full. Only the fields LAVS models are kept: the second
+    // address line, the type and the primary flag are not.
+    private Address getAddress(String customerId, long addressId) {
+        mainframe.client.messages.customerAddress.Retrieve message =
+                new mainframe.client.messages.customerAddress.Retrieve(addressId, customerId);
+        sendOrThrow(message);
+
+        return new Address(message.getId(), customerId, message.getLine1(), message.getSuburb(),
+                message.getCity(), message.getPostCode(), message.getCountry(),
+                message.getIsMailing());
     }
 
     @Override
