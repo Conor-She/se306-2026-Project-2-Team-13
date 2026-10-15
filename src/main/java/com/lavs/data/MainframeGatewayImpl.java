@@ -477,6 +477,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                     invalidId);
         }
     }
+
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
         AddRelationship message = new AddRelationship(guarantor.getCustomerId(),
@@ -485,9 +486,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 toMainframeRelationshipType(guarantor.getRelationshipType()));
         sendOrThrow(message);
 
-        return toGuarantor(message.getId(), message.getCustomer(),
-                message.getSecondaryCustomerNumber(), message.getType(),
-                message.getOtherType());
+        return new Guarantor(String.valueOf(message.getId()), guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(), guarantor.getRelationshipType());
     }
 
     @Override
@@ -499,9 +499,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 toMainframeRelationshipType(guarantor.getRelationshipType()));
         sendOrThrow(message);
 
-        return toGuarantor(message.getId(), message.getCustomer(),
-                message.getSecondaryCustomerNumber(), message.getType(),
-                message.getOtherType());
+        return new Guarantor(guarantor.getGuarantorId(), guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(), guarantor.getRelationshipType());
     }
 
     @Override
@@ -675,8 +674,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 coBorrower.getCustomerId(), coBorrower.getLoanId(), AddCoborrower.TYPE_COBORROWER);
         sendOrThrow(message);
 
-        return new CoBorrower(String.valueOf(message.getId()), message.getLoanNumber(),
-                message.getCoborrowerNumber());
+        return new CoBorrower(String.valueOf(message.getId()), coBorrower.getLoanId(),
+                coBorrower.getCustomerId());
     }
 
     @Override
@@ -777,8 +776,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
         sendOrThrow(message);
 
         // The mainframe has no field for a repayment, so that link isn't kept
-        return new Payment(String.valueOf(message.getId()), message.getLoanNumber(), null,
-                java.time.LocalDate.parse(message.getDate()), message.getAmountPaid());
+        return new Payment(String.valueOf(message.getId()), payment.getLoanId(), null,
+                payment.getPaymentDate(), payment.getAmountPaid());
     }
 
     // The mainframe has no update message, so an edit adds the new version and

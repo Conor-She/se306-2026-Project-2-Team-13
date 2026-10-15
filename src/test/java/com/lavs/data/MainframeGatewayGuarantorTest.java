@@ -182,6 +182,20 @@ class MainframeGatewayGuarantorTest {
         verifyNoInteractions(connection);
     }
 
+    @Test
+    void addToleratesAReplyThatOnlyHasTheId() {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(response("id", "11"));
+        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
+
+        Guarantor saved = gateway.addGuarantor(new Guarantor(null, "C001", "C002", "Parent"));
+
+        assertEquals("11", saved.getGuarantorId());
+        assertEquals("C001", saved.getCustomerId());
+        assertEquals("C002", saved.getGuarantorCustomerId());
+        assertEquals("Parent", saved.getRelationshipType());
+    }
+
     private static MessageResponse response(String... entries) {
         HashMap<String, String> values = new HashMap<>();
         for (int index = 0; index < entries.length; index += 2) {
