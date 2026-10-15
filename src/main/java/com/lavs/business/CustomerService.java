@@ -33,7 +33,8 @@ public class CustomerService {
         Objects.requireNonNull(query, "query must not be null");
         return gateway.searchCustomers(query.strip()).stream()
                 .map(customer -> new CustomerPreview(new CustomerId(customer.getCustomerId()),
-                        customer.getTitle(), customer.getFirstName(), customer.getLastName()))
+                        customer.getTitle(), customer.getFirstName(), customer.getLastName(),
+                        customer.getDateOfBirth()))
                 .toList();
     }
 

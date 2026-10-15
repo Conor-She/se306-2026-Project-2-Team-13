@@ -43,7 +43,7 @@ class CustomerServiceTest {
                 LocalDate.of(1990, 5, 1), "NZ");
         when(gateway.searchCustomers("Jane")).thenReturn(List.of(customer));
 
-        assertEquals(List.of(new CustomerPreview(new CustomerId("C1"), "Ms", "Jane", "Smith")),
+        assertEquals(List.of(new CustomerPreview(new CustomerId("C1"), "Ms", "Jane", "Smith", LocalDate.of(1990, 5, 1))),
                 new CustomerService(gateway).search(" Jane "));
 
         verify(gateway).searchCustomers("Jane");

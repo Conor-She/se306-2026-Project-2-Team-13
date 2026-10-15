@@ -19,8 +19,7 @@
    <columns>
     <TableColumn fx:id="idColumn" text="Customer ID" prefWidth="110" minWidth="95"/>
     <TableColumn fx:id="nameColumn" text="Name" prefWidth="210" minWidth="120"/>
-
-
+    <TableColumn fx:id="dateOfBirthColumn" text="Date of Birth" prefWidth="160" minWidth="140"/>
    </columns>
   </TableView>
  </VBox>

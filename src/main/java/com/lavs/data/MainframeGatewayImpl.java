@@ -131,7 +131,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
             sendOrThrow(message);
             for (Search.Item item : message.getItems()) {
                 results.add(new Customer(item.getNumber(), item.getTitle(), item.getFirstName(),
-                        item.getFamilyName(), null, null));
+                        item.getFamilyName(),
+                        item.getDateOfBirth() == null || item.getDateOfBirth().isBlank()
+                                ? null : LocalDate.parse(item.getDateOfBirth()), null));
             }
             if (message.getItems().length == 0 || page * CATEGORY_PAGE_SIZE >= message.getTotal()) {
                 return results;

@@ -20,6 +20,7 @@ class MainframeGatewayCustomerSearchTest {
         var results = new MainframeGatewayImpl(connection, "Test").searchCustomers("Smith");
 
         assertEquals(2, results.size());
+        assertEquals(java.time.LocalDate.of(1990, 5, 1), results.get(0).getDateOfBirth());
         assertEquals("C1", results.get(0).getCustomerId());
         assertEquals("C101", results.get(1).getCustomerId());
         var requests = ArgumentCaptor.forClass(MessageRequest.class);
@@ -48,6 +49,7 @@ class MainframeGatewayCustomerSearchTest {
         values.put("1:firstName", "Jane");
         values.put("1:familyName", "Smith");
         values.put("1:title", "Ms");
+        values.put("1:dateOfBirth", "1990-05-01");
         return new MessageResponse(new Status(1), values);
     }
 }

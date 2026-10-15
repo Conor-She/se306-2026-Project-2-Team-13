@@ -1,5 +1,7 @@
 package com.lavs.ui;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import javafx.application.Platform;
@@ -60,7 +62,11 @@ public class CustomersController {
     public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
         this.registrationServiceFactory = java.util.Objects.requireNonNull(factory);
     }
-    public record CustomerSummary(String customerId, String name, String phone, String email) {
+    public record CustomerSummary(String customerId, String name, String phone, String email,
+            LocalDate dateOfBirth) {
+        public CustomerSummary(String customerId, String name, String phone, String email) {
+            this(customerId, name, phone, email, null);
+        }
         boolean matches(String query) {
             return List.of(customerId, name, phone, email).stream()
                     .anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(query));
@@ -70,6 +76,7 @@ public class CustomersController {
     @FXML private Label resultsHeading;
     @FXML private TableView<CustomerSummary> customerTable;
     @FXML private TableColumn<CustomerSummary, String> idColumn, nameColumn;
+    @FXML private TableColumn<CustomerSummary, LocalDate> dateOfBirthColumn;
     @FXML private VBox listView, detailsView;
     @FXML private CustomerDetailsController detailsViewController;
 
@@ -77,6 +84,15 @@ public class CustomersController {
         root = (VBox) listView.getParent();
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
+        dateOfBirthColumn.setCellValueFactory(c ->
+                new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue().dateOfBirth()));
+        dateOfBirthColumn.setCellFactory(column -> new TableCell<>() {
+            private final DateTimeFormatter format = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+            @Override protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty ? null : date == null ? "Not provided" : format.format(date));
+            }
+        });
         var sorted = new SortedList<>(customers);
         sorted.comparatorProperty().bind(customerTable.comparatorProperty());
         customerTable.setItems(sorted);
@@ -137,7 +153,7 @@ public class CustomersController {
             @Override protected List<CustomerSummary> call() {
                 return customerService.search(query).stream().map(preview -> new CustomerSummary(
                         preview.customerId().value(),
-                        (text(preview.firstName()) + " " + text(preview.lastName())).strip(), "", ""))
+                        (text(preview.firstName()) + " " + text(preview.lastName())).strip(), "", "", preview.dateOfBirth()))
                         .toList();
             }
         };

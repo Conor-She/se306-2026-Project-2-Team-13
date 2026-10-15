@@ -57,7 +57,7 @@ property) can be set for customer creation, which uses the configured organisati
 
 The Home screen and sidebar profile show the signed-in username. Home, Customers
 (search UI), and Loans share a persistent navigation sidebar. The Customers screen searches the signed-in mainframe as you type and displays
-customer ID and name previews. Enter a customer name or ID to search; the mainframe does not list customers for a blank query. Select
+customer ID, name and date-of-birth previews. Enter a customer name or ID to search; the mainframe does not list customers for a blank query. Select
 a result to retrieve personal details and every address, phone, email and employer.
 Use the "View all" links for additional contact entries. Search and retrieval run
 in the background; failures remain on the search screen and can be retried.

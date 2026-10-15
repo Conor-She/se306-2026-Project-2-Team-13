@@ -61,11 +61,18 @@ class CustomersServiceIntegrationTest {
         JavaFxTestSupport.run(() -> {
             assertEquals("C1", table.getItems().get(0).customerId());
             assertEquals("Jane Smith", table.getItems().get(0).name());
-            assertEquals(2, table.getColumns().size());
+            assertEquals(3, table.getColumns().size());
+            assertEquals("Date of Birth", table.getColumns().get(2).getText());
+            assertEquals(LocalDate.of(1990, 5, 1), table.getColumns().get(2).getCellData(0));
             return null;
         });
         searchFor("Smith");
         await(() -> heading().equals("Search results (2)"));
+        JavaFxTestSupport.run(() -> {
+            assertNull(table.getItems().stream().filter(customer -> customer.customerId().equals("C2"))
+                    .findFirst().orElseThrow().dateOfBirth());
+            return null;
+        });
         verify(gateway, never()).getCustomer(anyString());
         verify(gateway, never()).getAddresses(anyString());
         verify(gateway, never()).getPhones(anyString());
