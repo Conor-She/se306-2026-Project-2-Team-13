@@ -189,7 +189,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deleteEmail(String emailId) {
+    public void deleteEmail(String customerId, String emailId) {
         checkAvailability();
     }
 

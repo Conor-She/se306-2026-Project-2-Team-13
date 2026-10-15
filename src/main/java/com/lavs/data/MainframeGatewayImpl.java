@@ -36,6 +36,9 @@ import mainframe.client.messages.customer.UpdateAddress;
 import mainframe.client.messages.customer.AddPhoneNumber;
 import mainframe.client.messages.customer.DeletePhoneNumber;
 import mainframe.client.messages.customer.UpdatePhoneNumber;
+import mainframe.client.messages.customer.AddEmail;
+import mainframe.client.messages.customer.DeleteEmail;
+import mainframe.client.messages.customer.UpdateEmail;
 import mainframe.client.messages.loan.UpdateStatus;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
@@ -242,17 +245,37 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Email addEmail(Email email) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmail");
+        AddEmail message = new AddEmail(email.getEmailAddress(), email.getCustomerId(),
+                email.isPrimary(), null, AddEmail.TYPE_PERSONAL);
+        sendOrThrow(message);
+
+        return new Email(message.getId(), message.getCustomer(), message.getAddress(),
+                message.getIsPrimary());
     }
 
     @Override
     public Email updateEmail(Email email) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.UpdateEmail");
+        Long emailId = email.getEmailId();
+        if (emailId == null) {
+            throw new IllegalArgumentException("An existing email with an emailId is required");
+        }
+
+        mainframe.client.messages.customerEmail.Retrieve current =
+                new mainframe.client.messages.customerEmail.Retrieve(
+                        emailId, email.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateEmail message = new UpdateEmail(email.getEmailAddress(), email.getCustomerId(),
+                emailId, email.isPrimary(), current.getOtherType(), current.getType());
+        sendOrThrow(message);
+
+        return new Email(message.getId(), message.getCustomer(), message.getAddress(),
+                message.getIsPrimary());
     }
 
     @Override
-    public void deleteEmail(String emailId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.DeleteEmail");
+    public void deleteEmail(String customerId, String emailId) {
+        sendOrThrow(new DeleteEmail(customerId, parseNumericId(emailId, "Email ID")));
     }
 
     @Override
@@ -318,8 +341,23 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Email> getEmails(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerEmail retrieval");
+        List<Email> emails = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerEmail.List message =
+                    new mainframe.client.messages.customerEmail.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerEmail.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerEmail.List.Item item : items) {
+                emails.add(new Email(item.getId(), customerId, item.getAddress(),
+                        "y".equals(item.getIsPrimary())));
+            }
+            if (items.length == 0 || emails.size() >= message.getTotal()) {
+                return emails;
+            }
+            page++;
+        }
     }
 
     @Override
