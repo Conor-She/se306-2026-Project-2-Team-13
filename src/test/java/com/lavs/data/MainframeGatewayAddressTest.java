@@ -2,13 +2,11 @@ package com.lavs.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.lavs.model.Address;
@@ -148,7 +146,7 @@ class MainframeGatewayAddressTest {
                 .thenReturn(response("customer", "C001", "id", "7"));
         MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
 
-        gateway.deleteAddress("C001", "7");
+        gateway.deleteAddress("C001", 7L);
 
         ArgumentCaptor<MessageRequest> request = ArgumentCaptor.forClass(MessageRequest.class);
         verify(connection).send(request.capture());
@@ -156,18 +154,6 @@ class MainframeGatewayAddressTest {
         assertEquals("customer.deleteAddress", request.getValue().getRequestType());
         assertEquals("C001", request.getValue().getValue("customer"));
         assertEquals("7", request.getValue().getValue("id"));
-    }
-
-    // An ID that isn't a number can't be a mainframe ID, so nothing is sent
-    @Test
-    void refusesANonNumericAddressIdWithoutCallingTheMainframe() {
-        Connection connection = mock(Connection.class);
-        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> gateway.deleteAddress("C001", "not-a-number"));
-
-        verifyNoInteractions(connection);
     }
 
     private static MessageResponse response(String... entries) {

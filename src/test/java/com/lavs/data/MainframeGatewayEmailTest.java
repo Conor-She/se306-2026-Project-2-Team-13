@@ -2,13 +2,11 @@ package com.lavs.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.lavs.model.Email;
@@ -126,7 +124,7 @@ class MainframeGatewayEmailTest {
                 .thenReturn(response("customer", "C001", "id", "3"));
         MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
 
-        gateway.deleteEmail("C001", "3");
+        gateway.deleteEmail("C001", 3L);
 
         ArgumentCaptor<MessageRequest> request = ArgumentCaptor.forClass(MessageRequest.class);
         verify(connection).send(request.capture());
@@ -134,17 +132,6 @@ class MainframeGatewayEmailTest {
         assertEquals("customer.deleteEmail", request.getValue().getRequestType());
         assertEquals("C001", request.getValue().getValue("customer"));
         assertEquals("3", request.getValue().getValue("id"));
-    }
-
-    @Test
-    void refusesANonNumericEmailIdWithoutCallingTheMainframe() {
-        Connection connection = mock(Connection.class);
-        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> gateway.deleteEmail("C001", "not-a-number"));
-
-        verifyNoInteractions(connection);
     }
 
     private static MessageResponse response(String... entries) {

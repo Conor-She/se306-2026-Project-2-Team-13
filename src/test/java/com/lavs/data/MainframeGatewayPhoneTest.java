@@ -1,13 +1,11 @@
 package com.lavs.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.lavs.model.Phone;
@@ -138,7 +136,7 @@ class MainframeGatewayPhoneTest {
                 .thenReturn(response("customer", "C001", "id", "5"));
         MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
 
-        gateway.deletePhone("C001", "5");
+        gateway.deletePhone("C001", 5L);
 
         ArgumentCaptor<MessageRequest> request = ArgumentCaptor.forClass(MessageRequest.class);
         verify(connection).send(request.capture());
@@ -146,17 +144,6 @@ class MainframeGatewayPhoneTest {
         assertEquals("customer.deletePhoneNumber", request.getValue().getRequestType());
         assertEquals("C001", request.getValue().getValue("customer"));
         assertEquals("5", request.getValue().getValue("id"));
-    }
-
-    @Test
-    void refusesANonNumericPhoneIdWithoutCallingTheMainframe() {
-        Connection connection = mock(Connection.class);
-        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> gateway.deletePhone("C001", "not-a-number"));
-
-        verifyNoInteractions(connection);
     }
 
     private static MessageResponse response(String... entries) {

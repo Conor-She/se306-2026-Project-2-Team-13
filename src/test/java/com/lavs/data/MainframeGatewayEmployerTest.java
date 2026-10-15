@@ -143,7 +143,7 @@ class MainframeGatewayEmployerTest {
                 .thenReturn(response("customer", "C001", "id", "9"));
         MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
 
-        gateway.deleteEmployer("C001", "9");
+        gateway.deleteEmployer("C001", 9L);
 
         ArgumentCaptor<MessageRequest> request = ArgumentCaptor.forClass(MessageRequest.class);
         verify(connection).send(request.capture());
@@ -151,17 +151,6 @@ class MainframeGatewayEmployerTest {
         assertEquals("customer.deleteEmployer", request.getValue().getRequestType());
         assertEquals("C001", request.getValue().getValue("customer"));
         assertEquals("9", request.getValue().getValue("id"));
-    }
-
-    @Test
-    void refusesANonNumericEmployerIdWithoutCallingTheMainframe() {
-        Connection connection = mock(Connection.class);
-        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> gateway.deleteEmployer("C001", "not-a-number"));
-
-        verifyNoInteractions(connection);
     }
 
     private static MessageResponse response(String... entries) {
