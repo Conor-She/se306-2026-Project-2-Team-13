@@ -41,7 +41,7 @@ public interface MainframeGateway {
     void deleteEmail(String customerId, String emailId);
     Employer addEmployer(Employer employer);
     Employer updateEmployer(Employer employer);
-    void deleteEmployer(String employerId);
+    void deleteEmployer(String customerId, String employerId);
 
     // Read a customer's child records (for checking a loan's prerequisites)
     List<Address> getAddresses(String customerId);

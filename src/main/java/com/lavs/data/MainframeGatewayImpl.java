@@ -39,6 +39,9 @@ import mainframe.client.messages.customer.UpdatePhoneNumber;
 import mainframe.client.messages.customer.AddEmail;
 import mainframe.client.messages.customer.DeleteEmail;
 import mainframe.client.messages.customer.UpdateEmail;
+import mainframe.client.messages.customer.AddEmployer;
+import mainframe.client.messages.customer.DeleteEmployer;
+import mainframe.client.messages.customer.UpdateEmployer;
 import mainframe.client.messages.loan.UpdateStatus;
 import mainframe.client.messages.loan.AddCoborrower;
 import mainframe.client.messages.loan.AddPayment;
@@ -362,19 +365,40 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Employer addEmployer(Employer employer) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddEmployer");
+        AddEmployer message = new AddEmployer(employer.getCustomerId(),
+                employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                AddEmployer.TYPE_PRIMARY);
+        sendOrThrow(message);
+
+        return new Employer(message.getId(), message.getCustomer(), message.getName(),
+                message.getPosition(), message.getSalary(), employer.getEmploymentType());
     }
 
     @Override
     public Employer updateEmployer(Employer employer) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateEmployer");
+        Long employerId = employer.getEmployerId();
+        if (employerId == null) {
+            throw new IllegalArgumentException(
+                    "An existing employer with an employerId is required");
+        }
+
+        mainframe.client.messages.customerEmployer.Retrieve current =
+                new mainframe.client.messages.customerEmployer.Retrieve(
+                        employerId, employer.getCustomerId());
+        sendOrThrow(current);
+
+        UpdateEmployer message = new UpdateEmployer(employer.getCustomerId(), employerId,
+                employer.getCompanyName(), employer.getJobTitle(), employer.getIncome(),
+                current.getType());
+        sendOrThrow(message);
+
+        return new Employer(message.getId(), message.getCustomer(), message.getName(),
+                message.getPosition(), message.getSalary(), employer.getEmploymentType());
     }
 
     @Override
-    public void deleteEmployer(String employerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteEmployer");
+    public void deleteEmployer(String customerId, String employerId) {
+        sendOrThrow(new DeleteEmployer(customerId, parseNumericId(employerId, "Employer ID")));
     }
 
     @Override
@@ -471,8 +495,31 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public List<Employer> getEmployers(String customerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customerEmployer retrieval");
+        List<Employer> employers = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerEmployer.List message =
+                    new mainframe.client.messages.customerEmployer.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerEmployer.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerEmployer.List.Item item : items) {
+                employers.add(getEmployer(customerId, item.getId()));
+            }
+            if (items.length == 0 || employers.size() >= message.getTotal()) {
+                return employers;
+            }
+            page++;
+        }
+    }
+
+    private Employer getEmployer(String customerId, long employerId) {
+        mainframe.client.messages.customerEmployer.Retrieve message =
+                new mainframe.client.messages.customerEmployer.Retrieve(employerId, customerId);
+        sendOrThrow(message);
+
+        return new Employer(message.getId(), customerId, message.getName(),
+                message.getPosition(), message.getSalary(), null);
     }
 
     @Override

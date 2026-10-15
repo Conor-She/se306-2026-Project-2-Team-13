@@ -212,7 +212,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     }
 
     @Override
-    public void deleteEmployer(String employerId) {
+    public void deleteEmployer(String customerId, String employerId) {
         checkAvailability();
     }
 
