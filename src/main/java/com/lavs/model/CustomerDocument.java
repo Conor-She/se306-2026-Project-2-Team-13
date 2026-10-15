@@ -12,9 +12,9 @@ public class CustomerDocument {
 
     public CustomerDocument(String documentId, String customerId, String fileName,
             String documentType, LocalDate uploadDate) {
-        // Basic structural checks only
-        if (documentId == null || documentId.isBlank()) {
-            throw new IllegalArgumentException("documentId must not be null or blank");
+        // The mainframe assigns the ID when a new document is created.
+        if (documentId != null && documentId.isBlank()) {
+            throw new IllegalArgumentException("documentId must not be blank");
         }
         if (customerId == null || customerId.isBlank()) {
             throw new IllegalArgumentException("customerId must not be null or blank");
@@ -22,8 +22,13 @@ public class CustomerDocument {
         if (fileName == null || fileName.isBlank()) {
             throw new IllegalArgumentException("fileName must not be null or blank");
         }
+        if (documentType == null || documentType.isBlank()) {
+            throw new IllegalArgumentException("documentType must not be null or blank");
+        }
+        if (uploadDate == null) {
+            throw new IllegalArgumentException("uploadDate must not be null");
+        }
 
-        // Assign all fields once the document record is confirmed valid
         this.documentId = documentId;
         this.customerId = customerId;
         this.fileName = fileName;

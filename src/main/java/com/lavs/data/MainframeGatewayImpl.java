@@ -1,6 +1,7 @@
 package com.lavs.data;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -23,11 +24,18 @@ import mainframe.client.Message;
 import mainframe.client.Status;
 import mainframe.client.StatusMessage;
 import mainframe.client.messages.customer.AddAddress;
+import mainframe.client.messages.customer.AddDocumentMetadata;
 import mainframe.client.messages.customer.Create;
+import mainframe.client.messages.customer.DeleteDocument;
 import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
+import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.Update;
 import mainframe.client.messages.loan.UpdateStatus;
+import mainframe.client.messages.loan.AddCoborrower;
+import mainframe.client.messages.loan.AddPayment;
+import mainframe.client.messages.loan.DeleteCoborrower;
+import mainframe.client.messages.loan.DeletePayment;
 
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
@@ -37,11 +45,18 @@ public class MainframeGatewayImpl implements MainframeGateway {
     private static final long CATEGORY_PAGE_SIZE = 100;
 
     private final Connection connection;
-    private final String organisationName;
+    private final Long organisationNumber;
+    private static final String PAYMENTS_READ_ONLY_MESSAGE = "Not supported by the mainframe: "
+            + "its loanPayment messages only list and retrieve payments";
+
+    public MainframeGatewayImpl(Connection connection, long organisationNumber) {
+        this.connection = connection;
+        this.organisationNumber = organisationNumber;
+    }
 
     public MainframeGatewayImpl(Connection connection, String organisationName) {
         this.connection = connection;
-        this.organisationName = organisationName;
+        this.organisationNumber = null;
     }
 
     @Override
@@ -60,8 +75,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Customer createCustomer(Customer customer) {
-        long organisationId = findOrganisationId(organisationName);
-
+        long organisationId = requireOrganisationNumber();
         Create message = new Create(
                 customer.getDateOfBirth() == null ? null : customer.getDateOfBirth().toString(),
                 customer.getLastName(),
@@ -77,6 +91,17 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 customer.getDateOfBirth(), // mainframe returns a String, Customer wants LocalDate -
                                             // needs a parser once dateOfBirth format is confirmed
                 message.getNationality());
+    }
+
+    // The organisation number is needed to create a customer. A gateway built
+    // from a name doesn't have one.
+    private long requireOrganisationNumber() {
+        if (organisationNumber == null) {
+            throw new IllegalStateException(
+                    "Creating a customer needs the organisation number. Build the gateway "
+                            + "with the number, not the name.");
+        }
+        return organisationNumber;
     }
 
     @Override
@@ -324,20 +349,62 @@ public class MainframeGatewayImpl implements MainframeGateway {
     }
 
     @Override
+    public List<CustomerDocument> getDocuments(String customerId) {
+        List<CustomerDocument> documents = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerDocument.List message =
+                    new mainframe.client.messages.customerDocument.List(customerId, page, 100);
+            sendOrThrow(message);
+            mainframe.client.messages.customerDocument.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerDocument.List.Item item : items) {
+                documents.add(new CustomerDocument(Long.toString(item.getId()), customerId,
+                        item.getFileName(), item.getType(), LocalDate.parse(item.getUploadDate())));
+            }
+            if (items.length == 0 || page * 100 >= message.getTotal()) {
+                return List.copyOf(documents);
+            }
+            page++;
+        }
+    }
+
+    @Override
     public CustomerDocument addDocument(CustomerDocument document) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddDocument");
+        AddDocumentMetadata message = new AddDocumentMetadata(document.getCustomerId(),
+                document.getFileName(), document.getDocumentType(),
+                document.getUploadDate().toString());
+        sendOrThrow(message);
+        if (message.getId() == null) {
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
+                    "The mainframe did not return an ID for the new document");
+        }
+        return new CustomerDocument(Long.toString(message.getId()), document.getCustomerId(),
+                document.getFileName(), document.getDocumentType(), document.getUploadDate());
     }
 
     @Override
     public CustomerDocument updateDocument(CustomerDocument document) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.UpdateDocument");
+        long id = parseDocumentId(document.getDocumentId());
+        UpdateDocument message = new UpdateDocument(document.getCustomerId(), id,
+                document.getFileName(), document.getDocumentType(),
+                document.getUploadDate().toString());
+        sendOrThrow(message);
+        return document;
     }
 
     @Override
-    public void deleteDocument(String documentId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs customer.DeleteDocument");
+    public void deleteDocument(String customerId, String documentId) {
+        DeleteDocument message = new DeleteDocument(customerId, parseDocumentId(documentId));
+        sendOrThrow(message);
+    }
+
+    private long parseDocumentId(String documentId) {
+        try {
+            return Long.parseLong(documentId);
+        } catch (NumberFormatException invalidId) {
+            throw new IllegalArgumentException("Document ID must be a numeric mainframe ID",
+                    invalidId);
+        }
     }
 
     @Override
@@ -454,57 +521,153 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public CoBorrower addCoBorrower(CoBorrower coBorrower) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanCoborrower.Add");
+        AddCoborrower message = new AddCoborrower(
+                coBorrower.getCustomerId(), coBorrower.getLoanId(), AddCoborrower.TYPE_COBORROWER);
+        sendOrThrow(message);
+
+        return new CoBorrower(String.valueOf(message.getId()), message.getLoanNumber(),
+                message.getCoborrowerNumber());
     }
 
     @Override
-    public void deleteCoBorrower(String coBorrowerId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower.Delete");
+    public void deleteCoBorrower(String loanId, String coBorrowerId) {
+        sendOrThrow(new DeleteCoborrower(Long.parseLong(coBorrowerId), loanId));
     }
 
     @Override
     public List<CoBorrower> getCoBorrowers(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower retrieval");
+        List<CoBorrower> coBorrowers = new ArrayList<>();
+        long page = 1;
+        long seen = 0;
+        while (true) {
+            mainframe.client.messages.loanCoborrower.List message =
+                    new mainframe.client.messages.loanCoborrower.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanCoborrower.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loanCoborrower.List.Item item : items) {
+                if (AddCoborrower.TYPE_COBORROWER.equals(item.getType())) {
+                    coBorrowers.add(new CoBorrower(String.valueOf(item.getId()), loanId,
+                            item.getCoborrowerNumber()));
+                }
+            }
+            seen += items.length;
+            if (items.length == 0 || seen >= message.getTotal()) {
+                return coBorrowers;
+            }
+            page++;
+        }
     }
 
     @Override
     public int getCoBorrowerCount(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanCoborrower retrieval");
+        return getCoBorrowers(loanId).size();
     }
 
+    // The mainframe builds its own schedule from the loan's terms and has no
+    // message for storing one, so there is nothing to save. The schedule LAVS
+    // calculates is shown when the loan is created; the one read back later is
+    // the mainframe's (see getRepaymentSchedule).
     @Override
     public void saveRepaymentSchedule(String loanId, List<Repayment> schedule) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanRepaymentSchedule messages");
+        // Intentionally empty
     }
 
+    // The mainframe's list only has each loan's number, principal, start date
+    // and status, so each loan is then fetched in full
     @Override
     public List<Loan> findLoansByCustomer(String customerId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loan.Search");
+        List<Loan> loans = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loan.List message =
+                    new mainframe.client.messages.loan.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loan.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loan.List.Item item : items) {
+                loans.add(getLoan(item.getLoanNumber()));
+            }
+            if (items.length == 0 || loans.size() >= message.getTotal()) {
+                return loans;
+            }
+            page++;
+        }
     }
 
     @Override
     public List<Repayment> getRepaymentSchedule(String loanId) {
-        throw new UnsupportedOperationException(
-                "Not yet implemented - needs loanRepaymentSchedule retrieval");
+        List<Repayment> schedule = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loanRepaymentSchedule.List message =
+                    new mainframe.client.messages.loanRepaymentSchedule.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanRepaymentSchedule.List.Item[] items =
+                    message.getItems();
+            for (mainframe.client.messages.loanRepaymentSchedule.List.Item item : items) {
+                schedule.add(new Repayment(loanId + "-repayment-" + item.getPaymentNumber(),
+                        loanId, java.time.LocalDate.parse(item.getDate()), item.getAmountPaid(),
+                        item.getPrincipalAmount(), item.getInterestAmount(),
+                        item.getAmountRemaining()));
+            }
+            if (items.length == 0 || schedule.size() >= message.getTotal()) {
+                return schedule;
+            }
+            page++;
+        }
     }
 
     @Override
     public Payment addPayment(Payment payment) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Add");
+        AddPayment message = new AddPayment(
+                payment.getAmountPaid(), payment.getPaymentDate().toString(),
+                payment.getLoanId());
+        sendOrThrow(message);
+
+        // The mainframe has no field for a repayment, so that link isn't kept
+        return new Payment(String.valueOf(message.getId()), message.getLoanNumber(), null,
+                java.time.LocalDate.parse(message.getDate()), message.getAmountPaid());
     }
 
+    // The mainframe has no update message, so an edit adds the new version and
+    // then deletes the old one, and the new payment gets a new ID. Adding first
+    // means a failure can't lose a payment; the cost is that a failed delete
+    // leaves the old payment alongside the new one.
     @Override
     public Payment updatePayment(Payment payment) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Update");
+        Payment replacement = addPayment(new Payment(null, payment.getLoanId(), null,
+                payment.getPaymentDate(), payment.getAmountPaid()));
+        deletePayment(payment.getLoanId(), payment.getPaymentId());
+        return replacement;
     }
 
     @Override
-    public void deletePayment(String paymentId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs loanPayment.Delete");
+    public void deletePayment(String loanId, String paymentId) {
+        sendOrThrow(new DeletePayment(Long.parseLong(paymentId), loanId));
+    }
+
+    // Reads every page of a loan's payments. The mainframe's ID is a number, kept here as text.
+    @Override
+    public List<Payment> getPayments(String loanId) {
+        List<Payment> payments = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.loanPayment.List message =
+                    new mainframe.client.messages.loanPayment.List(loanId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.loanPayment.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.loanPayment.List.Item item : items) {
+                payments.add(new Payment(String.valueOf(item.getId()), loanId, null,
+                        java.time.LocalDate.parse(item.getDate()), item.getAmountPaid()));
+            }
+            if (items.length == 0 || payments.size() >= message.getTotal()) {
+                return payments;
+            }
+            page++;
+        }
     }
 
     @Override
@@ -584,22 +747,6 @@ public class MainframeGatewayImpl implements MainframeGateway {
     private boolean yes(String value) {
         return "y".equalsIgnoreCase(value);
     }
-
-    private long findOrganisationId(String organisationName) {
-        mainframe.client.messages.organisation.List message =
-                new mainframe.client.messages.organisation.List(1, 100);
-        sendOrThrow(message);
-
-        for (mainframe.client.messages.organisation.List.Item item : message.getItems()) {
-            if (organisationName.equals(item.getName())) {
-                return item.getId();
-            }
-        }
-
-        throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0,
-                "Organisation '" + organisationName + "' not found on the mainframe");
-    }
-
 
     // Interest-Only is the one loan type the mainframe can represent. Table
     // Loan vs Reducing Balance is not stored by the mainframe (team decision),

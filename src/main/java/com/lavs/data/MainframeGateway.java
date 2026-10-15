@@ -54,9 +54,10 @@ public interface MainframeGateway {
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);
     void deleteNote(String noteId);
+    List<CustomerDocument> getDocuments(String customerId);
     CustomerDocument addDocument(CustomerDocument document);
     CustomerDocument updateDocument(CustomerDocument document);
-    void deleteDocument(String documentId);
+    void deleteDocument(String customerId, String documentId);
     Guarantor addGuarantor(Guarantor guarantor);
     Guarantor updateGuarantor(Guarantor guarantor);
     void deleteGuarantor(String guarantorId);
@@ -71,7 +72,7 @@ public interface MainframeGateway {
 
     // Manage Co-borrowers
     CoBorrower addCoBorrower(CoBorrower coBorrower);
-    void deleteCoBorrower(String coBorrowerId);
+    void deleteCoBorrower(String loanId, String coBorrowerId);
     int getCoBorrowerCount(String loanId);
     List<CoBorrower> getCoBorrowers(String loanId);
 
@@ -86,7 +87,8 @@ public interface MainframeGateway {
     // Manage Payments
     Payment addPayment(Payment payment);
     Payment updatePayment(Payment payment);
-    void deletePayment(String paymentId);
+    void deletePayment(String loanId, String paymentId);
+    List<Payment> getPayments(String loanId);
 
     // Retrieve Category Values
     List<String> getCategoryValues(String categoryType);

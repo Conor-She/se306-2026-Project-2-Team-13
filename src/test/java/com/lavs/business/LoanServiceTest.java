@@ -75,6 +75,13 @@ class LoanServiceTest {
         assertTrue(gateway.findLoansByCustomer("C001").isEmpty());
     }
 
+    // A valid table loan, except for its payment amount
+    private Loan loanWithPaymentAmount(String loanId, double paymentAmount) {
+        return new Loan(loanId, "C001", Loan.Status.NEW, 12_000, 12.0, Loan.Type.TABLE_LOAN,
+                false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1), paymentAmount,
+                Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12);
+    }
+
     // --- Valid creation ---
 
     // The loan comes back with its schedule, and both are saved
@@ -213,6 +220,35 @@ class LoanServiceTest {
                 () -> service.create(newLoan()));
 
         assertEquals(MainframeException.Type.UNAVAILABLE, exception.getType());
+    }
+
+    // A loan with zero or a negative amount must not be created
+    @Test
+    void doesNotCreateALoanWithoutAPaymentAmount() {
+        givenEligibleCustomer();
+
+        for (double amount : new double[] {0, -50}) {
+            Loan noPayment = loanWithPaymentAmount(null, amount);
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> service.create(noPayment));
+
+            assertEquals(LoanService.PAYMENT_AMOUNT_MESSAGE, exception.getMessage());
+        }
+        assertNoLoanWasCreated();
+    }
+
+    @Test
+    void doesNotUpdateALoanWithoutAPaymentAmount() {
+        givenEligibleCustomer();
+        String loanId = service.create(newLoan()).getLoan().getLoanId();
+        Loan noPayment = loanWithPaymentAmount(loanId, 0);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.update(noPayment));
+
+        assertEquals(LoanService.PAYMENT_AMOUNT_MESSAGE, exception.getMessage());
+        assertEquals(1_000, gateway.getLoan(loanId).getPaymentAmount());
     }
 
     // --- Editing a loan ---

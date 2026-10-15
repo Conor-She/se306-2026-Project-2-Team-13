@@ -39,7 +39,8 @@ public class List implements Message {
                 long idValue = idText == null ? null : Long.parseLong(idText);
                 String typeValue = response.getValue(i + ":type");
                 String fileNameValue = response.getValue(i + ":fileName");
-                _data.add(new Item(fileNameValue, idValue, typeValue));
+                String uploadDateValue = response.getValue(i + ":uploadDate");
+                _data.add(new Item(fileNameValue, idValue, typeValue, uploadDateValue));
             }
         }
         return response.getStatus();
@@ -72,10 +73,12 @@ public class List implements Message {
         private String _fileName;
         private long _id;
         private String _type;
-        public Item(String fileName, long id, String type) {
+        private String _uploadDate;
+        public Item(String fileName, long id, String type, String uploadDate) {
             _fileName = fileName;
             _id = id;
             _type = type;
+            _uploadDate = uploadDate;
         }
         public String getFileName() {
             return _fileName;
@@ -85,6 +88,9 @@ public class List implements Message {
         }
         public String getType() {
             return _type;
+        }
+        public String getUploadDate() {
+            return _uploadDate;
         }
     }
 }

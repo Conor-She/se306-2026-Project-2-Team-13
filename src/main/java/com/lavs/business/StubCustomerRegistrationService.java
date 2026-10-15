@@ -63,7 +63,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
             case "emails" -> List.of("email");
             case "employers" -> List.of("name", "role", "employmentType", "income", "phone");
             case "notes" -> List.of("text");
-            case "documents" -> List.of("fileName", "filePath");
+            case "documents" -> List.of("fileName", "documentType", "uploadDate");
             default -> throw new IllegalArgumentException("Unknown entry kind: " + kind);
         };
         for (String key : required)
@@ -77,6 +77,13 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
             errors.add(new ValidationError(step, "postcode", "Enter a postcode using digits only."));
         if (kind.equals("employers") && !income.isBlank() && !income.matches("[0-9]+(\\.[0-9]{1,2})?"))
             errors.add(new ValidationError(step, "income", "Enter a non-negative annual income with up to two decimal places."));
+        if (kind.equals("documents") && !entry.getOrDefault("uploadDate", "").isBlank()) {
+            try {
+                java.time.LocalDate.parse(entry.get("uploadDate"));
+            } catch (java.time.DateTimeException invalid) {
+                errors.add(new ValidationError(step, "uploadDate", "Use a valid date in yyyy-MM-dd format."));
+            }
+        }
         String number = kind.equals("phones") ? entry.getOrDefault("number", "") : "";
         String employerPhone = kind.equals("employers") ? entry.getOrDefault("phone", "") : "";
         if (!employerPhone.isBlank() && !employerPhone.matches("\\+?[0-9 ()-]{7,20}"))

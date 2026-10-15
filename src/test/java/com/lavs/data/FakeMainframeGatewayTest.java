@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
 import com.lavs.model.Customer;
+import com.lavs.model.CustomerDocument;
 import com.lavs.model.Email;
 import com.lavs.model.Employer;
 import com.lavs.model.Guarantor;
@@ -45,6 +46,41 @@ class FakeMainframeGatewayTest {
         assertEquals("Jane", gateway.getCustomer("C001").getFirstName());
         assertEquals(1, gateway.searchCustomers("Jane").size());
         assertTrue(gateway.searchCustomers("Nobody").isEmpty());
+    }
+
+    @Test
+    void addsAndListsDocumentsForTheirCustomer() {
+        CustomerDocument added = gateway.addDocument(
+                new CustomerDocument(null, "C001", "payslip.pdf", "Income",
+                        LocalDate.of(2026, 10, 14)));
+
+        assertNotNull(added.getDocumentId());
+        assertEquals(List.of(added), gateway.getDocuments("C001"));
+        assertTrue(gateway.getDocuments("C002").isEmpty());
+    }
+
+    @Test
+    void updatesDocumentMetadata() {
+        CustomerDocument added = gateway.addDocument(
+                new CustomerDocument(null, "C001", "payslip.pdf", "Income",
+                        LocalDate.of(2026, 10, 14)));
+        CustomerDocument updated = new CustomerDocument(added.getDocumentId(), "C001",
+                "payslip-final.pdf", "Other", LocalDate.of(2026, 10, 13));
+
+        gateway.updateDocument(updated);
+
+        assertEquals(List.of(updated), gateway.getDocuments("C001"));
+    }
+
+    @Test
+    void deletesDocumentFromItsCustomer() {
+        CustomerDocument added = gateway.addDocument(
+                new CustomerDocument(null, "C001", "payslip.pdf", "Income",
+                        LocalDate.of(2026, 10, 14)));
+
+        gateway.deleteDocument("C001", added.getDocumentId());
+
+        assertTrue(gateway.getDocuments("C001").isEmpty());
     }
 
     // The mainframe assigns loan numbers and starts every loan as New, so
