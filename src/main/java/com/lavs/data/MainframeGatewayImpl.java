@@ -663,9 +663,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
         UpdateStatus message = new UpdateStatus(loanId, toMainframeStatus(newStatus));
         sendOrThrow(message);
 
-        // UpdateStatus only returns loanNumber and status, not the full loan,
-        // so we re-fetch to return a complete Loan matching the other methods
-        return getLoan(message.getLoanNumber());
+        // The reply only has the loan number and status,
+        // so the loan is re-fetched using the number we sent
+        return getLoan(loanId);
     }
 
     @Override
