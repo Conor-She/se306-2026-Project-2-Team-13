@@ -260,4 +260,19 @@ class CustomerServiceTest {
 
         assertEquals(List.of(), gateway.getEmployers(customerId));
     }
+
+    @Test
+    void editingCustomerReadWithDateOfBirthRetainsItWhenChangingTheirName() {
+        FakeMainframeGateway gateway = new FakeMainframeGateway();
+        CustomerService service = new CustomerService(gateway);
+        Customer stored = gateway.createCustomer(newCustomer());
+        Customer loaded = service.getById(new CustomerId(stored.getCustomerId())).customer();
+        Customer renamed = new Customer(loaded.getCustomerId(), loaded.getTitle(),
+                "Janet", loaded.getLastName(), loaded.getDateOfBirth(), loaded.getNationality());
+
+        service.update(renamed, List.of(), List.of(), List.of(), List.of());
+
+        assertEquals(LocalDate.of(1990, 5, 1), service.getById(new CustomerId(stored.getCustomerId()))
+                .customer().getDateOfBirth());
+    }
 }
