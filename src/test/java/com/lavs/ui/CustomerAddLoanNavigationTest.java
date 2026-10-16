@@ -45,6 +45,8 @@ class CustomerAddLoanNavigationTest {
                     "Engineer", 90000, "Full-time"));
             LoansController loansController =
                     (LoansController) loader.getNamespace().get("loansViewController");
+            loansController.setLoanBrowsingService(new com.lavs.business.LoanBrowsingService(gateway));
+            loansController.setRequestExecutor(Runnable::run);
             loansController.setLoanSubmissionService(
                     new com.lavs.business.LoanSubmissionService(gateway));
             loansController.setSaveExecutor(Runnable::run);
@@ -92,9 +94,9 @@ class CustomerAddLoanNavigationTest {
             assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
                     .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             var table = (javafx.scene.control.TableView<?>) loansView.lookup("#loanTable");
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             ((LoansController) loader.getNamespace().get("loansViewController")).onShown();
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             details.setCustomer(new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
             assertFalse(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
                     .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));

@@ -10,8 +10,12 @@ import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
 import com.lavs.business.LoanSummary;
 import com.lavs.business.LoanSubmissionException;
+import com.lavs.business.CustomerService;
 import com.lavs.data.MainframeException;
+import com.lavs.model.CustomerPreview;
 import com.lavs.model.Repayment;
+import java.util.concurrent.Executor;
+import javafx.animation.PauseTransition;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -19,6 +23,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
+import javafx.util.Duration;
 
 /** Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the mainframe. */
 public class AddLoanController {
@@ -41,7 +46,8 @@ public class AddLoanController {
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
     private final LoanDraft draft = new LoanDraft();
-    private final StubLoanPrerequisiteService prerequisiteService = new StubLoanPrerequisiteService();
+    private java.util.function.Consumer<String> prerequisiteValidator =
+            new StubLoanPrerequisiteService()::validate;
     @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
     @FXML private TableView<Repayment> repaymentTable;
@@ -52,6 +58,16 @@ public class AddLoanController {
     @FXML private Label reviewNotice;
     private String activeMarkerStyle, inactiveMarkerStyle, activeNameStyle, inactiveNameStyle;
     private List<CustomersController.CustomerSummary> customers = List.of();
+    private CustomerService customerService;
+    private Executor customerSearchExecutor = Runnable::run;
+    private final PauseTransition primarySearchDelay = new PauseTransition(Duration.millis(300));
+    private final PauseTransition coborrowerSearchDelay = new PauseTransition(Duration.millis(300));
+    private long primarySearchVersion;
+    private long coborrowerSearchVersion;
+    private String pendingPrimaryQuery;
+    private String pendingCoborrowerQuery;
+    private long pendingPrimaryVersion;
+    private long pendingCoborrowerVersion;
     private Runnable onCancel = () -> {};
     private java.util.function.Consumer<LoanDraft> onSave;
     private boolean saved;
@@ -80,6 +96,8 @@ public class AddLoanController {
         inactiveMarkerStyle = marker1.getStyle();
         activeNameStyle = stepName0.getStyle();
         inactiveNameStyle = stepName1.getStyle();
+        primarySearchDelay.setOnFinished(event -> loadPrimaryCustomers(pendingPrimaryQuery, pendingPrimaryVersion));
+        coborrowerSearchDelay.setOnFinished(event -> loadCoborrowers(pendingCoborrowerQuery, pendingCoborrowerVersion));
         coborrowerSearch.textProperty().addListener((obs, old, value) -> searchCoborrowers());
         coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value == null || draft.coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
@@ -149,6 +167,23 @@ public class AddLoanController {
         this.onCancel = onCancel;
     }
 
+    public void setCustomerSearchService(CustomerService service, Executor executor) {
+        customerService = service;
+        customerSearchExecutor = executor == null ? Runnable::run : executor;
+    }
+
+    public void setPrerequisiteValidator(java.util.function.Consumer<String> validator) {
+        prerequisiteValidator = java.util.Objects.requireNonNull(validator);
+    }
+
+    /** Cancels delayed or in-flight result updates when the wizard is closed. */
+    public void dispose() {
+        primarySearchDelay.stop();
+        coborrowerSearchDelay.stop();
+        primarySearchVersion++;
+        coborrowerSearchVersion++;
+    }
+
     public void focusBorrowerSearch() {
         javafx.application.Platform.runLater(() -> {
             if (customerSearch.getScene() != null && customerSearch.isVisible()) customerSearch.requestFocus();
@@ -156,13 +191,26 @@ public class AddLoanController {
     }
 
     private void searchCustomers() {
-        String query = customerSearch.getText().strip().toLowerCase(Locale.ROOT);
-        customerResults.getItems().setAll(query.isEmpty() ? List.of() : customers.stream()
-                .filter(c -> c.name().toLowerCase(Locale.ROOT).contains(query)
-                        || c.customerId().toLowerCase(Locale.ROOT).contains(query)).toList());
-        customerResults.setPlaceholder(new Label("No customers found"));
-        customerResults.setVisible(!query.isEmpty());
-        customerResults.setManaged(!query.isEmpty());
+        String query = customerSearch.getText() == null ? "" : customerSearch.getText().strip();
+        long request = ++primarySearchVersion;
+        primarySearchDelay.stop();
+        if (query.isEmpty()) {
+            customerResults.getItems().clear();
+            customerResults.setVisible(false);
+            customerResults.setManaged(false);
+            return;
+        }
+        customerResults.setPlaceholder(new Label(customerService == null
+                ? "No customers found" : "Searching customers..."));
+        customerResults.setVisible(true);
+        customerResults.setManaged(true);
+        if (customerService == null) {
+            customerResults.getItems().setAll(filterCustomers(customers, query));
+            return;
+        }
+        pendingPrimaryQuery = query;
+        pendingPrimaryVersion = request;
+        primarySearchDelay.playFromStart();
     }
 
     @FXML private void clearBorrower() {
@@ -376,14 +424,87 @@ public class AddLoanController {
     }
 
     private void searchCoborrowers() {
-        String query = coborrowerSearch.getText().strip().toLowerCase(Locale.ROOT);
-        coborrowerResults.getItems().setAll(query.isEmpty() || draft.coborrowers.size() >= 3 ? List.of()
-                : customers.stream().filter(this::eligibleCoborrower)
-                .filter(c -> c.name().toLowerCase(Locale.ROOT).contains(query)
-                        || c.customerId().toLowerCase(Locale.ROOT).contains(query)).toList());
-        coborrowerResults.setVisible(!query.isEmpty() && draft.coborrowers.size() < 3);
-        coborrowerResults.setManaged(coborrowerResults.isVisible());
+        String query = coborrowerSearch.getText() == null ? "" : coborrowerSearch.getText().strip();
+        long request = ++coborrowerSearchVersion;
+        coborrowerSearchDelay.stop();
+        if (query.isEmpty() || draft.coborrowers.size() >= 3) {
+            coborrowerResults.getItems().clear();
+            coborrowerResults.setVisible(false);
+            coborrowerResults.setManaged(false);
+            return;
+        }
+        coborrowerResults.setPlaceholder(new Label(customerService == null
+                ? "No customers found" : "Searching customers..."));
+        coborrowerResults.setVisible(true);
+        coborrowerResults.setManaged(true);
+        if (customerService == null) {
+            coborrowerResults.getItems().setAll(filterCustomers(customers, query).stream()
+                    .filter(this::eligibleCoborrower).toList());
+            return;
+        }
+        pendingCoborrowerQuery = query;
+        pendingCoborrowerVersion = request;
+        coborrowerSearchDelay.playFromStart();
     }
+
+    private void loadPrimaryCustomers(String query, long request) {
+        customerSearchExecutor.execute(() -> {
+            try {
+                List<CustomersController.CustomerSummary> found = searchBackendCustomers(query);
+                javafx.application.Platform.runLater(() -> {
+                    if (request != primarySearchVersion || !query.equals(text(customerSearch.getText()).strip())) return;
+                    customerResults.getItems().setAll(found);
+                    customerResults.setPlaceholder(new Label("No customers found"));
+                });
+            } catch (RuntimeException failure) {
+                javafx.application.Platform.runLater(() -> {
+                    if (request != primarySearchVersion || !query.equals(text(customerSearch.getText()).strip())) return;
+                    customerResults.getItems().clear();
+                    customerResults.setPlaceholder(new Label("Customer search is unavailable"));
+                });
+            }
+        });
+    }
+
+    private void loadCoborrowers(String query, long request) {
+        customerSearchExecutor.execute(() -> {
+            try {
+                List<CustomersController.CustomerSummary> found = searchBackendCustomers(query);
+                javafx.application.Platform.runLater(() -> {
+                    if (request != coborrowerSearchVersion
+                            || !query.equals(text(coborrowerSearch.getText()).strip())) return;
+                    coborrowerResults.getItems().setAll(found.stream().filter(this::eligibleCoborrower).toList());
+                    coborrowerResults.setPlaceholder(new Label("No customers found"));
+                });
+            } catch (RuntimeException failure) {
+                javafx.application.Platform.runLater(() -> {
+                    if (request != coborrowerSearchVersion
+                            || !query.equals(text(coborrowerSearch.getText()).strip())) return;
+                    coborrowerResults.getItems().clear();
+                    coborrowerResults.setPlaceholder(new Label("Customer search is unavailable"));
+                });
+            }
+        });
+    }
+
+    private List<CustomersController.CustomerSummary> searchBackendCustomers(String query) {
+        return customerService.search(query).stream().map(AddLoanController::summaryOf).toList();
+    }
+
+    private static CustomersController.CustomerSummary summaryOf(CustomerPreview preview) {
+        return new CustomersController.CustomerSummary(preview.customerId().value(),
+                (text(preview.firstName()) + " " + text(preview.lastName())).strip(), "", "",
+                preview.dateOfBirth());
+    }
+
+    private static List<CustomersController.CustomerSummary> filterCustomers(
+            List<CustomersController.CustomerSummary> customers, String query) {
+        String normalized = query.toLowerCase(Locale.ROOT);
+        return customers.stream().filter(customer -> customer.name().toLowerCase(Locale.ROOT).contains(normalized)
+                || customer.customerId().toLowerCase(Locale.ROOT).contains(normalized)).toList();
+    }
+
+    private static String text(String value) { return value == null ? "" : value; }
 
     @FXML private void focusCoborrowerSearch() {
         javafx.application.Platform.runLater(() -> {
@@ -445,10 +566,13 @@ public class AddLoanController {
     private String prerequisiteError() {
         if (draft.primaryBorrower == null) return null;
         try {
-            prerequisiteService.validate(draft.primaryBorrower.customerId());
+            prerequisiteValidator.accept(draft.primaryBorrower.customerId());
             return null;
         } catch (LoanPrerequisiteException exception) {
             return prerequisiteMessage(draft.primaryBorrower.name(), exception);
+        } catch (MainframeException exception) {
+            return "Could not check " + draft.primaryBorrower.name()
+                    + "'s loan requirements. Check the mainframe connection and try again.";
         }
     }
 

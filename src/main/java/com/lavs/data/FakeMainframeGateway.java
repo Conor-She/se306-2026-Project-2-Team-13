@@ -138,10 +138,19 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public List<Customer> searchCustomers(String query) {
         checkAvailability();
+        String normalizedQuery = query.strip().toLowerCase(java.util.Locale.ROOT);
         List<Customer> results = new ArrayList<>();
         for (Customer customer : customers.values()) {
-            if (customer.getFirstName() != null && customer.getFirstName().contains(query)
-                    || customer.getLastName() != null && customer.getLastName().contains(query)) {
+            String fullName = ((customer.getFirstName() == null ? "" : customer.getFirstName()) + " "
+                    + (customer.getLastName() == null ? "" : customer.getLastName()))
+                    .strip().toLowerCase(java.util.Locale.ROOT);
+            if (customer.getCustomerId() != null
+                    && customer.getCustomerId().toLowerCase(java.util.Locale.ROOT).contains(normalizedQuery)
+                    || customer.getFirstName() != null
+                    && customer.getFirstName().toLowerCase(java.util.Locale.ROOT).contains(normalizedQuery)
+                    || customer.getLastName() != null
+                    && customer.getLastName().toLowerCase(java.util.Locale.ROOT).contains(normalizedQuery)
+                    || fullName.contains(normalizedQuery)) {
                 results.add(customer);
             }
         }

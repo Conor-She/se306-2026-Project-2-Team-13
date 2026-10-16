@@ -2,6 +2,10 @@ package com.lavs.ui;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.lavs.business.LoanBrowsingService;
+import com.lavs.data.FakeMainframeGateway;
+import com.lavs.model.Loan;
+import com.lavs.model.Payment;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -22,6 +26,7 @@ class LoanDetailsControllerTest {
     private FXMLLoader loader;
     private LoanDetailsController controller;
     private Parent root;
+    private FakeMainframeGateway gateway;
 
     @BeforeAll static void startToolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
 
@@ -33,6 +38,16 @@ class LoanDetailsControllerTest {
             Stage stage = new Stage();
             stage.setScene(new Scene(root, 1100, 700));
             stage.show();
+            gateway = new FakeMainframeGateway();
+            gateway.createCustomer(new com.lavs.model.Customer("67670442", "Ms", "Sarah", "Johnson", null, "NZ"));
+            gateway.createLoan(new Loan("LN-1", "67670442", Loan.Status.ACTIVE, 450000, 6.5,
+                    Loan.Type.TABLE_LOAN, false, LocalDate.of(2025, 1, 1), LocalDate.of(2055, 1, 1),
+                    3245.67, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 360));
+            gateway.addPayment(new Payment("P1", "LN-1", "R1", LocalDate.of(2025, 8, 1), 3245.67));
+            gateway.addPayment(new Payment("P2", "LN-1", null, LocalDate.of(2025, 8, 15), 3245.67));
+            gateway.addPayment(new Payment("P3", "LN-1", "R2", LocalDate.of(2025, 9, 1), 3245.67));
+            controller.setLoanBrowsingService(new LoanBrowsingService(gateway));
+            controller.setRequestExecutor(Runnable::run);
             controller.setLoan(loan("LN-1", "Sarah Johnson", "Active", "$450,000", "Home Loan"));
             return null;
         });
@@ -150,11 +165,10 @@ class LoanDetailsControllerTest {
             assertEquals("15/08/2025", paymentCell(2, 0));
             assertEquals("01/08/2025", paymentCell(3, 0));
             assertEquals("$3,245.67", paymentCell(1, 1));
-            assertEquals("Principal & Interest", paymentCell(1, 2));
-            assertEquals("Paid", paymentCell(1, 3));
-            assertEquals("FP-001234", paymentCell(1, 4));
-            assertNotNull(button("Edit payment FP-001234"));
-            assertNotNull(button("Delete payment FP-001234"));
+            assertEquals("R2", paymentCell(1, 2));
+            assertEquals("P3", paymentCell(1, 3));
+            assertNotNull(button("Edit payment P3"));
+            assertNotNull(button("Delete payment P3"));
             return null;
         });
     }
@@ -183,7 +197,7 @@ class LoanDetailsControllerTest {
             assertEquals("Showing 1-4 of 4", text("paymentsCount"));
             assertEquals("15/01/2026", paymentCell(1, 0));
             assertEquals("$1,250.50", paymentCell(1, 1));
-            assertTrue(paymentCell(1, 4).startsWith("PAY-"));
+            assertTrue(paymentCell(1, 3).startsWith("PAY-"));
             return null;
         });
     }
@@ -193,7 +207,7 @@ class LoanDetailsControllerTest {
             node("paymentsTab", Button.class).fire();
             modal(button("Add payment"), pane -> click(pane, "Cancel"));
             assertEquals("Showing 1-3 of 3", text("paymentsCount"));
-            modal(button("Edit payment FP-001234"), pane -> {
+            modal(button("Edit payment P3"), pane -> {
                 TextField amount = ((GridPane) pane.getContent()).getChildren().stream()
                         .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
                 assertEquals("3245.67", amount.getText());
@@ -201,14 +215,14 @@ class LoanDetailsControllerTest {
                 click(pane, "Cancel");
             });
             assertEquals("$3,245.67", paymentCell(1, 1));
-            modal(button("Edit payment FP-001234"), pane -> {
+            modal(button("Edit payment P3"), pane -> {
                 ((GridPane) pane.getContent()).getChildren().stream().filter(TextField.class::isInstance)
                         .map(TextField.class::cast).findFirst().orElseThrow().setText("600");
                 ((DatePicker) pane.lookup(".date-picker")).setValue(LocalDate.of(2025, 7, 1));
                 click(pane, "Save changes");
             });
             assertEquals("Showing 1-3 of 3", text("paymentsCount"));
-            assertEquals("FP-001234", paymentCell(3, 4));
+            assertEquals("P3", paymentCell(3, 3));
             assertEquals("$600.00", paymentCell(3, 1));
             assertEquals("01/07/2025", paymentCell(3, 0));
             return null;
@@ -218,13 +232,13 @@ class LoanDetailsControllerTest {
     @Test void deletionRequiresConfirmationAndLastDeletionShowsEmptyState() throws Exception {
         JavaFxTestSupport.run(() -> {
             node("paymentsTab", Button.class).fire();
-            modal(button("Delete payment FP-001234"), pane -> {
+            modal(button("Delete payment P3"), pane -> {
                 assertEquals("Showing 1-3 of 3", text("paymentsCount"));
                 assertTrue(((Label) pane.lookup(".content.label")).getText().contains("$3,245.67"));
                 click(pane, "Cancel");
             });
             assertEquals("Showing 1-3 of 3", text("paymentsCount"));
-            for (String id : List.of("FP-001234", "FP-001233", "FP-001232")) {
+            for (String id : List.of("P3", "P2", "P1")) {
                 modal(button("Delete payment " + id), pane -> click(pane, "OK"));
             }
             assertEquals("Showing 0 of 0", text("paymentsCount"));

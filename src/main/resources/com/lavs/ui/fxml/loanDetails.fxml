@@ -15,7 +15,6 @@
             <String fx:id="coborrowerHoverStyle" fx:value="-fx-background-color: #eeecff;" />
             <String fx:id="coborrowerDeleteHoverStyle" fx:value="-fx-background-color: #fff0f2;" />
             <String fx:id="paymentCellStyle" fx:value="-fx-font-size: 11; -fx-text-fill: #55558d; -fx-padding: 12 18;" />
-            <String fx:id="paymentBadgeStyle" fx:value="-fx-background-color: #d9f3ec; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-padding: 3 12; -fx-font-size: 11;" />
             <String fx:id="paymentRowStyle" fx:value="-fx-border-color: #edf0fc transparent transparent transparent; -fx-border-width: 1 0 0 0; -fx-min-height: 44;" />
       </fx:define>
       <HBox alignment="CENTER_LEFT" spacing="12">
@@ -136,17 +135,16 @@
                         style="-fx-background: white; -fx-background-color: transparent; -fx-background-insets: 0; -fx-border-width: 0; -fx-padding: 0; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;">
                         <GridPane fx:id="coborrowersTable" styleClass="coborrowers-table" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6;">
                               <columnConstraints>
-                                    <ColumnConstraints percentWidth="25" /><ColumnConstraints percentWidth="14" />
-                                    <ColumnConstraints percentWidth="16" /><ColumnConstraints percentWidth="27" />
-                                    <ColumnConstraints percentWidth="11" /><ColumnConstraints percentWidth="7" />
+                                    <ColumnConstraints percentWidth="30" /><ColumnConstraints percentWidth="17" />
+                                    <ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="26" />
+                                    <ColumnConstraints percentWidth="10" />
                               </columnConstraints>
-                              <Region styleClass="coborrowers-table-header" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="6" maxWidth="Infinity" maxHeight="Infinity" mouseTransparent="true"  style="-fx-background-color: #f2f6ff; -fx-background-radius: 6 6 0 0;" />
+                              <Region styleClass="coborrowers-table-header" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="5" maxWidth="Infinity" maxHeight="Infinity" mouseTransparent="true"  style="-fx-background-color: #f2f6ff; -fx-background-radius: 6 6 0 0;" />
                               <Label styleClass="coborrowers-column-heading" text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6; -fx-padding: 8 0;" />
-                              <Label styleClass="coborrowers-column-heading" text="Relationship" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Customer ID" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
                               <Label styleClass="coborrowers-column-heading" text="Phone" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
                               <Label styleClass="coborrowers-column-heading" text="Email" GridPane.columnIndex="3" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
-                              <Label styleClass="coborrowers-column-heading" text="Status" GridPane.columnIndex="4" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
-                              <Label styleClass="coborrowers-column-heading" text="Actions" GridPane.columnIndex="5" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
+                              <Label styleClass="coborrowers-column-heading" text="Actions" GridPane.columnIndex="4" GridPane.rowIndex="0" style="-fx-font-weight: bold; -fx-translate-x: 16; -fx-font-size: 11px; -fx-text-fill: #747ba6;" />
                         </GridPane>
                   </ScrollPane>
             </VBox>
@@ -209,11 +207,11 @@
                   </HBox>
                   <ScrollPane fitToWidth="true" style="-fx-background: white; -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-width: 0;" VBox.vgrow="ALWAYS">
                         <GridPane fx:id="paymentRows">
-                              <columnConstraints><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="25" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="17" /><ColumnConstraints percentWidth="7" /></columnConstraints>
-                              <Region GridPane.columnSpan="6" GridPane.rowIndex="0" style="-fx-background-color: #f2f6ff;" />
-                              <Label text="Date" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Amount" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Type" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Status" GridPane.columnIndex="3" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Reference" GridPane.columnIndex="4" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
+                              <columnConstraints><ColumnConstraints percentWidth="20" /><ColumnConstraints percentWidth="20" /><ColumnConstraints percentWidth="22" /><ColumnConstraints percentWidth="23" /><ColumnConstraints percentWidth="15" /></columnConstraints>
+                              <Region GridPane.columnSpan="5" GridPane.rowIndex="0" style="-fx-background-color: #f2f6ff;" />
+                              <Label text="Date" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Amount paid" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Repayment ID" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" /><Label text="Payment ID" GridPane.columnIndex="3" GridPane.rowIndex="0" style="-fx-padding: 12 18; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
 
-                              <Label text="Actions" GridPane.columnIndex="5" GridPane.rowIndex="0" GridPane.halignment="CENTER" style="-fx-padding: 12 8; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
+                              <Label text="Actions" GridPane.columnIndex="4" GridPane.rowIndex="0" GridPane.halignment="CENTER" style="-fx-padding: 12 8; -fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #747ba6;" />
                         </GridPane>
                   </ScrollPane>
                   <Label fx:id="paymentsCount" style="-fx-padding: 4 18 16 18; -fx-font-size: 11; -fx-text-fill: #747ba6;" />

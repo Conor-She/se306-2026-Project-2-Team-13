@@ -125,7 +125,11 @@ public class DashboardController {
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
         customersViewController.setCustomerService(service);
-        loansViewController.setCustomerPreviews(customersViewController::customerPreviews);
+        loansViewController.setCustomerService(service);
+    }
+
+    public void setLoanBrowsingService(com.lavs.business.LoanBrowsingService service) {
+        loansViewController.setLoanBrowsingService(service);
     }
 
     public void setLoanSubmissionService(com.lavs.business.LoanSubmissionService service) {

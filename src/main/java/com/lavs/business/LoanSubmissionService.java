@@ -89,6 +89,11 @@ public class LoanSubmissionService {
         return new SavedLoan(loanId, snapshot, created.getSchedule());
     }
 
+    /** Uses the same live borrower checks as submission for the wizard's prerequisite notice. */
+    public void validatePrerequisites(String customerId) {
+        loanService.validatePrerequisites(customerId);
+    }
+
     // Everything about the co-borrowers that can be checked before the loan exists
     private void checkCoBorrowers(LoanDraft draft) {
         String primaryId = draft.primaryBorrower.customerId();

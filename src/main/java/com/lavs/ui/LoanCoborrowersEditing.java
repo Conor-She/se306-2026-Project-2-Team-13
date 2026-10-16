@@ -10,7 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 
-/** Editable sample co-borrowers, retained per loan for this controller's lifetime. */
+/** Displays backend co-borrowers and supports temporary edits in the current view. */
 final class LoanCoborrowersEditing {
     private final GridPane table;
     private final Map<String, List<Map<String, String>>> sessions = new HashMap<>();
@@ -29,11 +29,34 @@ final class LoanCoborrowersEditing {
     }
 
     void select(String loanId) {
-        records = sessions.computeIfAbsent(loanId, id -> new ArrayList<>(List.of(
-                sample("Michael", "Johnson", "Brother", "021 987 6543", "michael.johnson@email.com"),
-                sample("Sophie", "Johnson", "Sister", "027 456 7890", "sophie.j@email.com"),
-                sample("Chris", "Johnson", "Parent", "021 123 4567", "chris.j@email.com"))));
+        records = sessions.computeIfAbsent(loanId, id -> new ArrayList<>());
         render();
+    }
+
+    void setRecords(String loanId, List<com.lavs.business.LoanBrowsingService.CoBorrowerDetails> coBorrowers) {
+        List<Map<String, String>> loaded = new ArrayList<>();
+        for (var coBorrower : coBorrowers) {
+            Map<String, String> record = new LinkedHashMap<>();
+            record.put("coBorrowerId", value(coBorrower.coBorrowerId()));
+            record.put("customerId", value(coBorrower.customerId()));
+            record.put("firstName", value(coBorrower.firstName()));
+            record.put("lastName", value(coBorrower.lastName()));
+            record.put("phone", value(coBorrower.phone()));
+            record.put("email", value(coBorrower.email()));
+            loaded.add(record);
+        }
+        sessions.put(loanId, loaded);
+        records = loaded;
+        render();
+    }
+
+    void setUnavailable(String loanId) {
+        sessions.put(loanId, new ArrayList<>());
+        records = sessions.get(loanId);
+        render();
+        table.getChildren().stream().filter(Label.class::isInstance).map(Label.class::cast)
+                .filter(label -> Integer.valueOf(1).equals(GridPane.getRowIndex(label)))
+                .findFirst().ifPresent(label -> label.setText("Co-borrowers could not be loaded."));
     }
 
     void add() { edit(null); }
@@ -45,7 +68,14 @@ final class LoanCoborrowersEditing {
                 CustomerRecordEditor.Kind.GUARANTOR, existing == null ? Map.of() : existing,
                 existing == null, saved -> {
                     if (existing == null) target.add(saved);
-                    else { existing.clear(); existing.putAll(saved); }
+                    else {
+                        String customerId = existing.get("customerId");
+                        String coBorrowerId = existing.get("coBorrowerId");
+                        existing.clear();
+                        existing.putAll(saved);
+                        if (customerId != null) existing.put("customerId", customerId);
+                        if (coBorrowerId != null) existing.put("coBorrowerId", coBorrowerId);
+                    }
                     if (records == target) render();
                 });
         String title = existing == null ? "Add co-borrower" : "Edit co-borrower";
@@ -75,7 +105,7 @@ final class LoanCoborrowersEditing {
         table.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
         if (records.isEmpty()) {
             Label empty = cell("No co-borrowers recorded for this loan.");
-            table.add(empty, 0, 1, 6, 1);
+            table.add(empty, 0, 1, 5, 1);
         }
         int row = 1;
         for (Map<String, String> record : records) {
@@ -83,8 +113,8 @@ final class LoanCoborrowersEditing {
             divider.getStyleClass().add("coborrowers-row");
             divider.setStyle(rowStyle);
             divider.setMouseTransparent(true);
-            table.add(divider, 0, row, 6, 1);
-            Label initials = cell(record.get("firstName").substring(0, 1) + record.get("lastName").substring(0, 1));
+            table.add(divider, 0, row, 5, 1);
+            Label initials = cell(initials(record));
             initials.setAlignment(Pos.CENTER);
             initials.setMinSize(32, 32);
             initials.setStyle("-fx-background-color: linear-gradient(to bottom right, #e8e7ff, #ceccff); -fx-background-radius: 20; -fx-text-fill: #4947a5; -fx-font-size: 11px;");
@@ -92,16 +122,9 @@ final class LoanCoborrowersEditing {
             person.setAlignment(Pos.CENTER_LEFT);
             person.setTranslateX(16);
             table.add(person, 0, row);
-            table.add(cell(record.get("relationship")), 1, row);
-            table.add(cell(record.get("phone")), 2, row);
-            table.add(cell(record.get("email")), 3, row);
-            Label status = cell(record.get("status"));
-            status.setMaxWidth(Region.USE_PREF_SIZE);
-            status.setWrapText(false);
-            GridPane.setFillWidth(status, false);
-            status.setStyle("-fx-background-color: " + ("Active".equals(record.get("status")) ? "#d9f3ec" : "#eeecff")
-                    + "; -fx-background-radius: 12; -fx-text-fill: #329e8a; -fx-padding: 3 14; -fx-font-size: 11px;");
-            table.add(status, 4, row);
+            table.add(cell(record.getOrDefault("customerId", "")), 1, row);
+            table.add(cell(record.getOrDefault("phone", "")), 2, row);
+            table.add(cell(record.getOrDefault("email", "")), 3, row);
             Button edit = iconButton("Edit co-borrower", name(record),
                     "M 3 14 L 13 4 L 17 8 L 7 18 L 2 19 Z M 11 6 L 15 10 M 14 3 L 16 1 L 20 5 L 18 7");
             edit.setOnAction(event -> edit(record));
@@ -114,7 +137,7 @@ final class LoanCoborrowersEditing {
             actions.getStyleClass().add("coborrower-action-buttons");
             actions.setAlignment(Pos.CENTER_LEFT);
             actions.setMinWidth(Region.USE_PREF_SIZE);
-            table.add(actions, 5, row++);
+            table.add(actions, 4, row++);
         }
         table.getChildren().stream().filter(Label.class::isInstance)
                 .forEach(label -> label.setTranslateX(16));
@@ -145,9 +168,13 @@ final class LoanCoborrowersEditing {
         label.setStyle("-fx-font-size: 12px; -fx-text-fill: #55558d; -fx-padding: 10 0;");
         return label;
     }
-    private static String name(Map<String, String> record) { return record.get("firstName") + " " + record.get("lastName"); }
-    private static Map<String, String> sample(String first, String last, String relationship, String phone, String email) {
-        return new LinkedHashMap<>(Map.of("firstName", first, "lastName", last, "relationship", relationship,
-                "phone", phone, "email", email, "status", "Active"));
+    private static String name(Map<String, String> record) {
+        return (value(record.get("firstName")) + " " + value(record.get("lastName"))).strip();
     }
+    private static String initials(Map<String, String> record) {
+        String first = value(record.get("firstName"));
+        String last = value(record.get("lastName"));
+        return (first.isEmpty() ? "" : first.substring(0, 1)) + (last.isEmpty() ? "" : last.substring(0, 1));
+    }
+    private static String value(String value) { return value == null ? "" : value; }
 }

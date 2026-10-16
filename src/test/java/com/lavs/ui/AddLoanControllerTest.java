@@ -193,6 +193,66 @@ class AddLoanControllerTest {
         });
     }
 
+    @Test void primaryAndCoborrowerPickersSearchAllBackendCustomersForEachQuery() throws Exception {
+        FXMLLoader[] loader = new FXMLLoader[1];
+        AddLoanController[] controller = new AddLoanController[1];
+        JavaFxTestSupport.run(() -> {
+            loader[0] = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            loader[0].load();
+            controller[0] = loader[0].getController();
+            var gateway = new com.lavs.data.FakeMainframeGateway();
+            gateway.createCustomer(new com.lavs.model.Customer("C101", "", "Baba", "Lala", null, "NZ"));
+            gateway.createCustomer(new com.lavs.model.Customer("C102", "", "a", "a", null, "NZ"));
+            controller[0].configure(List.of(), () -> {});
+            controller[0].setCustomerSearchService(new com.lavs.business.CustomerService(gateway), Runnable::run);
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("Baba");
+            return null;
+        });
+
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals("Baba Lala", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("a a");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals(1, results.getItems().size());
+            assertEquals("a a", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("Baba");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals("Baba Lala", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            controller[0].setPrimaryBorrower((CustomersController.CustomerSummary) results.getItems().get(0));
+            ((TextField) loader[0].getNamespace().get("coborrowerSearch")).setText("a a");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("coborrowerResults");
+            assertEquals(1, results.getItems().size());
+            assertEquals("a a", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("coborrowerSearch")).setText("Baba");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("coborrowerResults");
+            assertTrue(results.getItems().isEmpty(), "The primary borrower cannot be selected as a co-borrower");
+            controller[0].dispose();
+            return null;
+        });
+    }
+
+    private static void awaitCustomerSearch() throws InterruptedException {
+        Thread.sleep(500); // Let the 300 ms type-ahead debounce and FX result update complete.
+    }
+
     /**
      * A failed save shows a clear message, leaves the form usable, and a retry can succeed
      * without saving twice
