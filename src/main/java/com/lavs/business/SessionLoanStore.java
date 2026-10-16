@@ -43,4 +43,9 @@ public class SessionLoanStore {
     }
 
     public List<SavedLoan> getLoans() { return List.copyOf(loans); }
+
+    public List<String> getNotes(String loanId) {
+        return loans.stream().filter(loan -> loan.loanId().equals(loanId))
+                .findFirst().map(loan -> List.copyOf(loan.draft().notes)).orElse(List.of());
+    }
 }
