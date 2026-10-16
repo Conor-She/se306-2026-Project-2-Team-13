@@ -28,6 +28,22 @@ public class CustomerService {
         this.gateway = Objects.requireNonNull(gateway, "gateway must not be null");
     }
 
+    public List<com.lavs.model.CustomerNote> getNotes(String customerId) {
+        return new CustomerNoteService(gateway).getNotes(customerId);
+    }
+
+    public com.lavs.model.CustomerNote addNote(String customerId, String text, String type) {
+        return new CustomerNoteService(gateway).addNote(customerId, text, type);
+    }
+
+    public com.lavs.model.CustomerNote updateNote(com.lavs.model.CustomerNote note) {
+        return new CustomerNoteService(gateway).updateNote(note);
+    }
+
+    public void deleteNote(String customerId, String noteId) {
+        new CustomerNoteService(gateway).deleteNote(customerId, noteId);
+    }
+
     /** Returns previews matching the gateway's search rules. */
     public List<CustomerPreview> search(String query) {
         Objects.requireNonNull(query, "query must not be null");

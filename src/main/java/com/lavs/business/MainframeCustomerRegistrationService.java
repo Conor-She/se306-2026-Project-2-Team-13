@@ -19,6 +19,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
     private String customerId;
     private int addressIndex;
     private int documentIndex;
+    private int noteIndex;
 
     public MainframeCustomerRegistrationService(MainframeGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway);
@@ -29,7 +30,6 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         if (!draft.phones.isEmpty()) errors.add(new ValidationError(1, "", "Phone saving is not available yet. Remove phone entries to continue."));
         if (!draft.emails.isEmpty()) errors.add(new ValidationError(1, "", "Email saving is not available yet. Remove email entries to continue."));
         if (!draft.employers.isEmpty()) errors.add(new ValidationError(2, "", "Employer saving is not available yet. Remove employer entries to continue."));
-        if (!draft.notes.isEmpty()) errors.add(new ValidationError(3, "", "Note saving is not available yet. Remove notes to continue."));
         return List.copyOf(errors);
     }
 
@@ -38,7 +38,8 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         if (!errors.isEmpty()) throw new RegistrationException(errors);
         // Keep confirmed progress so retrying child records does not create another customer.
         if (pending != null && (!pending.personal.equals(draft.personal)
-                || !pending.addresses.equals(draft.addresses) || !pending.documents.equals(draft.documents))) {
+                || !pending.addresses.equals(draft.addresses) || !pending.documents.equals(draft.documents)
+                || !pending.notes.equals(draft.notes))) {
             throw failure("Customer " + customerId + " already exists. Restore the submitted details before retrying the remaining records.");
         }
         try {
@@ -63,6 +64,11 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
                         d.get("documentType"), LocalDate.parse(d.get("uploadDate"))));
                 documentIndex++;
             }
+            var notes = new CustomerNoteService(gateway);
+            while (noteIndex < draft.notes.size()) {
+                notes.addNote(customerId, draft.notes.get(noteIndex).get("text"));
+                noteIndex++;
+            }
         } catch (RuntimeException exception) {
             RegistrationException failure = failure(customerId == null
                     ? "Customer creation could not be confirmed. Check the organisation ID, connection and customer list before retrying."
@@ -73,7 +79,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         String result = customerId;
         customerId = null;
         pending = null;
-        addressIndex = documentIndex = 0;
+        addressIndex = documentIndex = noteIndex = 0;
         return result;
     }
 

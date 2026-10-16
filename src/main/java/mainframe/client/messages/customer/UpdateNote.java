@@ -28,7 +28,7 @@ public class UpdateNote implements Message {
         if (response.getStatus().getWasSuccessful()) {
             _customer = response.getValue("customer");
             String idValue = response.getValue("id");
-            _id = idValue == null ? null : Long.parseLong(idValue);
+            _id = idValue == null ? _id : Long.parseLong(idValue);
             _type = response.getValue("type");
             _author = response.getValue("author");
             _lines = response.getValue("lines");

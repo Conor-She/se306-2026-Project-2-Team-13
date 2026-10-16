@@ -53,7 +53,8 @@ public interface MainframeGateway {
     // Manage Notes, Documents & Guarantors
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);
-    void deleteNote(String noteId);
+    void deleteNote(String customerId, String noteId);
+    List<CustomerNote> getNotes(String customerId);
     List<CustomerDocument> getDocuments(String customerId);
     CustomerDocument addDocument(CustomerDocument document);
     CustomerDocument updateDocument(CustomerDocument document);
