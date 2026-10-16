@@ -113,12 +113,20 @@ final class CustomerDetailsEditing {
 
     private static String text(String value) { return value == null ? "" : value; }
 
-    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    void addLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanWithSchedule saved) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
-        var draft = loan.draft();
-        target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
-                "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"), "status", draft.details.get("status")));
+        var loan = saved.getLoan();
+        target.records.get(Kind.LOAN).add(values("id", loan.getLoanId(), "type", titleCase(loan.getType().name()),
+                "amount", Double.toString(loan.getPrincipal()), "rate", Double.toString(loan.getInterestRate()),
+                "status", titleCase(loan.getStatus().name())));
         if (state == target) render();
+    }
+
+    private static String titleCase(String value) {
+        String[] words = value.toLowerCase(Locale.ROOT).split("_");
+        return Arrays.stream(words).filter(word -> !word.isEmpty())
+                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 
     void editDetails(Kind kind) {

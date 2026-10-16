@@ -89,6 +89,8 @@ public class Main extends Application {
                 Parent dashboard = dashboardLoader.load();
                 DashboardController dashboardController = dashboardLoader.getController();
                 dashboardController.setCustomerService(new com.lavs.business.CustomerService(gateway));
+                dashboardController.setLoanBrowsingService(new com.lavs.business.LoanBrowsingService(gateway));
+                dashboardController.setLoanCreationService(new com.lavs.business.LoanCreationService(gateway));
                 dashboardController.setRegistrationServiceFactory(
                         () -> new com.lavs.business.MainframeCustomerRegistrationService(gateway));
                 dashboardController.configure(loginName[0], () -> {

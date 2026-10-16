@@ -151,6 +151,12 @@ public class LoanService {
                 customerId, gateway.getEmployers(customerId), gateway.getGuarantors(customerId));
     }
 
+    /** Checks whether the backend customer has the records required to create a loan. */
+    public void validatePrerequisites(String customerId) {
+        requireNotBlank(customerId, "customerId");
+        checkPrerequisites(customerId);
+    }
+
     private RepaymentCalculator calculatorFor(Loan loan) {
         RepaymentCalculator calculator = calculators.get(loan.getType());
         if (calculator == null) {

@@ -9,6 +9,7 @@ import com.lavs.business.LoanPrerequisiteChecker;
 import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
 import com.lavs.business.LoanSummary;
+import com.lavs.data.MainframeException;
 import com.lavs.model.Repayment;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
@@ -18,7 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 
-/** Three-step loan wizard. Persistence is not yet connected to the sample loan list. */
+/** Three-step loan wizard. Loan persistence is provided by the owning LoansController. */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
@@ -52,9 +53,16 @@ public class AddLoanController {
     private List<CustomersController.CustomerSummary> customers = List.of();
     private Runnable onCancel = () -> {};
     private java.util.function.Consumer<LoanDraft> onSave;
+    private java.util.function.Consumer<String> prerequisiteValidator =
+            new StubLoanPrerequisiteService()::validate;
     private boolean saved;
 
     public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
+
+    public void setPrerequisiteValidator(java.util.function.Consumer<String> validator) {
+        if (validator != null) prerequisiteValidator = validator;
+        refreshPrerequisiteNotice();
+    }
 
     @FXML private void initialize() {
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -213,9 +221,11 @@ public class AddLoanController {
                 next.setDisable(true);
                 onSave.accept(draft.copy());
                 saved = true;
-            } catch (IllegalArgumentException exception) {
+            } catch (RuntimeException exception) {
                 next.setDisable(false);
-                showMessage(exception.getMessage());
+                String reason = exception.getMessage();
+                showMessage(reason == null || reason.isBlank()
+                        ? "Unable to save the loan. Please try again." : reason);
             }
         } else {
             int target = editingReview ? 2 : step + 1;
@@ -386,7 +396,7 @@ public class AddLoanController {
     private String prerequisiteError() {
         if (draft.primaryBorrower == null) return null;
         try {
-            prerequisiteService.validate(draft.primaryBorrower.customerId());
+            prerequisiteValidator.accept(draft.primaryBorrower.customerId());
             return null;
         } catch (LoanPrerequisiteException exception) {
             if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage()))
@@ -397,6 +407,9 @@ public class AddLoanController {
                         + "Add at least one alternate contact to this customer's record before continuing with the loan.";
             return draft.primaryBorrower.name() + " has no employer recorded and needs a guarantor. "
                     + "Add a guarantor to this customer's record before continuing with the loan.";
+        } catch (MainframeException exception) {
+            return "Could not check " + draft.primaryBorrower.name()
+                    + "'s loan requirements. Check the mainframe connection and try again.";
         }
     }
 

@@ -1,5 +1,13 @@
 package com.lavs.ui;
 
+import com.lavs.business.CustomerService;
+import com.lavs.business.LoanBrowsingService;
+import com.lavs.business.LoanCreationService;
+import com.lavs.data.FakeMainframeGateway;
+import com.lavs.model.Address;
+import com.lavs.model.Customer;
+import com.lavs.model.Employer;
+import com.lavs.model.Phone;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -12,6 +20,11 @@ class CustomerAddLoanNavigationTest {
     @Test void customerLoanPrefillsBorrowerAndCancelReturnsToLoansTab() throws Exception {
         JavaFxTestSupport.startToolkit();
         JavaFxTestSupport.run(() -> {
+            FakeMainframeGateway gateway = new FakeMainframeGateway();
+            gateway.createCustomer(new Customer("C004", "Mr", "Ethan", "Chen", null, "NZ"));
+            gateway.addAddress(new Address(null, "C004", "5 Queen Street", "CBD", "Auckland", "1010", "NZ", true));
+            gateway.addPhone(new Phone(null, "C004", "0211234567", true, true));
+            gateway.addEmployer(new Employer(null, "C004", "Acme Limited", "Engineer", 90000, "Primary"));
             boolean[] discard = {false};
             AddLoanController[] editor = {null};
             var loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
@@ -28,6 +41,10 @@ class CustomerAddLoanNavigationTest {
                 catch (ReflectiveOperationException exception) { throw new RuntimeException(exception); }
             });
             Parent root = loader.load();
+            DashboardController dashboard = loader.getController();
+            dashboard.setCustomerService(new CustomerService(gateway));
+            dashboard.setLoanBrowsingService(new LoanBrowsingService(gateway));
+            dashboard.setLoanCreationService(new LoanCreationService(gateway));
             new Scene(root, 1100, 800);
             ((Button) loader.getNamespace().get("customersNav")).fire();
             Parent customersView = (Parent) loader.getNamespace().get("customersView");
@@ -78,18 +95,22 @@ class CustomerAddLoanNavigationTest {
             assertTrue(customersView.isVisible());
             assertTrue(customersView.lookup("#loansContent").isVisible());
             assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
+            assertEquals(1, gateway.findLoansByCustomer("C004").size());
+            var listed = new LoanBrowsingService(gateway).search("Ethan Chen").loans();
+            assertEquals(1, listed.size());
+            assertEquals("FAKE-LOAN-1", listed.get(0).loan().getLoanId());
             var table = (javafx.scene.control.TableView<?>) loansView.lookup("#loanTable");
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             ((LoansController) loader.getNamespace().get("loansViewController")).onShown();
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             details.setCustomer(new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
             assertFalse(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             details.setCustomer(ethan);
             details.showLoansTab();
             assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             return null;
         });
     }

@@ -8,7 +8,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicLong;
 
+import com.lavs.business.LoanBrowsingService;
 import com.lavs.model.Payment;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -54,7 +58,6 @@ public class LoanDetailsController {
     @FXML private GridPane paymentRows;
     @FXML private Label paymentsCount;
     @FXML private String paymentCellStyle;
-    @FXML private String paymentBadgeStyle;
     @FXML private String paymentRowStyle;
     @FXML private GridPane coborrowersTable;
     private LoanCoborrowersEditing coborrowers;
@@ -65,8 +68,11 @@ public class LoanDetailsController {
     @FXML private String coborrowerDeleteHoverStyle;
 
     private final ObservableList<Payment> payments = FXCollections.observableArrayList();
+    private final AtomicLong recordsSequence = new AtomicLong();
     private LoansController.LoanSummary loan;
-    private String loadedLoanId;
+    private boolean recordsUnavailable;
+    private LoanBrowsingService loanBrowsingService;
+    private Executor requestExecutor = ForkJoinPool.commonPool();
     private Runnable onBack;
 
     @FXML private void initialize() {
@@ -87,11 +93,52 @@ public class LoanDetailsController {
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
 
-        if (!loan.loanId().equals(loadedLoanId)) {
-            loadedLoanId = loan.loanId();
-            payments.setAll(samplePayments(loan.loanId()));
-            refreshPayments();
-        }
+        payments.clear();
+        recordsUnavailable = false;
+        refreshPayments();
+        loadLoanRecords(loan.loanId());
+    }
+
+    public void setLoanBrowsingService(LoanBrowsingService service) {
+        loanBrowsingService = service;
+    }
+
+    /** Allows tests to run backend requests deterministically. */
+    public void setRequestExecutor(Executor executor) {
+        requestExecutor = executor == null ? ForkJoinPool.commonPool() : executor;
+    }
+
+    private void loadLoanRecords(String loanId) {
+        long request = recordsSequence.incrementAndGet();
+        coborrowers.setRecords(loanId, List.of());
+        if (loanBrowsingService == null) return;
+
+        requestExecutor.execute(() -> {
+            try {
+                LoanBrowsingService.LoanRecords records = loanBrowsingService.recordsFor(loanId);
+                javafx.application.Platform.runLater(() -> {
+                    if (recordsSequence.get() != request || loan == null
+                            || !loanId.equals(loan.loanId())) return;
+                    payments.setAll(records.payments());
+                    recordsUnavailable = false;
+                    coborrowers.setRecords(loanId, records.coBorrowers());
+                    refreshPayments();
+                });
+            } catch (RuntimeException failure) {
+                javafx.application.Platform.runLater(() -> {
+                    if (recordsSequence.get() != request || loan == null
+                            || !loanId.equals(loan.loanId())) return;
+                    payments.clear();
+                    recordsUnavailable = true;
+                    refreshPayments();
+                    coborrowers.setUnavailable(loanId);
+                });
+            }
+        });
+    }
+
+    public void dispose() {
+        recordsSequence.incrementAndGet();
     }
 
     public LoansController.LoanSummary getLoan() {
@@ -217,9 +264,10 @@ public class LoanDetailsController {
         for (Payment payment : sorted) {
             Region background = new Region();
             background.setStyle(paymentRowStyle);
-            paymentRows.add(background, 0, row, 6, 1);
+            paymentRows.add(background, 0, row, 5, 1);
+            String repaymentId = payment.getRepaymentId() == null ? "Unlinked" : payment.getRepaymentId();
             String[] values = { payment.getPaymentDate().format(PAYMENT_DATE_FORMAT),
-                    formatAmount(payment.getAmountPaid()), "Principal & Interest", "Paid", payment.getPaymentId() };
+                    formatAmount(payment.getAmountPaid()), repaymentId, payment.getPaymentId() };
             javafx.scene.control.MenuItem edit = new javafx.scene.control.MenuItem("Edit payment");
             edit.setOnAction(event -> editPayment(payment));
             javafx.scene.control.MenuItem delete = new javafx.scene.control.MenuItem("Delete payment");
@@ -227,9 +275,8 @@ public class LoanDetailsController {
             javafx.scene.control.ContextMenu actions = new javafx.scene.control.ContextMenu(edit, delete);
             for (int column = 0; column < values.length; column++) {
                 Label cell = new Label(values[column]);
-                cell.setStyle(column == 3 ? paymentBadgeStyle : paymentCellStyle);
-                cell.setMaxWidth(column == 3 ? Region.USE_PREF_SIZE : Double.MAX_VALUE);
-                if (column == 3) cell.setTranslateX(18);
+                cell.setStyle(paymentCellStyle);
+                cell.setMaxWidth(Double.MAX_VALUE);
                 cell.setTooltip(new Tooltip("Right-click to edit or delete this payment"));
                 cell.setOnContextMenuRequested(event -> actions.show(cell, event.getScreenX(), event.getScreenY()));
                 paymentRows.add(cell, column, row);
@@ -242,13 +289,15 @@ public class LoanDetailsController {
             buttons.setAlignment(Pos.CENTER_RIGHT);
             buttons.setMinWidth(Region.USE_PREF_SIZE);
             buttons.setPadding(new Insets(0, 12, 0, 0));
-            paymentRows.add(buttons, 5, row);
+            paymentRows.add(buttons, 4, row);
             row++;
         }
         if (sorted.isEmpty()) {
-            Label empty = new Label("No payments recorded for this loan.");
+            Label empty = new Label(recordsUnavailable
+                    ? "Payments could not be loaded."
+                    : "No payments recorded for this loan.");
             empty.setStyle(paymentCellStyle);
-            paymentRows.add(empty, 0, 1, 6, 1);
+            paymentRows.add(empty, 0, 1, 5, 1);
         }
         paymentsCount.setText(sorted.isEmpty() ? "Showing 0 of 0"
                 : "Showing 1-" + sorted.size() + " of " + sorted.size());
@@ -270,16 +319,6 @@ public class LoanDetailsController {
         button.setTooltip(new Tooltip(accessibleText));
         button.setStyle(coborrowerActionStyle);
         return button;
-    }
-
-    private List<Payment> samplePayments(String loanId) {
-        return List.of(
-                new Payment("FP-001232", loanId, null,
-                        LocalDate.of(2025, 8, 1), 3245.67),
-                new Payment("FP-001233", loanId, null,
-                        LocalDate.of(2025, 8, 15), 3245.67),
-                new Payment("FP-001234", loanId, null,
-                        LocalDate.of(2025, 9, 1), 3245.67));
     }
 
     private boolean isPositiveAmount(String value) {

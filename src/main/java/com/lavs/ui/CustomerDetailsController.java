@@ -154,8 +154,8 @@ public class CustomerDetailsController {
         customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
-    public void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
-        editing.addSessionLoan(customer, loan);
+    public void addLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanWithSchedule loan) {
+        editing.addLoan(customer, loan);
     }
     public void setOnBack(Runnable onBack) { this.onBack = onBack; }
     public void setOnAddLoan(Consumer<CustomersController.CustomerSummary> onAddLoan) {

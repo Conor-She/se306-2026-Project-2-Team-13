@@ -14,8 +14,9 @@
                         style="-fx-cursor: hand; -fx-padding: 9 16; -fx-background-radius: 7; -fx-border-radius: 7; -fx-font-size: 15px; -fx-background-color: #f8f40c; -fx-text-fill: black; -fx-border-color: #b6b309; -fx-font-weight: bold;"/>
             </HBox>
             <TextField fx:id="searchField"
-                  promptText="Search by loan ID, customer ID, status or amount"
-                  accessibleText="Search by loan ID, customer ID, status or amount"
+                  promptText="Search by loan ID, customer name or customer ID"
+                  accessibleText="Search by loan ID, customer name or customer ID"
+                  onAction="#searchLoans"
                   minHeight="56" prefHeight="56" maxHeight="56"
                   style="-fx-font-size: 20; -fx-padding: 12 16;" />
             <Label fx:id="resultsHeading" style="-fx-font-size: 20; -fx-font-weight: bold;" />
