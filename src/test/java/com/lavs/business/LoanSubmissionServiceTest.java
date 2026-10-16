@@ -299,7 +299,7 @@ class LoanSubmissionServiceTest {
         assertEquals(Loan.Status.NEW, failing.findLoansByCustomer("C001").get(0).getStatus());
     }
 
-        // Ported from SessionLoanStoreTest: the saved loan keeps its own copy of the draft
+    // The saved loan keeps its own copy of the draft, so later edits don't change it
     @Test
     void theSavedLoanKeepsItsOwnCopyOfTheDraft() {
         addEligibleCustomer(gateway);

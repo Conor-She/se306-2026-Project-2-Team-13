@@ -20,7 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 
-/** Three-step loan wizard. Persistence is not yet connected to the sample loan list. */
+/** Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the mainframe. */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
