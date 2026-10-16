@@ -110,7 +110,6 @@ public class LoansController {
             showList(true);
             onCancel.run();
         });
-        activeAddLoanController = controller;
         if (customerService != null) {
             controller.setCustomerSearchService(customerService, requestExecutor);
         }
@@ -140,6 +139,7 @@ public class LoansController {
         listView.setVisible(false);
         listView.setManaged(false);
         addLoanView = editor;
+        activeAddLoanController = controller;
         VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
         ((VBox) listView.getParent()).getChildren().add(editor);
         if (customer == null) controller.focusBorrowerSearch();

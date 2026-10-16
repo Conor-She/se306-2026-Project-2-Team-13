@@ -98,6 +98,18 @@ public class AddLoanController {
         inactiveNameStyle = stepName1.getStyle();
         primarySearchDelay.setOnFinished(event -> loadPrimaryCustomers(pendingPrimaryQuery, pendingPrimaryVersion));
         coborrowerSearchDelay.setOnFinished(event -> loadCoborrowers(pendingCoborrowerQuery, pendingCoborrowerVersion));
+        customerSearch.setOnAction(event -> {
+            searchCustomers();
+            primarySearchDelay.stop();
+            if (customerService != null && !customerSearch.getText().isBlank())
+                loadPrimaryCustomers(pendingPrimaryQuery, pendingPrimaryVersion);
+        });
+        coborrowerSearch.setOnAction(event -> {
+            searchCoborrowers();
+            coborrowerSearchDelay.stop();
+            if (customerService != null && !coborrowerSearch.getText().isBlank() && draft.coborrowers.size() < 3)
+                loadCoborrowers(pendingCoborrowerQuery, pendingCoborrowerVersion);
+        });
         coborrowerSearch.textProperty().addListener((obs, old, value) -> searchCoborrowers());
         coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value == null || draft.coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
@@ -210,6 +222,7 @@ public class AddLoanController {
         }
         pendingPrimaryQuery = query;
         pendingPrimaryVersion = request;
+        customerResults.getItems().clear();
         primarySearchDelay.playFromStart();
     }
 
@@ -444,6 +457,7 @@ public class AddLoanController {
         }
         pendingCoborrowerQuery = query;
         pendingCoborrowerVersion = request;
+        coborrowerResults.getItems().clear();
         coborrowerSearchDelay.playFromStart();
     }
 
@@ -460,7 +474,7 @@ public class AddLoanController {
                 javafx.application.Platform.runLater(() -> {
                     if (request != primarySearchVersion || !query.equals(text(customerSearch.getText()).strip())) return;
                     customerResults.getItems().clear();
-                    customerResults.setPlaceholder(new Label("Customer search is unavailable"));
+                    customerResults.setPlaceholder(new Label("Customer search is unavailable. Press Enter to retry."));
                 });
             }
         });
@@ -474,14 +488,14 @@ public class AddLoanController {
                     if (request != coborrowerSearchVersion
                             || !query.equals(text(coborrowerSearch.getText()).strip())) return;
                     coborrowerResults.getItems().setAll(found.stream().filter(this::eligibleCoborrower).toList());
-                    coborrowerResults.setPlaceholder(new Label("No customers found"));
+                    coborrowerResults.setPlaceholder(new Label("No eligible customers found"));
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
                     if (request != coborrowerSearchVersion
                             || !query.equals(text(coborrowerSearch.getText()).strip())) return;
                     coborrowerResults.getItems().clear();
-                    coborrowerResults.setPlaceholder(new Label("Customer search is unavailable"));
+                    coborrowerResults.setPlaceholder(new Label("Customer search is unavailable. Press Enter to retry."));
                 });
             }
         });

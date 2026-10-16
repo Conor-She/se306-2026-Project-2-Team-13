@@ -121,7 +121,7 @@ public class DashboardController {
         showHome();
     }
 
-    public void dispose() { customersViewController.dispose(); }
+    public void dispose() { customersViewController.dispose(); loansViewController.dispose(); }
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
         customersViewController.setCustomerService(service);
