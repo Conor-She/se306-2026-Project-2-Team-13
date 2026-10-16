@@ -39,10 +39,6 @@ public class CustomersController {
         detailsViewController.setCustomerService(service);
     }
 
-    private List<CustomerSummary> availableCustomerPreviews = List.of();
-
-    public List<CustomerSummary> customerPreviews() { return availableCustomerPreviews; }
-
     public void dispose() {
         searchDelay.stop();
         searchVersion++;
@@ -161,7 +157,6 @@ public class CustomersController {
         task.setOnSucceeded(event -> {
             if (version != searchVersion) return;
             customers.setAll(task.getValue());
-            availableCustomerPreviews = List.copyOf(task.getValue());
             resultsHeading.setText("Search results (" + customers.size() + ")");
             customerTable.setPlaceholder(new Label("No customers found"));
         });
@@ -221,7 +216,7 @@ public class CustomersController {
         detailsViewController.setOnAddLoan(action);
     }
 
-    public void addSessionLoan(com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    public void addSessionLoan(com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         var borrower = loan.draft().primaryBorrower;
         CustomerSummary customer = customers.stream().filter(c -> c.customerId().equals(borrower.customerId()))
                 .findFirst().orElse(new CustomerSummary(borrower.customerId(), borrower.name(), "", ""));

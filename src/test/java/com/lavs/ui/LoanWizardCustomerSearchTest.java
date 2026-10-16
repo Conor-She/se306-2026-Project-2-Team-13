@@ -56,8 +56,8 @@ class LoanWizardCustomerSearchTest {
             }
             return null;
         });
-        if (earlierSearch) await(() -> ((CustomersController) loader.getNamespace().get("customersViewController"))
-                .customerPreviews().size() == 1);
+        if (earlierSearch) await(() -> ((TableView<?>) ((Parent) loader.getNamespace().get("customersView"))
+                .lookup("#customerTable")).getItems().size() == 1);
         JavaFxTestSupport.run(() -> {
             ((Button) loader.getNamespace().get("loansNav")).fire();
             ((LoansController) loader.getNamespace().get("loansViewController")).openAddLoan(null, () -> {});
@@ -94,7 +94,7 @@ class LoanWizardCustomerSearchTest {
         JavaFxTestSupport.run(() -> { assertTrue(results("coborrowerResults").getItems().isEmpty()); search("customerSearch", "Nobody"); return null; });
         await(() -> placeholder("customerResults").equals("No customers found"));
         JavaFxTestSupport.run(() -> { assertTrue(results("customerResults").getItems().isEmpty()); return null; });
-        verify(gateway).searchCustomers("Amelia");
+        verify(gateway, times(2)).searchCustomers("Amelia");
         verify(gateway, atLeastOnce()).searchCustomers("Ethan");
         verify(gateway, never()).searchCustomers("");
     }
@@ -118,9 +118,12 @@ class LoanWizardCustomerSearchTest {
             JavaFxTestSupport.run(() -> {
                 var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
                 root = loader.load();
+                new Scene(root, 1100, 800);
+                root.applyCss();
+                root.layout();
                 wizard = loader.getController();
                 wizard.configure(List.of(new CustomersController.CustomerSummary("CACHED", "Cached", "", "")), () -> {});
-                wizard.setCustomerService(service);
+                wizard.setCustomerSearchService(service, java.util.concurrent.ForkJoinPool.commonPool());
                 search("customerSearch", "old");
                 return null;
             });

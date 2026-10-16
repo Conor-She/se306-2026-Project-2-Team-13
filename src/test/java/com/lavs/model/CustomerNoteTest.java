@@ -1,6 +1,7 @@
 package com.lavs.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDate;
@@ -23,5 +24,19 @@ class CustomerNoteTest {
     void rejectsBlankNoteText() {
         assertThrows(IllegalArgumentException.class, () ->
                 new CustomerNote("N001", "C001", "", LocalDate.now()));
+    }
+
+    @Test
+    void allowsMissingIdBeforeANoteIsSaved() {
+        CustomerNote note = new CustomerNote(null, "C001", "New customer note",
+                LocalDate.of(2026, 10, 16));
+
+        assertNull(note.getNoteId());
+    }
+
+    @Test
+    void rejectsBlankNoteId() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new CustomerNote(" ", "C001", "New customer note", LocalDate.now()));
     }
 }

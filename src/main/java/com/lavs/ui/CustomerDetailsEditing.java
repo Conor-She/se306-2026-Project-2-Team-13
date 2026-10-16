@@ -4,6 +4,9 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Consumer;
+
+import com.lavs.ui.CustomerRecordEditor.Kind;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -30,11 +33,13 @@ final class CustomerDetailsEditing {
     private final Map<String, State> sessions = new HashMap<>();
     private State state;
     private boolean readOnly;
+    private com.lavs.business.CustomerService customerService;
 
     private static final class State {
         CustomersController.CustomerSummary summary;
         final Map<Kind, Map<String, String>> details = new EnumMap<>(Kind.class);
         final Map<Kind, List<Map<String, String>>> records = new EnumMap<>(Kind.class);
+        boolean persisted;
         State(CustomersController.CustomerSummary customer) {
             summary = customer;
             details.put(Kind.PERSONAL, values("title", "", "firstName", firstName(customer.name()),
@@ -43,6 +48,14 @@ final class CustomerDetailsEditing {
             for (Kind kind : List.of(Kind.CONTACT_RECORD, Kind.EMPLOYMENT, Kind.LOAN, Kind.NOTE,
                     Kind.DOCUMENT, Kind.GUARANTOR)) records.put(kind, new ArrayList<>());
 
+        }
+        State(State source) {
+            summary = source.summary;
+            persisted = source.persisted;
+            source.details.forEach((kind, values) -> details.put(kind, new LinkedHashMap<>(values)));
+            source.records.forEach((kind, values) -> records.put(kind, values.stream()
+                    .map(value -> (Map<String, String>) new LinkedHashMap<>(value))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new))));
         }
     }
 
@@ -57,6 +70,10 @@ final class CustomerDetailsEditing {
         this.contactLinks = contactLinks;
         this.primaryEmployerRow = primaryEmployerRow;
         this.onChange = onChange;
+    }
+
+    void setCustomerService(com.lavs.business.CustomerService customerService) {
+        this.customerService = Objects.requireNonNull(customerService);
     }
 
     CustomersController.CustomerSummary select(CustomersController.CustomerSummary customer) {
@@ -75,26 +92,28 @@ final class CustomerDetailsEditing {
                 "birthDate", customer.getDateOfBirth() == null ? "" : CustomerRecordEditor.BIRTH_DATE.format(customer.getDateOfBirth()),
                 "nationality", text(customer.getNationality())));
         var contacts = loaded.records.get(Kind.CONTACT_RECORD);
-        details.emails().forEach(email -> contacts.add(values("contactType", "Email", "value", text(email.getEmailAddress()),
-                "primary", Boolean.toString(email.isPrimary()))));
-        details.phones().forEach(phone -> contacts.add(values("contactType", "Phone", "value", text(phone.getNumber()),
-                "primary", Boolean.toString(phone.isPrimary()), "texts", Boolean.toString(phone.isSendTXT()))));
+        details.emails().forEach(email -> contacts.add(values("id", id(email.getEmailId()), "contactType", "Email",
+                "value", text(email.getEmailAddress()), "primary", Boolean.toString(email.isPrimary()))));
+        details.phones().forEach(phone -> contacts.add(values("id", id(phone.getPhoneId()), "contactType", "Phone",
+                "value", text(phone.getNumber()), "primary", Boolean.toString(phone.isPrimary()),
+                "texts", Boolean.toString(phone.isSendTXT()))));
         details.addresses().forEach(address -> contacts.add(values("contactType", "Address", "value",
                 java.util.stream.Stream.of(address.getStreet(), address.getSuburb(), address.getCity(), address.getPostCode(), address.getCountry())
                         .filter(value -> value != null && !value.isBlank()).collect(java.util.stream.Collectors.joining(", ")),
+                "id", id(address.getAddressId()), "street", text(address.getStreet()), "suburb", text(address.getSuburb()),
+                "city", text(address.getCity()), "postCode", text(address.getPostCode()), "country", text(address.getCountry()),
                 "primary", Boolean.toString(address.isMailing()))));
         for (String type : List.of("Email", "Phone", "Address")) {
             var entries = contacts.stream().filter(record -> type.equals(record.get("contactType"))).toList();
             var primary = entries.stream().filter(record -> Boolean.parseBoolean(record.get("primary")))
                     .findFirst().orElse(entries.isEmpty() ? null : entries.get(0));
             if (primary != null) {
-                loaded.details.get(Kind.CONTACT).put(contactKey(type), primary.get("value"));
-                if (type.equals("Phone")) loaded.details.get(Kind.CONTACT).put("texts", primary.get("texts"));
+                writePrimaryContact(loaded, type, primary);
                 contacts.remove(primary);
             }
         }
         details.employers().forEach(employer -> {
-            var record = values("employer", text(employer.getCompanyName()), "role", text(employer.getJobTitle()),
+            var record = values("id", id(employer.getEmployerId()), "employer", text(employer.getCompanyName()), "role", text(employer.getJobTitle()),
                     "employmentType", text(employer.getEmploymentType()), "income", Double.toString(employer.getIncome()));
             if (!loaded.details.containsKey(Kind.EMPLOYMENT)) loaded.details.put(Kind.EMPLOYMENT, record);
             else loaded.records.get(Kind.EMPLOYMENT).add(record);
@@ -102,18 +121,51 @@ final class CustomerDetailsEditing {
         var contact = loaded.details.get(Kind.CONTACT);
         loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
                 contact.get("phone"), contact.get("email"));
+        // The mainframe's loans come first. Loans added this session are kept only if the
+        // mainframe's list doesn't already have them, so a loan saved just now isn't shown twice.
+        var loanRecords = loaded.records.get(Kind.LOAN);
+        details.loans().forEach(loan -> loanRecords.add(loanRecord(loan)));
         State previous = sessions.get(customer.getCustomerId());
-        if (previous != null) loaded.records.get(Kind.LOAN).addAll(previous.records.get(Kind.LOAN));
+        if (previous != null) {
+            Set<String> knownIds = new HashSet<>();
+            loanRecords.forEach(record -> knownIds.add(record.get("id")));
+            previous.records.get(Kind.LOAN).stream()
+                    .filter(record -> !knownIds.contains(record.get("id")))
+                    .forEach(loanRecords::add);
+        }
         state = loaded;
         sessions.put(customer.getCustomerId(), loaded);
-        readOnly = true;
+        loaded.persisted = true;
+        readOnly = false;
         render();
         return loaded.summary;
     }
 
     private static String text(String value) { return value == null ? "" : value; }
+    private static String id(Long value) { return value == null ? "" : value.toString(); }
 
-    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    // A loan read from the mainframe, in the form the Loans tab shows. The mainframe doesn't
+    // keep whether a loan is a table or a reducing balance loan, so those show as Fixed or Floating.
+    private static Map<String, String> loanRecord(com.lavs.model.Loan loan) {
+        String type;
+        if (loan.getType() == null) {
+            type = loan.isFloating() ? "Floating" : "Fixed";
+        } else {
+            type = switch (loan.getType()) {
+                case TABLE_LOAN -> "Table Loan";
+                case REDUCING_BALANCE -> "Reducing Balance";
+                case INTEREST_ONLY -> "Interest Only";
+            };
+        }
+        String name = loan.getStatus().name();
+        return values("id", loan.getLoanId(), "type", type,
+                "amount", java.math.BigDecimal.valueOf(loan.getPrincipal()).toPlainString(),
+                "rate", java.math.BigDecimal.valueOf(loan.getInterestRate())
+                        .stripTrailingZeros().toPlainString(),
+                "status", name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT));
+    }
+
+    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
         var draft = loan.draft();
         target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
@@ -124,11 +176,7 @@ final class CustomerDetailsEditing {
     void editDetails(Kind kind) {
         State target = state;
         CustomerRecordEditor.create(window(), kind, target.details.get(kind), false, saved -> {
-            target.details.put(kind, saved);
-            Map<String, String> personal = target.details.get(Kind.PERSONAL);
-            Map<String, String> contact = target.details.get(Kind.CONTACT);
-            target.summary = new CustomersController.CustomerSummary(target.summary.customerId(), fullName(personal), contact.get("phone"), contact.get("email"));
-            if (state == target) { render(); onChange.accept(target.summary); }
+            save(target, draft -> draft.details.put(kind, saved), () -> {});
         }).show();
     }
 
@@ -141,63 +189,63 @@ final class CustomerDetailsEditing {
     private void editContact(String type, Map<String, String> record, Runnable afterSave) {
         State target = state;
         Map<String, String> original = record == null
-                ? values("contactType", type, "value", target.details.get(Kind.CONTACT).get(contactKey(type)),
-                        "primary", "true", "texts", target.details.get(Kind.CONTACT).getOrDefault("texts", "false"))
+                ? primaryContact(target, type)
                 : new LinkedHashMap<>(record);
         if (record != null) original.put("primary", "false");
         Dialog<Map<String, String>> dialog = CustomerRecordEditor.create(window(), Kind.CONTACT_RECORD, original, false, saved -> {
-            if (record == null) {
-                target.details.get(Kind.CONTACT).put(contactKey(type), saved.get("value"));
-                if (type.equals("Phone")) target.details.get(Kind.CONTACT).put("texts", saved.get("texts"));
-            } else {
-                record.clear(); record.putAll(saved);
-                if (Boolean.parseBoolean(saved.get("primary"))) promoteContact(target, type, record);
-            }
-            updateSummary(target);
-            if (state == target) { render(); afterSave.run(); }
+            normaliseAddress(saved, original);
+            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+            save(target, draft -> {
+                if (recordIndex < 0) writePrimaryContact(draft, type, saved);
+                else {
+                    Map<String, String> changed = draft.records.get(Kind.CONTACT_RECORD).get(recordIndex);
+                    changed.clear();
+                    changed.putAll(saved);
+                    if (Boolean.parseBoolean(saved.get("primary"))) promoteContact(draft, type, changed);
+                }
+            }, afterSave);
         });
         VBox form = (VBox) ((ScrollPane) dialog.getDialogPane().getContent()).getContent();
         Button delete = deleteButton("Delete contact", () -> confirmDelete("contact", () -> {
-            deleteContact(target, type, record);
+            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+            save(target, draft -> deleteContact(draft, type,
+                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)), afterSave);
             dialog.close();
-            if (state == target) { render(); afterSave.run(); }
         }));
         form.getChildren().add(delete);
         dialog.setHeaderText("Edit " + type.toLowerCase(Locale.ROOT));
         dialog.show();
     }
 
-    private void updateSummary(State target) {
+    private void updateSummary(State target, boolean notify) {
         Map<String, String> contact = target.details.get(Kind.CONTACT);
         target.summary = new CustomersController.CustomerSummary(target.summary.customerId(),
                 fullName(target.details.get(Kind.PERSONAL)), contact.get("phone"), contact.get("email"));
-        if (state == target) onChange.accept(target.summary);
+        if (notify && state == target) onChange.accept(target.summary);
     }
 
     private void promoteContact(State target, String type, Map<String, String> record) {
-        Map<String, String> primary = target.details.get(Kind.CONTACT);
-        String previous = primary.getOrDefault(contactKey(type), "");
-        String previousTexts = primary.getOrDefault("texts", "false");
-        String nextValue = record.get("value");
-        String nextTexts = record.getOrDefault("texts", "false");
-        primary.put(contactKey(type), nextValue);
-        if (type.equals("Phone")) primary.put("texts", nextTexts);
-        if (previous.isBlank()) target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
+        Map<String, String> previous = primaryContact(target, type);
+        writePrimaryContact(target, type, record);
+        if (previous.getOrDefault("value", "").isBlank()) {
+            target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
+        }
         else {
             record.clear();
-            record.putAll(values("contactType", type, "value", previous, "primary", "false", "texts", type.equals("Phone") ? previousTexts : "false"));
+            record.putAll(previous);
+            record.put("primary", "false");
         }
     }
 
     private void deleteContact(State target, String type, Map<String, String> record) {
         if (record != null) target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
         else {
-            target.details.get(Kind.CONTACT).put(contactKey(type), "");
-            if (type.equals("Phone")) target.details.get(Kind.CONTACT).put("texts", "false");
+            writePrimaryContact(target, type, values("contactType", type, "value", "",
+                    "primary", "true", "texts", "false"));
             target.records.get(Kind.CONTACT_RECORD).stream().filter(entry -> type.equals(entry.get("contactType")))
                     .findFirst().ifPresent(entry -> promoteContact(target, type, entry));
         }
-        updateSummary(target);
+        updateSummary(target, false);
     }
 
     private Button deleteButton(String accessibleText, Runnable action) {
@@ -222,9 +270,10 @@ final class CustomerDetailsEditing {
     void deleteEmployer() {
         State target = state;
         confirmDelete("employer", () -> {
-            if (target.records.get(Kind.EMPLOYMENT).isEmpty()) target.details.remove(Kind.EMPLOYMENT);
-            else target.details.put(Kind.EMPLOYMENT, target.records.get(Kind.EMPLOYMENT).remove(0));
-            if (state == target) render();
+            save(target, draft -> {
+                if (draft.records.get(Kind.EMPLOYMENT).isEmpty()) draft.details.remove(Kind.EMPLOYMENT);
+                else draft.details.put(Kind.EMPLOYMENT, draft.records.get(Kind.EMPLOYMENT).remove(0));
+            }, () -> {});
         });
     }
 
@@ -270,11 +319,13 @@ final class CustomerDetailsEditing {
         actions.setManaged(!readOnly);
         if (record != null) {
             State target = state;
+            int recordIndex = target.records.get(Kind.CONTACT_RECORD).indexOf(record);
             Button primary = new Button("Make primary");
             primary.setAccessibleText("Make primary " + value);
             primary.setOnAction(event -> {
-                promoteContact(target, type, record); updateSummary(target);
-                if (state == target) { render(); populateContacts(type, list); }
+                save(target, draft -> promoteContact(draft, type,
+                        draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)),
+                        () -> populateContacts(type, list));
             });
             actions.getChildren().add(primary);
         }
@@ -283,16 +334,23 @@ final class CustomerDetailsEditing {
             texts.setAccessibleText("Send TXT messages to " + value);
             texts.setSelected(Boolean.parseBoolean(record == null ? state.details.get(Kind.CONTACT).getOrDefault("texts", "false") : record.getOrDefault("texts", "false")));
             texts.setOnAction(event -> {
-                if (record == null) state.details.get(Kind.CONTACT).put("texts", Boolean.toString(texts.isSelected()));
-                else record.put("texts", Boolean.toString(texts.isSelected()));
+                State target = state;
+                int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+                save(target, draft -> {
+                    if (recordIndex < 0) draft.details.get(Kind.CONTACT).put("texts", Boolean.toString(texts.isSelected()));
+                    else draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)
+                            .put("texts", Boolean.toString(texts.isSelected()));
+                }, () -> populateContacts(type, list));
             });
             texts.setDisable(readOnly);
             text.getChildren().add(texts);
         }
         State target = state;
+        int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
         actions.getChildren().add(deleteButton("Delete " + value, () -> confirmDelete("contact", () -> {
-            deleteContact(target, type, record);
-            if (state == target) { render(); populateContacts(type, list); }
+            save(target, draft -> deleteContact(draft, type,
+                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)),
+                    () -> populateContacts(type, list));
         })));
         HBox row = new HBox(12, text, actions);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -304,22 +362,156 @@ final class CustomerDetailsEditing {
 
     private void editRecord(Kind kind, Map<String, String> record) {
         State target = state;
-        Map<String, String> draft = record == null ? new LinkedHashMap<>() : record;
-        if (record == null && (kind == Kind.NOTE || kind == Kind.DOCUMENT)) draft.put("date", LocalDate.now().toString());
-        CustomerRecordEditor.create(window(), kind, draft, record == null, saved -> {
-            if (record == null && kind == Kind.EMPLOYMENT && !target.details.containsKey(kind)) target.details.put(kind, saved);
-            else if (record == null) target.records.get(kind).add(saved);
-            else { record.clear(); record.putAll(saved); }
-            if (kind == Kind.CONTACT_RECORD) {
-                String type = saved.get("contactType");
-                if (Boolean.parseBoolean(saved.get("primary")) || target.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "").isBlank())
-                    promoteContact(target, type, saved);
-                updateSummary(target);
-            }
-            if (state == target) render();
+        Map<String, String> editorDraft = record == null ? new LinkedHashMap<>() : record;
+        if (record == null && (kind == Kind.NOTE || kind == Kind.DOCUMENT)) editorDraft.put("date", LocalDate.now().toString());
+        int recordIndex = record == null ? -1 : target.records.get(kind).indexOf(record);
+        CustomerRecordEditor.create(window(), kind, editorDraft, record == null, saved -> {
+            save(target, draft -> {
+                if (recordIndex < 0 && kind == Kind.EMPLOYMENT && !draft.details.containsKey(kind)) draft.details.put(kind, saved);
+                else if (recordIndex < 0) draft.records.get(kind).add(saved);
+                else {
+                    Map<String, String> changed = draft.records.get(kind).get(recordIndex);
+                    changed.clear();
+                    changed.putAll(saved);
+                }
+                if (kind == Kind.CONTACT_RECORD) {
+                    String type = saved.get("contactType");
+                    Map<String, String> changed = recordIndex < 0 ? saved : draft.records.get(kind).get(recordIndex);
+                    normaliseAddress(changed, editorDraft);
+                    if (Boolean.parseBoolean(saved.get("primary")) || draft.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "").isBlank())
+                        promoteContact(draft, type, changed);
+                }
+            }, () -> {});
         }, saved -> kind == Kind.LOAN && target.records.get(kind).stream()
                 .anyMatch(other -> other != record && other.get("id").equalsIgnoreCase(saved.get("id")))
                 ? Map.of("id", "This loan ID already exists for the customer.") : Map.of()).show();
+    }
+
+    private void save(State target, Consumer<State> change, Runnable afterSave) {
+        if (state != target) return;
+        State draft = new State(target);
+        change.accept(draft);
+        updateSummary(draft, false);
+        if (!target.persisted) {
+            state = draft;
+            sessions.put(draft.summary.customerId(), draft);
+            render();
+            onChange.accept(draft.summary);
+            afterSave.run();
+            return;
+        }
+        if (customerService == null) {
+            showSaveError(new IllegalStateException("Customer editing is not connected"));
+            return;
+        }
+        try {
+            com.lavs.model.CustomerDetails requested = toCustomerDetails(draft);
+            customerService.update(requested.customer(), requested.addresses(), requested.phones(),
+                    requested.emails(), requested.employers());
+            CustomersController.CustomerSummary updated = select(customerService.getById(
+                    new com.lavs.model.CustomerId(draft.summary.customerId())));
+            onChange.accept(updated);
+            afterSave.run();
+        } catch (RuntimeException failure) {
+            showSaveError(failure);
+        }
+    }
+
+    private void showSaveError(RuntimeException failure) {
+        Alert alert = new Alert(Alert.AlertType.ERROR,
+                "Your changes were not saved. Check the details and connection, then try again.", ButtonType.OK);
+        if (window() != null) alert.initOwner(window());
+        alert.setHeaderText("Customer changes could not be saved");
+        alert.setTitle("Save failed");
+        alert.getDialogPane().setId("customerSaveError");
+        alert.show();
+    }
+
+    private com.lavs.model.CustomerDetails toCustomerDetails(State source) {
+        String customerId = source.summary.customerId();
+        Map<String, String> personal = source.details.get(Kind.PERSONAL);
+        com.lavs.model.Customer customer = new com.lavs.model.Customer(customerId,
+                personal.get("title"), personal.get("firstName"), personal.get("lastName"),
+                LocalDate.parse(personal.get("birthDate"), CustomerRecordEditor.BIRTH_DATE),
+                personal.get("nationality"));
+        List<Map<String, String>> contacts = new ArrayList<>();
+        for (String type : List.of("Email", "Phone", "Address")) {
+            Map<String, String> primary = primaryContact(source, type);
+            if (!primary.getOrDefault("value", "").isBlank()) contacts.add(primary);
+        }
+        contacts.addAll(source.records.get(Kind.CONTACT_RECORD));
+        List<com.lavs.model.Address> addresses = contacts.stream()
+                .filter(record -> "Address".equals(record.get("contactType")))
+                .map(record -> address(record, customerId)).toList();
+        List<com.lavs.model.Phone> phones = contacts.stream()
+                .filter(record -> "Phone".equals(record.get("contactType")))
+                .map(record -> new com.lavs.model.Phone(longId(record.get("id")), customerId,
+                        record.get("value"), Boolean.parseBoolean(record.get("primary")),
+                        Boolean.parseBoolean(record.getOrDefault("texts", "false")))).toList();
+        List<com.lavs.model.Email> emails = contacts.stream()
+                .filter(record -> "Email".equals(record.get("contactType")))
+                .map(record -> new com.lavs.model.Email(longId(record.get("id")), customerId,
+                        record.get("value"), Boolean.parseBoolean(record.get("primary")))).toList();
+        List<Map<String, String>> employment = new ArrayList<>();
+        if (source.details.containsKey(Kind.EMPLOYMENT)) employment.add(source.details.get(Kind.EMPLOYMENT));
+        employment.addAll(source.records.get(Kind.EMPLOYMENT));
+        List<com.lavs.model.Employer> employers = employment.stream()
+                .map(record -> new com.lavs.model.Employer(longId(record.get("id")), customerId,
+                        record.get("employer"), record.get("role"), Double.parseDouble(record.get("income")),
+                        record.get("employmentType"))).toList();
+        return new com.lavs.model.CustomerDetails(customer, addresses, phones, emails, employers);
+    }
+
+    private static com.lavs.model.Address address(Map<String, String> record, String customerId) {
+        String structured = addressText(record);
+        boolean unchanged = structured.equals(record.getOrDefault("value", ""));
+        return new com.lavs.model.Address(longId(record.get("id")), customerId,
+                unchanged ? record.getOrDefault("street", "") : record.get("value"),
+                unchanged ? record.getOrDefault("suburb", "") : "",
+                unchanged ? record.getOrDefault("city", "") : "",
+                unchanged ? record.getOrDefault("postCode", "") : "",
+                unchanged ? record.getOrDefault("country", "") : "",
+                Boolean.parseBoolean(record.get("primary")));
+    }
+
+    private static Long longId(String value) {
+        return value == null || value.isBlank() ? null : Long.valueOf(value);
+    }
+
+    private static String addressText(Map<String, String> record) {
+        return java.util.stream.Stream.of("street", "suburb", "city", "postCode", "country")
+                .map(key -> record.getOrDefault(key, "")).filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static void normaliseAddress(Map<String, String> saved, Map<String, String> original) {
+        if (!"Address".equals(saved.get("contactType"))) return;
+        if (!Objects.equals(saved.get("value"), original.get("value"))) {
+            saved.put("street", saved.get("value"));
+            for (String key : List.of("suburb", "city", "postCode", "country")) saved.put(key, "");
+        }
+    }
+
+    private static Map<String, String> primaryContact(State source, String type) {
+        Map<String, String> contact = source.details.get(Kind.CONTACT);
+        Map<String, String> result = values("contactType", type,
+                "value", contact.getOrDefault(contactKey(type), ""), "primary", "true",
+                "texts", type.equals("Phone") ? contact.getOrDefault("texts", "false") : "false");
+        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country"))
+            result.put(key, contact.getOrDefault(primaryKey(type, key), ""));
+        return result;
+    }
+
+    private static void writePrimaryContact(State target, String type, Map<String, String> record) {
+        Map<String, String> contact = target.details.get(Kind.CONTACT);
+        contact.put(contactKey(type), record.getOrDefault("value", ""));
+        if (type.equals("Phone")) contact.put("texts", record.getOrDefault("texts", "false"));
+        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country"))
+            contact.put(primaryKey(type, key), record.getOrDefault(key, ""));
+    }
+
+    private static String primaryKey(String type, String key) {
+        return type.toLowerCase(Locale.ROOT) + "." + key;
     }
 
     private javafx.stage.Window window() {
@@ -395,9 +587,9 @@ final class CustomerDetailsEditing {
             ((SVGPath) edit.getGraphic()).setStrokeWidth(1.3);
             edit.setOnAction(event -> editRecord(kind, record));
             State target = state;
+            int recordIndex = target.records.get(kind).indexOf(record);
             Button delete = deleteButton("Delete " + title, () -> confirmDelete("employer", () -> {
-                target.records.get(kind).removeIf(entry -> entry == record);
-                if (state == target) render();
+                save(target, draft -> draft.records.get(kind).remove(recordIndex), () -> {});
             }));
             delete.setStyle(((Button) primaryEmployerRow.getChildren().get(2)).getStyle());
             ((SVGPath) delete.getGraphic()).setStrokeWidth(1.5);

@@ -36,6 +36,20 @@ class CustomerAddLoanNavigationTest {
             CustomersController customers = (CustomersController) loader.getNamespace().get("customersViewController");
             var details = getDetailsController(customers);
             var ethan = new CustomersController.CustomerSummary("C004", "Ethan Chen", "", "");
+            var gateway = new com.lavs.data.FakeMainframeGateway();
+            gateway.addAddress(new com.lavs.model.Address(1L, ethan.customerId(), "5 Queen St",
+                    "CBD", "Auckland", "1010", "NZ", true));
+            gateway.addPhone(new com.lavs.model.Phone(1L, ethan.customerId(), "0211234567",
+                    true, true));
+            gateway.addEmployer(new com.lavs.model.Employer(1L, ethan.customerId(), "Acme Ltd",
+                    "Engineer", 90000, "Full-time"));
+            LoansController loansController =
+                    (LoansController) loader.getNamespace().get("loansViewController");
+            loansController.setLoanBrowsingService(new com.lavs.business.LoanBrowsingService(gateway));
+            loansController.setRequestExecutor(Runnable::run);
+            loansController.setLoanSubmissionService(
+                    new com.lavs.business.LoanSubmissionService(gateway));
+            loansController.setSaveExecutor(Runnable::run);
             details.setCustomer(ethan);
             customers.showCustomerLoans();
             root.applyCss();
@@ -78,18 +92,18 @@ class CustomerAddLoanNavigationTest {
             assertTrue(customersView.isVisible());
             assertTrue(customersView.lookup("#loansContent").isVisible());
             assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             var table = (javafx.scene.control.TableView<?>) loansView.lookup("#loanTable");
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             ((LoansController) loader.getNamespace().get("loansViewController")).onShown();
-            assertEquals(11, table.getItems().size());
+            assertTrue(table.getItems().isEmpty());
             details.setCustomer(new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
             assertFalse(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             details.setCustomer(ethan);
             details.showLoansTab();
             assertTrue(customersView.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "SESSION-0001".equals(label.getText())));
+                    .map(Label.class::cast).anyMatch(label -> "FAKE-LOAN-1".equals(label.getText())));
             return null;
         });
     }

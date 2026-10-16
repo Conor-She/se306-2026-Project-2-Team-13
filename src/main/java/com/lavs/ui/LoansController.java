@@ -1,13 +1,20 @@
 package com.lavs.ui;
 
+import com.lavs.business.CustomerService;
+import com.lavs.business.LoanBrowsingService;
+import com.lavs.business.LoanSubmissionService;
+import com.lavs.model.Loan;
+import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
-
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -19,36 +26,74 @@ import javafx.scene.layout.VBox;
 
 /** Searchable loan list and navigation to the selected loan's details. */
 public class LoansController {
+    public static final String NOT_CONNECTED = "Connect to the mainframe to search loans";
+    public static final String SEARCH_PROMPT = "Enter a loan ID or customer name or ID";
+
     public record LoanSummary(String loanId, String customerId, String customerName,
             String status, String amount, String type) {
-        boolean matches(String query) {
-            return List.of(loanId, customerId, customerName, status, amount, type).stream()
-                    .anyMatch(value -> value.toLowerCase(Locale.ROOT).contains(query));
-        }
     }
+
     @FXML private TextField searchField;
     @FXML private Label resultsHeading;
     @FXML private TableView<LoanSummary> loanTable;
     @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
+
     private VBox addLoanView;
-    private AddLoanController addLoanController;
-    private final com.lavs.business.SessionLoanStore sessionLoans = new com.lavs.business.SessionLoanStore();
-    private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
-    private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
+    private AddLoanController activeAddLoanController;
+    private final ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
+    private final ExecutorService defaultRequestExecutor = Executors.newSingleThreadExecutor(task -> {
+        Thread thread = new Thread(task, "lavs-loan-search");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private Executor requestExecutor = defaultRequestExecutor;
+    private final AtomicLong searchSequence = new AtomicLong();
+    private LoanBrowsingService loanBrowsingService;
+    private CustomerService customerService;
+    private LoanSubmissionService submission;
+    private java.util.function.Consumer<LoanSubmissionService.SavedLoan> onSaved = loan -> {};
 
-    private com.lavs.business.CustomerService customerService;
+    // Saving talks to the mainframe, so in the app it runs on a background thread.
+    private Executor saveExecutor = task -> {
+        Thread thread = new Thread(task, "lavs-save-loan");
+        thread.setDaemon(true);
+        thread.start();
+    };
 
-    public void setCustomerService(com.lavs.business.CustomerService service) {
-        customerService = java.util.Objects.requireNonNull(service);
-        if (addLoanController != null) addLoanController.setCustomerService(service);
+    public void setOnSaved(java.util.function.Consumer<LoanSubmissionService.SavedLoan> onSaved) {
+        this.onSaved = onSaved;
     }
 
-    public void dispose() { if (addLoanController != null) addLoanController.dispose(); }
+    public void setCustomerService(CustomerService service) {
+        customerService = service;
+        if (activeAddLoanController != null && service != null) {
+            activeAddLoanController.setCustomerSearchService(service, requestExecutor);
+        }
+    }
 
-    public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
-        this.onSaved = onSaved;
+    public void setLoanSubmissionService(LoanSubmissionService submission) {
+        this.submission = submission;
+    }
+
+    public void setLoanBrowsingService(LoanBrowsingService service) {
+        loanBrowsingService = service;
+        detailsViewController.setLoanBrowsingService(service);
+        updateEmptyState();
+    }
+
+    /** Allows tests to run backend requests deterministically. */
+    public void setRequestExecutor(Executor executor) {
+        requestExecutor = executor == null ? defaultRequestExecutor : executor;
+        detailsViewController.setRequestExecutor(requestExecutor);
+        if (activeAddLoanController != null && customerService != null) {
+            activeAddLoanController.setCustomerSearchService(customerService, requestExecutor);
+        }
+    }
+
+    public void setSaveExecutor(Executor saveExecutor) {
+        this.saveExecutor = saveExecutor;
     }
 
     @FXML private void openAddLoan() throws java.io.IOException {
@@ -60,27 +105,41 @@ public class LoansController {
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
+        controller.setSaveExecutor(saveExecutor);
         controller.configure(List.of(), () -> {
             showList(true);
             onCancel.run();
         });
-        if (customerService != null) controller.setCustomerService(customerService);
+        if (customerService != null) {
+            controller.setCustomerSearchService(customerService, requestExecutor);
+        }
+        if (submission != null) {
+            controller.setPrerequisiteValidator(submission::validatePrerequisites);
+        }
         if (customer != null) controller.setPrimaryBorrower(customer);
         controller.setOnSave(draft -> {
-            var saved = sessionLoans.save(draft);
-            var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
-            loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
-                    draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),
-                    draft.details.get("loanType")));
-            onSaved.accept(saved);
-            onShown();
-            if (customer != null) onCancel.run();
+            if (submission == null) {
+                throw new IllegalStateException("Saving loans is not connected to the mainframe.");
+            }
+            // The slow part runs off the screen thread, and throws if the loan wasn't created.
+            var saved = submission.submit(draft);
+            // Only a loan that really exists on the mainframe reaches the screen.
+            AddLoanController.runOnFxThread(() -> {
+                onSaved.accept(saved);
+                showList(true);
+                if (customer != null) {
+                    onCancel.run();
+                } else {
+                    searchField.setText(saved.loanId());
+                    searchLoans();
+                }
+            });
         });
         showList(true);
         listView.setVisible(false);
         listView.setManaged(false);
         addLoanView = editor;
-        addLoanController = controller;
+        activeAddLoanController = controller;
         VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
         ((VBox) listView.getParent()).getChildren().add(editor);
         if (customer == null) controller.focusBorrowerSearch();
@@ -95,21 +154,11 @@ public class LoansController {
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));
         amountColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().amount()));
         typeColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().type()));
-        loans.setAll(loadLoans());
-        var filtered = new FilteredList<>(loans);
-        filtered.addListener((javafx.collections.ListChangeListener<LoanSummary>) change ->
-                resultsHeading.setText((searchField.getText().isBlank() ? "All loans (" : "Search results (") + filtered.size() + ")"));
-        var sorted = new SortedList<>(filtered);
-        sorted.comparatorProperty().bind(loanTable.comparatorProperty());
-        loanTable.setItems(sorted);
+        loanTable.setItems(loans);
         loanTable.getSortOrder().add(idColumn);
-        loanTable.setPlaceholder(new Label("No loans found"));
-        resultsHeading.setText("All loans (" + filtered.size() + ")");
-        searchField.textProperty().addListener((obs, oldValue, value) -> {
-            String query = value.strip().toLowerCase(Locale.ROOT);
-            filtered.setPredicate(loan -> loan.matches(query));
-            resultsHeading.setText((query.isEmpty() ? "All loans (" : "Search results (") + filtered.size() + ")");
-        });
+        resultsHeading.setText("Search loans");
+        updateEmptyState();
+        searchField.setOnAction(event -> searchLoans());
         loanTable.setRowFactory(table -> {
             TableRow<LoanSummary> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -120,31 +169,105 @@ public class LoansController {
         detailsViewController.setOnBack(this::showListAndFocusSearch);
     }
 
-    /** Replace this method with the backend loan-summary call when available. */
-    protected List<LoanSummary> loadLoans() {
-        return List.of(
-            new LoanSummary("L008", "C008", "Sophie Wilson", "Approved", "$10,000", "Table Loan"),
-            new LoanSummary("L003", "C003", "Charlotte Brown", "Pending", "$5,000", "Interest Only"),
-            new LoanSummary("L001", "C001", "Amelia Adams", "Approved", "$15,000", "Table Loan"),
-            new LoanSummary("L006", "C006", "Liam Patel", "Rejected", "$8,000", "Reducing Balance"),
-            new LoanSummary("L004", "C004", "Ethan Chen", "Pending", "$12,000", "Interest Only"),
-            new LoanSummary("L010", "C010", "Zoe Williams", "Approved", "$20,000", "Reducing Balance"),
-            new LoanSummary("L002", "C002", "Benjamin Baker", "Rejected", "$6,000", "Interest Only"),
-            new LoanSummary("L009", "C009", "William Wong", "Approved", "$18,000", "Reducing Balance"),
-            new LoanSummary("L005", "C005", "Isla Jones", "Pending", "$9,000", "Table Loan"),
-            new LoanSummary("L007", "C007", "Oliver Smith", "Approved", "$14,000", "Table Loan"));
+    @FXML private void searchLoans() {
+        String query = searchField.getText() == null ? "" : searchField.getText().strip();
+        long request = searchSequence.incrementAndGet();
+        loans.clear();
+
+        if (loanBrowsingService == null) {
+            resultsHeading.setText("Search loans");
+            loanTable.setPlaceholder(new Label(NOT_CONNECTED));
+            return;
+        }
+        if (query.isEmpty()) {
+            resultsHeading.setText("Search loans");
+            loanTable.setPlaceholder(new Label(SEARCH_PROMPT));
+            return;
+        }
+
+        resultsHeading.setText("Searching loans...");
+        loanTable.setPlaceholder(new Label("Searching loans..."));
+        requestExecutor.execute(() -> {
+            try {
+                LoanBrowsingService.LoanSearchResult result = loanBrowsingService.search(query);
+                Platform.runLater(() -> {
+                    if (searchSequence.get() != request) return;
+                    loans.setAll(result.loans().stream().map(LoansController::summaryOf).toList());
+                    resultsHeading.setText("Search results (" + loans.size() + ")");
+                    updateEmptyState();
+                    if (result.truncated()) {
+                        loanTable.setTooltip(new javafx.scene.control.Tooltip(
+                                "More customers matched than can be shown. Narrow your search."));
+                    } else {
+                        loanTable.setTooltip(null);
+                    }
+                    sortLoans();
+                });
+            } catch (RuntimeException failure) {
+                Platform.runLater(() -> {
+                    if (searchSequence.get() != request) return;
+                    loans.clear();
+                    resultsHeading.setText("Could not load loans. Press Enter to retry.");
+                    loanTable.setPlaceholder(new Label("Loan search is unavailable"));
+                });
+            }
+        });
+    }
+
+    private static LoanSummary summaryOf(LoanBrowsingService.LoanListing listing) {
+        Loan loan = listing.loan();
+        NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
+        String status = loan.getStatus() == null ? "Not recorded" : titleCase(loan.getStatus().name());
+        String type = loan.getType() == null ? "Not recorded" : titleCase(loan.getType().name());
+        return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), listing.customerName(), status,
+                currency.format(loan.getPrincipal()), type);
+    }
+
+    private static String titleCase(String value) {
+        String[] words = value.toLowerCase(Locale.ROOT).split("_");
+        StringBuilder result = new StringBuilder();
+        for (String word : words) {
+            if (!result.isEmpty()) result.append(' ');
+            result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return result.toString();
+    }
+
+    private void updateEmptyState() {
+        if (resultsHeading == null || loanTable == null) return;
+        if (loans.isEmpty()) {
+            if (loanBrowsingService == null) loanTable.setPlaceholder(new Label(NOT_CONNECTED));
+            else if (searchField == null || searchField.getText().isBlank())
+                loanTable.setPlaceholder(new Label(SEARCH_PROMPT));
+            else loanTable.setPlaceholder(new Label("No loans found for \"" + searchField.getText().strip() + "\""));
+        }
+    }
+
+    private void sortLoans() {
+        idColumn.setSortType(TableColumn.SortType.ASCENDING);
+        loanTable.getSortOrder().setAll(List.of(idColumn));
+        loanTable.sort();
     }
 
     public void onShown() {
         showList(true);
+        searchSequence.incrementAndGet();
         searchField.clear();
-        idColumn.setSortType(TableColumn.SortType.ASCENDING);
-        loanTable.getSortOrder().setAll(List.of(idColumn));
-        loanTable.sort();
+        loans.clear();
+        resultsHeading.setText("Search loans");
+        updateEmptyState();
+        sortLoans();
         focusSearch();
     }
 
-    private void openDetails(LoanSummary loan) {
+    public void dispose() {
+        searchSequence.incrementAndGet();
+        if (activeAddLoanController != null) activeAddLoanController.dispose();
+        defaultRequestExecutor.shutdownNow();
+        detailsViewController.dispose();
+    }
+
+    void openDetails(LoanSummary loan) {
         detailsViewController.setLoan(loan);
         showList(false);
     }
@@ -157,12 +280,15 @@ public class LoansController {
     private void focusSearch() {
         Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
     }
+
     private void showList(boolean visible) {
         if (addLoanView != null) {
-            addLoanController.dispose();
-            addLoanController = null;
             ((VBox) listView.getParent()).getChildren().remove(addLoanView);
             addLoanView = null;
+            if (activeAddLoanController != null) {
+                activeAddLoanController.dispose();
+                activeAddLoanController = null;
+            }
         }
         listView.setVisible(visible);
         listView.setManaged(visible);

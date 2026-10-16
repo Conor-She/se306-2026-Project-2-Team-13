@@ -128,6 +128,14 @@ public class DashboardController {
         loansViewController.setCustomerService(service);
     }
 
+    public void setLoanBrowsingService(com.lavs.business.LoanBrowsingService service) {
+        loansViewController.setLoanBrowsingService(service);
+    }
+
+    public void setLoanSubmissionService(com.lavs.business.LoanSubmissionService service) {
+        loansViewController.setLoanSubmissionService(service);
+    }
+
     public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
         customersViewController.setRegistrationServiceFactory(factory);
     }

@@ -13,6 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -51,6 +52,14 @@ class CustomersServiceIntegrationTest {
         searchFor("Smith");
         await(() -> table.getItems().size() == 2);
         clearInvocations(gateway);
+    }
+
+    @AfterEach void closeWindows() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            for (javafx.stage.Window window : List.copyOf(javafx.stage.Window.getWindows())) window.hide();
+            controller.dispose();
+            return null;
+        });
     }
 
     @Test void searchesBackendForNoSingleAndMultipleMatchesWithoutRetrievingDetails() throws Exception {
@@ -103,7 +112,7 @@ class CustomersServiceIntegrationTest {
                             .anyMatch(child -> child instanceof Label value && "Other company".equals(value.getText()))));
             var edit = root.lookupAll(".button").stream().filter(Button.class::isInstance).map(Button.class::cast)
                     .filter(button -> "Edit personal information".equals(button.getAccessibleText())).findFirst().orElseThrow();
-            assertTrue(edit.isDisabled());
+            assertFalse(edit.isDisabled());
             return null;
         });
         verify(gateway).getCustomer("C1");
@@ -111,6 +120,65 @@ class CustomersServiceIntegrationTest {
         verify(gateway).getPhones("C1");
         verify(gateway).getEmails("C1");
         verify(gateway).getEmployers("C1");
+    }
+
+    @Test void editingExistingCustomerPersistsAndIsVisibleAfterReopening() throws Exception {
+        openJane();
+        JavaFxTestSupport.run(() -> {
+            editButton("Edit email").fire();
+            DialogPane pane = editor();
+            ((TextField) pane.lookup("#edit_value")).setText("updated@example.com");
+            dialogButton(pane, "Save").fire();
+            assertEquals("updated@example.com", label("emailValue"));
+            return null;
+        });
+
+        assertEquals("updated@example.com", gateway.getEmails("C1").get(0).getEmailAddress());
+        JavaFxTestSupport.run(() -> {
+            controller.openCustomer(new CustomersController.CustomerSummary("C1", "Jane Smith", "", ""));
+            return null;
+        });
+        await(() -> "updated@example.com".equals(label("emailValue")));
+    }
+
+    @Test void invalidContactAndCancelLeaveExistingCustomerUnchanged() throws Exception {
+        openJane();
+        JavaFxTestSupport.run(() -> {
+            editButton("Edit phone").fire();
+            DialogPane phone = editor();
+            ((TextField) phone.lookup("#edit_value")).setText("invalid");
+            dialogButton(phone, "Save").fire();
+            assertTrue(phone.lookup("#error_value").isVisible());
+            assertEquals("021111111", label("phoneValue"));
+            dialogButton(phone, "Cancel").fire();
+
+            editButton("Edit personal information").fire();
+            DialogPane personal = editor();
+            ((TextField) personal.lookup("#edit_lastName")).setText("Discarded");
+            dialogButton(personal, "Cancel").fire();
+            assertEquals("Jane Smith", label("customerHeading"));
+            return null;
+        });
+        assertEquals("021111111", gateway.getPhones("C1").get(0).getNumber());
+        assertEquals("Smith", gateway.getCustomer("C1").getLastName());
+    }
+
+    @Test void saveFailureIsReportedAndLeavesDisplayedDetailsUnchanged() throws Exception {
+        openJane();
+        JavaFxTestSupport.run(() -> {
+            editButton("Edit email").fire();
+            DialogPane pane = editor();
+            ((TextField) pane.lookup("#edit_value")).setText("failed@example.com");
+            gateway.simulateUnavailable(true);
+            dialogButton(pane, "Save").fire();
+            assertEquals("jane@example.com", label("emailValue"));
+            assertTrue(javafx.stage.Window.getWindows().stream().filter(javafx.stage.Window::isShowing)
+                    .map(javafx.stage.Window::getScene).filter(java.util.Objects::nonNull)
+                    .map(javafx.scene.Scene::getRoot).anyMatch(node -> "customerSaveError".equals(node.getId())));
+            gateway.simulateUnavailable(false);
+            return null;
+        });
+        assertEquals("jane@example.com", gateway.getEmails("C1").get(0).getEmailAddress());
     }
 
     @Test void clearingSearchPromptsForQueryWithoutRequestingUnsupportedBlankSearch() throws Exception {
@@ -157,6 +225,29 @@ class CustomersServiceIntegrationTest {
 
     private void searchFor(String query) throws Exception {
         JavaFxTestSupport.run(() -> { search.setText(query); search.fireEvent(new ActionEvent()); return null; });
+    }
+    private void openJane() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            controller.openCustomer(table.getItems().stream().filter(customer -> customer.customerId().equals("C1"))
+                    .findFirst().orElseThrow());
+            return null;
+        });
+        await(() -> root.lookup("#detailsView").isVisible());
+        JavaFxTestSupport.run(() -> { root.applyCss(); root.layout(); return null; });
+    }
+    private Button editButton(String accessibleText) {
+        return root.lookupAll(".button").stream().filter(Button.class::isInstance).map(Button.class::cast)
+                .filter(button -> accessibleText.equals(button.getAccessibleText())).findFirst().orElseThrow();
+    }
+    private static DialogPane editor() {
+        return javafx.stage.Window.getWindows().stream().filter(javafx.stage.Window::isShowing)
+                .map(javafx.stage.Window::getScene).filter(java.util.Objects::nonNull)
+                .map(javafx.scene.Scene::getRoot).filter(DialogPane.class::isInstance).map(DialogPane.class::cast)
+                .filter(pane -> "customerRecordEditor".equals(pane.getId())).findFirst().orElseThrow();
+    }
+    private static Button dialogButton(DialogPane pane, String text) {
+        return pane.getButtonTypes().stream().filter(type -> text.equals(type.getText()))
+                .map(pane::lookupButton).map(Button.class::cast).findFirst().orElseThrow();
     }
     private String heading() { return label("resultsHeading"); }
     private String label(String id) { return ((Label) root.lookup("#" + id)).getText(); }
