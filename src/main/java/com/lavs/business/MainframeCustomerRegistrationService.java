@@ -5,9 +5,11 @@ import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.CustomerDocument;
 import com.lavs.model.CustomerDraft;
+import com.lavs.model.Email;
+import com.lavs.model.Employer;
+import com.lavs.model.Phone;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,28 +20,25 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
     private CustomerDraft pending;
     private String customerId;
     private int addressIndex;
-    private int documentIndex;
+    private int phoneIndex;
+    private int emailIndex;
+    private int employerIndex;
     private int noteIndex;
+    private int documentIndex;
 
     public MainframeCustomerRegistrationService(MainframeGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway);
     }
 
     @Override public List<ValidationError> validate(CustomerDraft draft) {
-        var errors = new ArrayList<>(validator.validate(draft));
-        if (!draft.phones.isEmpty()) errors.add(new ValidationError(1, "", "Phone saving is not available yet. Remove phone entries to continue."));
-        if (!draft.emails.isEmpty()) errors.add(new ValidationError(1, "", "Email saving is not available yet. Remove email entries to continue."));
-        if (!draft.employers.isEmpty()) errors.add(new ValidationError(2, "", "Employer saving is not available yet. Remove employer entries to continue."));
-        return List.copyOf(errors);
+        return validator.validate(draft);
     }
 
     @Override public synchronized String save(CustomerDraft draft) throws RegistrationException {
         var errors = validate(draft);
         if (!errors.isEmpty()) throw new RegistrationException(errors);
         // Keep confirmed progress so retrying child records does not create another customer.
-        if (pending != null && (!pending.personal.equals(draft.personal)
-                || !pending.addresses.equals(draft.addresses) || !pending.documents.equals(draft.documents)
-                || !pending.notes.equals(draft.notes))) {
+        if (pending != null && !sameDraft(pending, draft)) {
             throw failure("Customer " + customerId + " already exists. Restore the submitted details before retrying the remaining records.");
         }
         try {
@@ -58,16 +57,35 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
                         a.get("city"), a.get("postcode"), a.get("country"), Boolean.parseBoolean(a.get("mailing"))));
                 addressIndex++;
             }
-            while (documentIndex < draft.documents.size()) {
-                var d = draft.documents.get(documentIndex);
-                gateway.addDocument(new CustomerDocument(null, customerId, d.get("fileName"),
-                        d.get("documentType"), LocalDate.parse(d.get("uploadDate"))));
-                documentIndex++;
+            while (phoneIndex < draft.phones.size()) {
+                var p = draft.phones.get(phoneIndex);
+                gateway.addPhone(new Phone(null, customerId, p.get("number"),
+                        Boolean.parseBoolean(p.get("primary")),
+                        Boolean.parseBoolean(p.get("texts"))));
+                phoneIndex++;
+            }
+            while (emailIndex < draft.emails.size()) {
+                var e = draft.emails.get(emailIndex);
+                gateway.addEmail(new Email(null, customerId, e.get("email"),
+                        Boolean.parseBoolean(e.get("primary"))));
+                emailIndex++;
+            }
+            while (employerIndex < draft.employers.size()) {
+                var e = draft.employers.get(employerIndex);
+                gateway.addEmployer(new Employer(null, customerId, e.get("name"), e.get("role"),
+                        Double.parseDouble(e.get("income")), e.get("employmentType")));
+                employerIndex++;
             }
             var notes = new CustomerNoteService(gateway);
             while (noteIndex < draft.notes.size()) {
                 notes.addNote(customerId, draft.notes.get(noteIndex).get("text"));
                 noteIndex++;
+            }
+            while (documentIndex < draft.documents.size()) {
+                var d = draft.documents.get(documentIndex);
+                gateway.addDocument(new CustomerDocument(null, customerId, d.get("fileName"),
+                        d.get("documentType"), LocalDate.parse(d.get("uploadDate"))));
+                documentIndex++;
             }
         } catch (RuntimeException exception) {
             RegistrationException failure = failure(customerId == null
@@ -79,8 +97,18 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         String result = customerId;
         customerId = null;
         pending = null;
-        addressIndex = documentIndex = noteIndex = 0;
+        addressIndex = phoneIndex = emailIndex = employerIndex = noteIndex = documentIndex = 0;
         return result;
+    }
+
+    private static boolean sameDraft(CustomerDraft left, CustomerDraft right) {
+        return left.personal.equals(right.personal)
+                && left.addresses.equals(right.addresses)
+                && left.phones.equals(right.phones)
+                && left.emails.equals(right.emails)
+                && left.employers.equals(right.employers)
+                && left.notes.equals(right.notes)
+                && left.documents.equals(right.documents);
     }
 
     private static RegistrationException failure(String message) {
