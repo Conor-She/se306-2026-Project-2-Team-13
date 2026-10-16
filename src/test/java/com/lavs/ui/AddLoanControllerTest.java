@@ -192,4 +192,116 @@ class AddLoanControllerTest {
             return null;
         });
     }
+
+    @Test void primaryAndCoborrowerPickersSearchAllBackendCustomersForEachQuery() throws Exception {
+        FXMLLoader[] loader = new FXMLLoader[1];
+        AddLoanController[] controller = new AddLoanController[1];
+        JavaFxTestSupport.run(() -> {
+            loader[0] = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            loader[0].load();
+            controller[0] = loader[0].getController();
+            var gateway = new com.lavs.data.FakeMainframeGateway();
+            gateway.createCustomer(new com.lavs.model.Customer("C101", "", "Baba", "Lala", null, "NZ"));
+            gateway.createCustomer(new com.lavs.model.Customer("C102", "", "a", "a", null, "NZ"));
+            controller[0].configure(List.of(), () -> {});
+            controller[0].setCustomerSearchService(new com.lavs.business.CustomerService(gateway), Runnable::run);
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("Baba");
+            return null;
+        });
+
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals("Baba Lala", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("a a");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals(1, results.getItems().size());
+            assertEquals("a a", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("customerSearch")).setText("Baba");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("customerResults");
+            assertEquals("Baba Lala", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            controller[0].setPrimaryBorrower((CustomersController.CustomerSummary) results.getItems().get(0));
+            ((TextField) loader[0].getNamespace().get("coborrowerSearch")).setText("a a");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("coborrowerResults");
+            assertEquals(1, results.getItems().size());
+            assertEquals("a a", ((CustomersController.CustomerSummary) results.getItems().get(0)).name());
+            ((TextField) loader[0].getNamespace().get("coborrowerSearch")).setText("Baba");
+            return null;
+        });
+        awaitCustomerSearch();
+        JavaFxTestSupport.run(() -> {
+            ListView<?> results = (ListView<?>) loader[0].getNamespace().get("coborrowerResults");
+            assertTrue(results.getItems().isEmpty(), "The primary borrower cannot be selected as a co-borrower");
+            controller[0].dispose();
+            return null;
+        });
+    }
+
+    private static void awaitCustomerSearch() throws InterruptedException {
+        Thread.sleep(500); // Let the 300 ms type-ahead debounce and FX result update complete.
+    }
+
+    /**
+     * A failed save shows a clear message, leaves the form usable, and a retry can succeed
+     * without saving twice
+     */
+    @Test void failedSaveReportsTheErrorAndCanBeRetried() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            javafx.scene.Parent root = loader.load();
+            new javafx.scene.Scene(root, 1008, 662);
+            root.applyCss();
+            root.layout();
+            AddLoanController controller = loader.getController();
+            int[] attempts = {0};
+            controller.setSaveExecutor(Runnable::run);
+            controller.setOnSave(draft -> {
+                attempts[0]++;
+                if (attempts[0] == 1) {
+                    throw new com.lavs.data.MainframeException(
+                            com.lavs.data.MainframeException.Type.UNAVAILABLE, 10, "down");
+                }
+            });
+            controller.configure(List.of(), () -> {});
+            controller.setPrimaryBorrower(
+                    new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
+            for (String id : List.of("loanType", "paymentFrequency", "rateFrequency"))
+                ((ComboBox<?>) loader.getNamespace().get(id)).getSelectionModel().selectFirst();
+            ((TextField) loader.getNamespace().get("principal")).setText("12000");
+            ((TextField) loader.getNamespace().get("interestRate")).setText("6.25");
+            ((TextField) loader.getNamespace().get("term")).setText("12");
+            ((DatePicker) loader.getNamespace().get("startDate")).setValue(LocalDate.of(2026, 10, 14));
+            ((DatePicker) loader.getNamespace().get("renewDate")).setValue(LocalDate.of(2027, 10, 14));
+            Button next = (Button) loader.getNamespace().get("next");
+            next.fire();
+            next.fire();
+            assertEquals("Finish", next.getText());
+
+            next.fire();
+            Label message = (Label) loader.getNamespace().get("message");
+            assertEquals(1, attempts[0]);
+            assertTrue(message.isVisible());
+            assertTrue(message.getText().contains("could not be reached"));
+            assertTrue(message.getText().contains("no loan has been saved"));
+            assertFalse(next.isDisabled());
+
+            next.fire();
+            assertEquals(2, attempts[0]);
+            next.fire();
+            assertEquals(2, attempts[0], "A saved loan must not be saved again");
+            return null;
+        });
+    }
 }

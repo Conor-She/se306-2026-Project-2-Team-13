@@ -4,6 +4,9 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Consumer;
+
+import com.lavs.ui.CustomerRecordEditor.Kind;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -102,8 +105,18 @@ final class CustomerDetailsEditing {
         var contact = loaded.details.get(Kind.CONTACT);
         loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
                 contact.get("phone"), contact.get("email"));
+        // The mainframe's loans come first. Loans added this session are kept only if the
+        // mainframe's list doesn't already have them, so a loan saved just now isn't shown twice.
+        var loanRecords = loaded.records.get(Kind.LOAN);
+        details.loans().forEach(loan -> loanRecords.add(loanRecord(loan)));
         State previous = sessions.get(customer.getCustomerId());
-        if (previous != null) loaded.records.get(Kind.LOAN).addAll(previous.records.get(Kind.LOAN));
+        if (previous != null) {
+            Set<String> knownIds = new HashSet<>();
+            loanRecords.forEach(record -> knownIds.add(record.get("id")));
+            previous.records.get(Kind.LOAN).stream()
+                    .filter(record -> !knownIds.contains(record.get("id")))
+                    .forEach(loanRecords::add);
+        }
         state = loaded;
         sessions.put(customer.getCustomerId(), loaded);
         readOnly = true;
@@ -113,20 +126,33 @@ final class CustomerDetailsEditing {
 
     private static String text(String value) { return value == null ? "" : value; }
 
-    void addLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanWithSchedule saved) {
-        State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
-        var loan = saved.getLoan();
-        target.records.get(Kind.LOAN).add(values("id", loan.getLoanId(), "type", titleCase(loan.getType().name()),
-                "amount", Double.toString(loan.getPrincipal()), "rate", Double.toString(loan.getInterestRate()),
-                "status", titleCase(loan.getStatus().name())));
-        if (state == target) render();
+    // A loan read from the mainframe, in the form the Loans tab shows. The mainframe doesn't
+    // keep whether a loan is a table or a reducing balance loan, so those show as Fixed or Floating.
+    private static Map<String, String> loanRecord(com.lavs.model.Loan loan) {
+        String type;
+        if (loan.getType() == null) {
+            type = loan.isFloating() ? "Floating" : "Fixed";
+        } else {
+            type = switch (loan.getType()) {
+                case TABLE_LOAN -> "Table Loan";
+                case REDUCING_BALANCE -> "Reducing Balance";
+                case INTEREST_ONLY -> "Interest Only";
+            };
+        }
+        String name = loan.getStatus().name();
+        return values("id", loan.getLoanId(), "type", type,
+                "amount", java.math.BigDecimal.valueOf(loan.getPrincipal()).toPlainString(),
+                "rate", java.math.BigDecimal.valueOf(loan.getInterestRate())
+                        .stripTrailingZeros().toPlainString(),
+                "status", name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT));
     }
 
-    private static String titleCase(String value) {
-        String[] words = value.toLowerCase(Locale.ROOT).split("_");
-        return Arrays.stream(words).filter(word -> !word.isEmpty())
-                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
-                .collect(java.util.stream.Collectors.joining(" "));
+    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanSubmissionService.SavedLoan loan) {
+        State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
+        var draft = loan.draft();
+        target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
+                "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"), "status", draft.details.get("status")));
+        if (state == target) render();
     }
 
     void editDetails(Kind kind) {

@@ -36,7 +36,7 @@ public class DashboardController {
     private final BooleanProperty twoColumns = new SimpleBooleanProperty(false);
 
     @FXML private void initialize() {
-        loansViewController.setOnSaved(customersViewController::addLoan);
+        loansViewController.setOnSaved(customersViewController::addSessionLoan);
         customersViewController.setOnAddLoan(customer -> {
             try {
                 loansViewController.openAddLoan(customer, () -> {
@@ -121,22 +121,19 @@ public class DashboardController {
         showHome();
     }
 
-    public void dispose() {
-        customersViewController.dispose();
-        loansViewController.dispose();
-    }
+    public void dispose() { customersViewController.dispose(); }
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
         customersViewController.setCustomerService(service);
-        loansViewController.setCustomerPreviews(customersViewController::customerPreviews);
+        loansViewController.setCustomerService(service);
     }
 
     public void setLoanBrowsingService(com.lavs.business.LoanBrowsingService service) {
         loansViewController.setLoanBrowsingService(service);
     }
 
-    public void setLoanCreationService(com.lavs.business.LoanCreationService service) {
-        loansViewController.setLoanCreationService(service);
+    public void setLoanSubmissionService(com.lavs.business.LoanSubmissionService service) {
+        loansViewController.setLoanSubmissionService(service);
     }
 
     public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {

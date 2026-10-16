@@ -1,8 +1,8 @@
 package com.lavs.ui;
 
+import com.lavs.business.CustomerService;
 import com.lavs.business.LoanBrowsingService;
-import com.lavs.business.LoanCreationService;
-import com.lavs.business.LoanWithSchedule;
+import com.lavs.business.LoanSubmissionService;
 import com.lavs.model.Loan;
 import java.text.NumberFormat;
 import java.util.List;
@@ -41,6 +41,7 @@ public class LoansController {
     @FXML private LoanDetailsController detailsViewController;
 
     private VBox addLoanView;
+    private AddLoanController activeAddLoanController;
     private final ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
     private final ExecutorService defaultRequestExecutor = Executors.newSingleThreadExecutor(task -> {
         Thread thread = new Thread(task, "lavs-loan-search");
@@ -50,21 +51,30 @@ public class LoansController {
     private Executor requestExecutor = defaultRequestExecutor;
     private final AtomicLong searchSequence = new AtomicLong();
     private LoanBrowsingService loanBrowsingService;
-    private LoanCreationService loanCreationService;
-    private java.util.function.BiConsumer<com.lavs.model.LoanDraft, LoanWithSchedule> onSaved = (draft, loan) -> {};
-    private java.util.function.Supplier<List<CustomersController.CustomerSummary>> customerPreviews = List::of;
+    private CustomerService customerService;
+    private LoanSubmissionService submission;
+    private java.util.function.Consumer<LoanSubmissionService.SavedLoan> onSaved = loan -> {};
 
-    public void setCustomerPreviews(java.util.function.Supplier<List<CustomersController.CustomerSummary>> supplier) {
-        customerPreviews = supplier;
-    }
+    // Saving talks to the mainframe, so in the app it runs on a background thread.
+    private Executor saveExecutor = task -> {
+        Thread thread = new Thread(task, "lavs-save-loan");
+        thread.setDaemon(true);
+        thread.start();
+    };
 
-    public void setOnSaved(
-            java.util.function.BiConsumer<com.lavs.model.LoanDraft, LoanWithSchedule> onSaved) {
+    public void setOnSaved(java.util.function.Consumer<LoanSubmissionService.SavedLoan> onSaved) {
         this.onSaved = onSaved;
     }
 
-    public void setLoanCreationService(LoanCreationService service) {
-        loanCreationService = service;
+    public void setCustomerService(CustomerService service) {
+        customerService = service;
+        if (activeAddLoanController != null && service != null) {
+            activeAddLoanController.setCustomerSearchService(service, requestExecutor);
+        }
+    }
+
+    public void setLoanSubmissionService(LoanSubmissionService submission) {
+        this.submission = submission;
     }
 
     public void setLoanBrowsingService(LoanBrowsingService service) {
@@ -77,6 +87,13 @@ public class LoansController {
     public void setRequestExecutor(Executor executor) {
         requestExecutor = executor == null ? defaultRequestExecutor : executor;
         detailsViewController.setRequestExecutor(requestExecutor);
+        if (activeAddLoanController != null && customerService != null) {
+            activeAddLoanController.setCustomerSearchService(customerService, requestExecutor);
+        }
+    }
+
+    public void setSaveExecutor(Executor saveExecutor) {
+        this.saveExecutor = saveExecutor;
     }
 
     @FXML private void openAddLoan() throws java.io.IOException {
@@ -88,27 +105,36 @@ public class LoansController {
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
-        controller.configure(customerPreviews.get(), () -> {
+        controller.setSaveExecutor(saveExecutor);
+        controller.configure(List.of(), () -> {
             showList(true);
             onCancel.run();
         });
-        if (loanCreationService != null) {
-            controller.setPrerequisiteValidator(loanCreationService::validatePrerequisites);
+        activeAddLoanController = controller;
+        if (customerService != null) {
+            controller.setCustomerSearchService(customerService, requestExecutor);
+        }
+        if (submission != null) {
+            controller.setPrerequisiteValidator(submission::validatePrerequisites);
         }
         if (customer != null) controller.setPrimaryBorrower(customer);
         controller.setOnSave(draft -> {
-            if (loanCreationService == null) {
-                throw new IllegalStateException("Loan creation is not connected to the mainframe.");
+            if (submission == null) {
+                throw new IllegalStateException("Saving loans is not connected to the mainframe.");
             }
-            LoanWithSchedule saved = loanCreationService.create(draft);
-            onSaved.accept(draft, saved);
-            if (customer != null) {
-                onCancel.run();
-            } else {
+            // The slow part runs off the screen thread, and throws if the loan wasn't created.
+            var saved = submission.submit(draft);
+            // Only a loan that really exists on the mainframe reaches the screen.
+            AddLoanController.runOnFxThread(() -> {
+                onSaved.accept(saved);
                 showList(true);
-                searchField.setText(saved.getLoan().getLoanId());
-                searchLoans();
-            }
+                if (customer != null) {
+                    onCancel.run();
+                } else {
+                    searchField.setText(saved.loanId());
+                    searchLoans();
+                }
+            });
         });
         showList(true);
         listView.setVisible(false);
@@ -236,6 +262,7 @@ public class LoansController {
 
     public void dispose() {
         searchSequence.incrementAndGet();
+        if (activeAddLoanController != null) activeAddLoanController.dispose();
         defaultRequestExecutor.shutdownNow();
         detailsViewController.dispose();
     }
@@ -258,6 +285,10 @@ public class LoansController {
         if (addLoanView != null) {
             ((VBox) listView.getParent()).getChildren().remove(addLoanView);
             addLoanView = null;
+            if (activeAddLoanController != null) {
+                activeAddLoanController.dispose();
+                activeAddLoanController = null;
+            }
         }
         listView.setVisible(visible);
         listView.setManaged(visible);
