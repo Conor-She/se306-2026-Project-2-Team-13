@@ -16,14 +16,9 @@ public class SessionLoanStore {
     }
 
     private final List<SavedLoan> loans = new ArrayList<>();
-    private final SessionCustomerNoteStore customerNotes = new SessionCustomerNoteStore();
-
-    public SessionCustomerNoteStore getCustomerNotes() { return customerNotes; }
 
     public SavedLoan save(LoanDraft draft) {
         LoanDraft snapshot = draft.copy();
-        if (snapshot.notes.stream().anyMatch(note -> note == null || note.isBlank()))
-            throw new IllegalArgumentException("Customer notes must not be blank.");
         new StubLoanPrerequisiteService().validate(snapshot.primaryBorrower.customerId());
         if (snapshot.coborrowers.size() > 3) throw new IllegalArgumentException("A loan can have at most three co-borrowers.");
         if (!"New".equals(snapshot.details.get("status")))
@@ -38,14 +33,8 @@ public class SessionLoanStore {
         }
         SavedLoan saved = new SavedLoan(id, snapshot, schedule);
         loans.add(saved);
-        snapshot.notes.forEach(note -> customerNotes.addNote(snapshot.primaryBorrower.customerId(), note));
         return saved;
     }
 
     public List<SavedLoan> getLoans() { return List.copyOf(loans); }
-
-    public List<String> getNotes(String loanId) {
-        return loans.stream().filter(loan -> loan.loanId().equals(loanId))
-                .findFirst().map(loan -> List.copyOf(loan.draft().notes)).orElse(List.of());
-    }
 }

@@ -112,8 +112,8 @@ class LoanDetailsControllerTest {
 
     @Test void eachTabShowsOnlyItsOwnContentAndSelectedIndicator() throws Exception {
         JavaFxTestSupport.run(() -> {
-            String[] tabs = {"loanDetailsTab", "coborrowersTab", "repaymentScheduleTab", "paymentsTab", "loanNotesTab"};
-            String[] views = {"loanDetailsView", "coborrowersView", "repaymentScheduleView", "paymentsView", "loanNotesView"};
+            String[] tabs = {"loanDetailsTab", "coborrowersTab", "repaymentScheduleTab", "paymentsTab"};
+            String[] views = {"loanDetailsView", "coborrowersView", "repaymentScheduleView", "paymentsView"};
             for (int selected = 0; selected < tabs.length; selected++) {
                 node(tabs[selected], Button.class).fire();
                 for (int i = 0; i < tabs.length; i++) {
@@ -123,38 +123,6 @@ class LoanDetailsControllerTest {
                             .lookup(".loan-tab-indicator").isVisible(), tabs[i]);
                 }
             }
-            return null;
-        });
-    }
-
-    @Test void loanNotesDisplaySavedWizardNotesAndStayWithTheirLoan() throws Exception {
-        JavaFxTestSupport.run(() -> {
-            var draft = new com.lavs.model.LoanDraft();
-            draft.primaryBorrower = new com.lavs.model.LoanDraft.Borrower("C001", "Amelia Adams");
-            draft.startDate = LocalDate.of(2026, 10, 14);
-            draft.renewDate = draft.startDate.plusYears(1);
-            draft.details.putAll(java.util.Map.of("loanType", "Table Loan", "principal", "12000",
-                    "interestRate", "6.25", "term", "12", "paymentFrequency", "Monthly",
-                    "rateFrequency", "Monthly", "status", "New"));
-            draft.notes.addAll(List.of("Call before first payment", "Customer prefers email\nFollow up next week"));
-            var store = new com.lavs.business.SessionLoanStore();
-            var saved = store.save(draft);
-            draft.notes.clear();
-            controller.setLoanNotesProvider(store::getNotes);
-            controller.setLoan(loan(saved.loanId(), "Amelia Adams", "New", "$12,000", "Table Loan"));
-            node("loanNotesTab", Button.class).fire();
-            assertEquals("2 notes", text("loanNotesCount"));
-            assertTrue(root.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "Call before first payment".equals(label.getText())));
-            assertTrue(root.lookupAll(".label").stream().filter(Label.class::isInstance)
-                    .map(Label.class::cast).anyMatch(label -> "Customer prefers email\nFollow up next week".equals(label.getText()) && label.isWrapText()));
-            controller.setLoan(loan("OTHER", "Alex Smith", "Active", "$5,000", "Table Loan"));
-            assertEquals("0 notes", text("loanNotesCount"));
-            var rows = node("loanNoteRows", javafx.scene.layout.VBox.class);
-            assertEquals("No notes recorded for this loan.", ((Label) rows.getChildren().get(0)).getText());
-            controller.setLoan(loan(saved.loanId(), "Amelia Adams", "New", "$12,000", "Table Loan"));
-            assertEquals("2 notes", text("loanNotesCount"));
-            assertEquals(2, rows.getChildren().size());
             return null;
         });
     }

@@ -84,7 +84,6 @@ public class LoansController {
     protected AddLoanController createAddLoanController() { return new AddLoanController(); }
 
     @FXML private void initialize() {
-        detailsViewController.setLoanNotesProvider(sessionLoans::getNotes);
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));
         customerIdColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));

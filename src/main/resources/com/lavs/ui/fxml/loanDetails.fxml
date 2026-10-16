@@ -65,7 +65,6 @@
             <StackPane><Button fx:id="repaymentScheduleTab" text="Repayment Schedule"
                   onAction="#showRepaymentScheduleTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER"  style="-fx-background-color: #ff642e; -fx-background-radius: 7 7 0 0;" /></StackPane>
             <StackPane><Button fx:id="paymentsTab" text="Payments" onAction="#showPaymentsTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER"  style="-fx-background-color: #ff642e; -fx-background-radius: 7 7 0 0;" /></StackPane>
-            <StackPane><Button fx:id="loanNotesTab" text="Loan Notes" onAction="#showLoanNotesTab" /><Region styleClass="loan-tab-indicator" visible="false" mouseTransparent="true" minHeight="5" prefHeight="5" maxHeight="5" StackPane.alignment="BOTTOM_CENTER"  style="-fx-background-color: #ff642e; -fx-background-radius: 7 7 0 0;" /></StackPane>
       </HBox>
 
       <StackPane minHeight="300" VBox.vgrow="ALWAYS">
@@ -192,7 +191,7 @@
 <Label text="\$497,493.88" GridPane.columnIndex="5" GridPane.rowIndex="2"  style="-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d; " />
                 </GridPane>
                 <HBox style="-fx-padding: 4 16 16 16;" alignment="CENTER_LEFT">
-                    <Label text="Showing 1â€“2 of 2" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" />
+                    <Label text="Showing 1–2 of 2" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" />
                 </HBox>
             </VBox>
 
@@ -218,20 +217,6 @@
                         </GridPane>
                   </ScrollPane>
                   <Label fx:id="paymentsCount" style="-fx-padding: 4 18 16 18; -fx-font-size: 11; -fx-text-fill: #747ba6;" />
-            </VBox>
-            <VBox fx:id="loanNotesView" spacing="12" visible="false" managed="false"
-                  style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 8; -fx-background-radius: 8;">
-                  <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: linear-gradient(to right, #f8faff, #f0f5ff); -fx-background-radius: 8 8 0 0; -fx-padding: 16 20;">
-                        <VBox spacing="5">
-                              <Label text="Loan Notes" style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #20205e;"/>
-                              <Label text="Notes saved from the loan application wizard." wrapText="true" style="-fx-font-size: 11; -fx-text-fill: #747ba6;"/>
-                        </VBox>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <Label fx:id="loanNotesCount" style="-fx-font-size: 12; -fx-text-fill: #747ba6;"/>
-                  </HBox>
-                  <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" style="-fx-background: white; -fx-background-color: transparent; -fx-padding: 0; -fx-border-width: 0;">
-                        <VBox fx:id="loanNoteRows" spacing="12" minWidth="0" style="-fx-padding: 8 20 20 20;"/>
-                  </ScrollPane>
             </VBox>
       </StackPane>
 </VBox>

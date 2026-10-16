@@ -42,19 +42,4 @@ class SessionLoanStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.save(draft));
         assertTrue(store.getLoans().isEmpty());
     }
-
-    @Test void savesCustomerNotesOnlyWhenTheLoanSucceeds() {
-        var store = new SessionLoanStore();
-        var draft = draft();
-        draft.notes.add("Customer requested a follow-up");
-        var saved = store.save(draft);
-        draft.notes.clear();
-        assertEquals(1, saved.draft().notes.size());
-        assertEquals("Customer requested a follow-up", store.getCustomerNotes().getNotes("C001").get(0).getNoteText());
-        var invalid = draft();
-        invalid.notes.add(" ");
-        assertThrows(IllegalArgumentException.class, () -> store.save(invalid));
-        assertEquals(1, store.getLoans().size());
-        assertEquals(1, store.getCustomerNotes().getNotes("C001").size());
-    }
 }

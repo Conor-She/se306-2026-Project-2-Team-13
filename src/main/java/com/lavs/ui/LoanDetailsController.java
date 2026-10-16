@@ -47,10 +47,6 @@ public class LoanDetailsController {
     @FXML private Button coborrowersTab;
     @FXML private Button repaymentScheduleTab;
     @FXML private Button paymentsTab;
-    @FXML private Button loanNotesTab;
-    @FXML private VBox loanNotesView, loanNoteRows;
-    @FXML private Label loanNotesCount;
-    private java.util.function.Function<String, List<String>> loanNotesProvider = id -> List.of();
     @FXML private VBox loanDetailsView;
     @FXML private VBox coborrowersView;
     @FXML private VBox repaymentScheduleView;
@@ -90,7 +86,6 @@ public class LoanDetailsController {
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
-        renderLoanNotes();
 
         if (!loan.loanId().equals(loadedLoanId)) {
             loadedLoanId = loan.loanId();
@@ -101,35 +96,6 @@ public class LoanDetailsController {
 
     public LoansController.LoanSummary getLoan() {
         return loan;
-    }
-
-    public void setLoanNotesProvider(java.util.function.Function<String, List<String>> provider) {
-        loanNotesProvider = java.util.Objects.requireNonNull(provider);
-        if (loan != null) renderLoanNotes();
-    }
-
-    private void renderLoanNotes() {
-        List<String> notes = loanNotesProvider.apply(loan.loanId());
-        loanNoteRows.getChildren().clear();
-        loanNotesCount.setText(notes.size() + (notes.size() == 1 ? " note" : " notes"));
-        if (notes.isEmpty()) {
-            Label empty = new Label("No notes recorded for this loan.");
-            empty.setStyle("-fx-text-fill: #747ba6; -fx-padding: 12;");
-            loanNoteRows.getChildren().add(empty);
-        } else {
-            for (int index = 0; index < notes.size(); index++) {
-                Label heading = new Label("Note " + (index + 1));
-                heading.setStyle("-fx-font-weight: bold; -fx-text-fill: #393a7b;");
-                Label text = new Label(notes.get(index));
-                text.setWrapText(true);
-                text.setMinWidth(0);
-                text.setMaxWidth(Double.MAX_VALUE);
-                text.setStyle("-fx-text-fill: #55558d;");
-                VBox card = new VBox(8, heading, text);
-                card.setStyle("-fx-padding: 16; -fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 8; -fx-background-radius: 8;");
-                loanNoteRows.getChildren().add(card);
-            }
-        }
     }
 
     public void setOnBack(Runnable onBack) {
@@ -160,17 +126,12 @@ public class LoanDetailsController {
         selectTab(paymentsTab, paymentsView);
     }
 
-    @FXML private void showLoanNotesTab() {
-        if (loan != null) renderLoanNotes();
-        selectTab(loanNotesTab, loanNotesView);
-    }
-
     private void selectTab(Button selectedTab, VBox selectedView) {
-        for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab, loanNotesTab)) {
+        for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
             tab.getParent().lookup(".loan-tab-indicator").setVisible(tab == selectedTab);
         }
-        for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView, paymentsView, loanNotesView)) {
+        for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView, paymentsView)) {
             boolean selected = view == selectedView;
             view.setVisible(selected);
             view.setManaged(selected);

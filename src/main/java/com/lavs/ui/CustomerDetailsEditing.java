@@ -103,10 +103,7 @@ final class CustomerDetailsEditing {
         loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
                 contact.get("phone"), contact.get("email"));
         State previous = sessions.get(customer.getCustomerId());
-        if (previous != null) {
-            loaded.records.get(Kind.LOAN).addAll(previous.records.get(Kind.LOAN));
-            loaded.records.get(Kind.NOTE).addAll(previous.records.get(Kind.NOTE));
-        }
+        if (previous != null) loaded.records.get(Kind.LOAN).addAll(previous.records.get(Kind.LOAN));
         state = loaded;
         sessions.put(customer.getCustomerId(), loaded);
         readOnly = true;
@@ -119,12 +116,6 @@ final class CustomerDetailsEditing {
     void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
         var draft = loan.draft();
-        if (customer.customerId().equals(draft.primaryBorrower.customerId())) {
-            for (String note : draft.notes) {
-                target.records.get(Kind.NOTE).add(values("title", "Loan application " + loan.loanId(),
-                        "text", note, "author", "", "date", LocalDate.now().toString()));
-            }
-        }
         target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
                 "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"), "status", draft.details.get("status")));
         if (state == target) render();
