@@ -192,4 +192,56 @@ class AddLoanControllerTest {
             return null;
         });
     }
+
+    /**
+     * A failed save shows a clear message, leaves the form usable, and a retry can succeed
+     * without saving twice
+     */
+    @Test void failedSaveReportsTheErrorAndCanBeRetried() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            javafx.scene.Parent root = loader.load();
+            new javafx.scene.Scene(root, 1008, 662);
+            root.applyCss();
+            root.layout();
+            AddLoanController controller = loader.getController();
+            int[] attempts = {0};
+            controller.setSaveExecutor(Runnable::run);
+            controller.setOnSave(draft -> {
+                attempts[0]++;
+                if (attempts[0] == 1) {
+                    throw new com.lavs.data.MainframeException(
+                            com.lavs.data.MainframeException.Type.UNAVAILABLE, 10, "down");
+                }
+            });
+            controller.configure(List.of(), () -> {});
+            controller.setPrimaryBorrower(
+                    new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
+            for (String id : List.of("loanType", "paymentFrequency", "rateFrequency"))
+                ((ComboBox<?>) loader.getNamespace().get(id)).getSelectionModel().selectFirst();
+            ((TextField) loader.getNamespace().get("principal")).setText("12000");
+            ((TextField) loader.getNamespace().get("interestRate")).setText("6.25");
+            ((TextField) loader.getNamespace().get("term")).setText("12");
+            ((DatePicker) loader.getNamespace().get("startDate")).setValue(LocalDate.of(2026, 10, 14));
+            ((DatePicker) loader.getNamespace().get("renewDate")).setValue(LocalDate.of(2027, 10, 14));
+            Button next = (Button) loader.getNamespace().get("next");
+            next.fire();
+            next.fire();
+            assertEquals("Finish", next.getText());
+
+            next.fire();
+            Label message = (Label) loader.getNamespace().get("message");
+            assertEquals(1, attempts[0]);
+            assertTrue(message.isVisible());
+            assertTrue(message.getText().contains("could not be reached"));
+            assertTrue(message.getText().contains("no loan has been saved"));
+            assertFalse(next.isDisabled());
+
+            next.fire();
+            assertEquals(2, attempts[0]);
+            next.fire();
+            assertEquals(2, attempts[0], "A saved loan must not be saved again");
+            return null;
+        });
+    }
 }

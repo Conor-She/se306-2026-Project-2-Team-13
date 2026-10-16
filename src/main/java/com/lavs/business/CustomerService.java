@@ -9,6 +9,7 @@ import com.lavs.model.CustomerPreview;
 import com.lavs.model.Email;
 import com.lavs.model.Employer;
 import com.lavs.model.Phone;
+import com.lavs.model.Loan;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,8 +64,8 @@ public class CustomerService {
             throw new IllegalArgumentException("Customer '" + customerId + "' does not exist");
         }
         return new CustomerDetails(customer, gateway.getAddresses(customerId),
-                gateway.getPhones(customerId), gateway.getEmails(customerId),
-                gateway.getEmployers(customerId));
+            gateway.getPhones(customerId), gateway.getEmails(customerId),
+            gateway.getEmployers(customerId), loansOf(customerId));
     }
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,
@@ -286,5 +287,12 @@ public class CustomerService {
                 && Objects.equals(left.getJobTitle(), right.getJobTitle())
                 && Double.compare(left.getIncome(), right.getIncome()) == 0
                 && Objects.equals(left.getEmploymentType(), right.getEmploymentType());
+    }
+
+    // The customer's loans in loan number order, so the Loans tab is stable
+    private List<Loan> loansOf(String customerId) {
+        return gateway.findLoansByCustomer(customerId).stream()
+                .sorted(java.util.Comparator.comparing(Loan::getLoanId))
+                .toList();
     }
 }

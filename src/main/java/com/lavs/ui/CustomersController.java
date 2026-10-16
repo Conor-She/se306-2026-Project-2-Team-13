@@ -221,7 +221,7 @@ public class CustomersController {
         detailsViewController.setOnAddLoan(action);
     }
 
-    public void addSessionLoan(com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    public void addSessionLoan(com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         var borrower = loan.draft().primaryBorrower;
         CustomerSummary customer = customers.stream().filter(c -> c.customerId().equals(borrower.customerId()))
                 .findFirst().orElse(new CustomerSummary(borrower.customerId(), borrower.name(), "", ""));
