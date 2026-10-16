@@ -36,6 +36,7 @@ public class CustomersController {
 
     public void setCustomerService(CustomerService service) {
         customerService = java.util.Objects.requireNonNull(service);
+        detailsViewController.setCustomerService(service);
     }
 
     private List<CustomerSummary> availableCustomerPreviews = List.of();

@@ -5,7 +5,6 @@ import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.CustomerDocument;
 import com.lavs.model.CustomerDraft;
-import com.lavs.model.CustomerNote;
 import com.lavs.model.Email;
 import com.lavs.model.Employer;
 import com.lavs.model.Phone;
@@ -77,10 +76,9 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
                         Double.parseDouble(e.get("income")), e.get("employmentType")));
                 employerIndex++;
             }
+            var notes = new CustomerNoteService(gateway);
             while (noteIndex < draft.notes.size()) {
-                var n = draft.notes.get(noteIndex);
-                gateway.addNote(new CustomerNote(null, customerId, n.get("text"),
-                        LocalDate.now()));
+                notes.addNote(customerId, draft.notes.get(noteIndex).get("text"));
                 noteIndex++;
             }
             while (documentIndex < draft.documents.size()) {

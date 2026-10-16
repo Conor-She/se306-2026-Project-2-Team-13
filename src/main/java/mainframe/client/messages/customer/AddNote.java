@@ -29,7 +29,7 @@ public class AddNote implements Message {
             _author = response.getValue("author");
             _lines = response.getValue("lines");
             String idValue = response.getValue("id");
-            _id = idValue == null ? null : Long.parseLong(idValue);
+            _id = idValue == null ? _id : Long.parseLong(idValue);
         }
         return response.getStatus();
     }

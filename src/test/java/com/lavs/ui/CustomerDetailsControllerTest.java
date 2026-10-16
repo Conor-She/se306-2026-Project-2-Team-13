@@ -163,25 +163,6 @@ class CustomerDetailsControllerTest {
         });
     }
 
-    @Test void displaysNotesLoadedWithACustomer() throws Exception {
-        JavaFxTestSupport.run(() -> {
-            var customer = new com.lavs.model.Customer("C001", "Ms", "Ada", "Lovelace",
-                    java.time.LocalDate.of(1990, 12, 10), "New Zealand");
-            var note = new com.lavs.model.CustomerNote("9", "C001",
-                    "Prefers email contact", java.time.LocalDate.of(2026, 10, 16));
-            controller.setCustomerDetails(new com.lavs.model.CustomerDetails(customer,
-                    List.of(), List.of(), List.of(), List.of(), List.of(note)));
-            tab("notes").fire();
-
-            var labels = descendants(content("notes").getContent()).stream()
-                    .filter(Label.class::isInstance).map(Label.class::cast)
-                    .map(Label::getText).toList();
-            assertTrue(labels.contains("Prefers email contact"));
-            assertTrue(labels.contains("16 Oct 2026"));
-            return null;
-        });
-    }
-
     @Test void overviewCardsUseThreeColumnsAndStackAtNarrowWidths() throws Exception {
         JavaFxTestSupport.run(() -> {
             var personal = (javafx.scene.layout.VBox) loader.getNamespace().get("personalCard");

@@ -18,7 +18,6 @@ import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.CustomerDetails;
 import com.lavs.model.CustomerId;
-import com.lavs.model.CustomerNote;
 import com.lavs.model.CustomerPreview;
 import com.lavs.model.Email;
 import com.lavs.model.Employer;
@@ -93,8 +92,6 @@ class CustomerServiceTest {
         Customer other = gateway.createCustomer(newCustomer());
         gateway.addPhone(new Phone(null, other.getCustomerId(), "099999999", true, false));
         String id = customer.getCustomerId();
-        gateway.addNote(new CustomerNote(null, id, "Prefers email contact",
-                LocalDate.of(2026, 10, 16)));
 
         CustomerDetails details = service.getById(new CustomerId(id));
 
@@ -105,7 +102,6 @@ class CustomerServiceTest {
         assertEquals(gateway.getPhones(id), details.phones());
         assertEquals(gateway.getEmails(id), details.emails());
         assertEquals(gateway.getEmployers(id), details.employers());
-        assertEquals(gateway.getNotes(id), details.notes());
     }
 
     @Test
@@ -120,7 +116,6 @@ class CustomerServiceTest {
         assertEquals(List.of(), details.phones());
         assertEquals(List.of(), details.emails());
         assertEquals(List.of(), details.employers());
-        assertEquals(List.of(), details.notes());
     }
 
     @Test

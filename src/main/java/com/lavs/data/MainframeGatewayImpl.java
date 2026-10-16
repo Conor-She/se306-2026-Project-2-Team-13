@@ -2,6 +2,7 @@ package com.lavs.data;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,7 +28,6 @@ import mainframe.client.messages.customer.AddAddress;
 import mainframe.client.messages.customer.AddDocumentMetadata;
 import mainframe.client.messages.customer.AddEmail;
 import mainframe.client.messages.customer.AddEmployer;
-import mainframe.client.messages.customer.AddNote;
 import mainframe.client.messages.customer.AddPhoneNumber;
 import mainframe.client.messages.customer.AddRelationship;
 import mainframe.client.messages.customer.Create;
@@ -415,49 +415,49 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public CustomerNote addNote(CustomerNote note) {
-        AddNote message = new AddNote(note.getCustomerId(), note.getNoteText(), "Customer note");
+        var message = new mainframe.client.messages.customer.AddNote(note.getCustomerId(), note.getNoteText(), note.getType());
         sendOrThrow(message);
+        if (message.getId() == null || message.getId() <= 0)
+            throw new MainframeException(MainframeException.Type.BUSINESS_ERROR, 0, "The mainframe did not return a note ID");
+        return new CustomerNote(message.getId().toString(), note.getCustomerId(), note.getNoteText(),
+                note.getDateAdded(), note.getType(), message.getAuthor());
+    }
 
-        return new CustomerNote(String.valueOf(message.getId()), message.getCustomer(),
-                message.getLines(), LocalDate.now());
+    @Override
+    public CustomerNote updateNote(CustomerNote note) {
+        var message = new mainframe.client.messages.customer.UpdateNote(note.getCustomerId(),
+                Long.parseLong(note.getNoteId()), note.getNoteText(), note.getType());
+        sendOrThrow(message);
+        return new CustomerNote(note.getNoteId(), note.getCustomerId(), note.getNoteText(),
+                note.getDateAdded(), note.getType(), message.getAuthor());
+    }
+
+    @Override
+    public void deleteNote(String customerId, String noteId) {
+        sendOrThrow(new mainframe.client.messages.customer.DeleteNote(customerId, Long.parseLong(noteId)));
     }
 
     @Override
     public List<CustomerNote> getNotes(String customerId) {
         List<CustomerNote> notes = new ArrayList<>();
         long page = 1;
+        long seen = 0;
         while (true) {
-            mainframe.client.messages.customerNote.List message =
-                    new mainframe.client.messages.customerNote.List(customerId, page, 100);
+            var message = new mainframe.client.messages.customerNote.List(customerId, page, 100);
             sendOrThrow(message);
-
-            mainframe.client.messages.customerNote.List.Item[] items = message.getItems();
-            for (mainframe.client.messages.customerNote.List.Item item : items) {
-                mainframe.client.messages.customerNote.Retrieve note =
-                        new mainframe.client.messages.customerNote.Retrieve(
-                                item.getId(), customerId);
-                sendOrThrow(note);
-                LocalDate dateAdded = note.getDateAdded() == null
-                        || note.getDateAdded().isBlank()
-                                ? LocalDate.now() : LocalDate.parse(note.getDateAdded());
-                notes.add(new CustomerNote(String.valueOf(note.getId()), customerId,
-                        note.getLines(), dateAdded));
+            for (var item : message.getItems()) {
+                var retrieve = new mainframe.client.messages.customerNote.Retrieve(item.getId(), customerId);
+                sendOrThrow(retrieve);
+                String date = retrieve.getDateAdded();
+                notes.add(new CustomerNote(item.getId().toString(), customerId, retrieve.getLines(),
+                        date == null || date.isBlank() ? null : LocalDate.parse(date,
+                                date.contains("T") ? DateTimeFormatter.ISO_DATE_TIME : DateTimeFormatter.ISO_LOCAL_DATE),
+                        retrieve.getType(), retrieve.getAuthor()));
             }
-            if (items.length == 0 || notes.size() >= message.getTotal()) {
-                return List.copyOf(notes);
-            }
+            seen += message.getItems().length;
+            if (message.getItems().length == 0 || seen >= message.getTotal()) return List.copyOf(notes);
             page++;
         }
-    }
-
-    @Override
-    public CustomerNote updateNote(CustomerNote note) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.UpdateNote");
-    }
-
-    @Override
-    public void deleteNote(String noteId) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.DeleteNote");
     }
 
     @Override
