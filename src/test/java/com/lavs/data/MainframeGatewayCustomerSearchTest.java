@@ -41,7 +41,21 @@ class MainframeGatewayCustomerSearchTest {
         verify(connection).send(any(MessageRequest.class));
     }
 
+    @Test void missingSearchDateOfBirthIsNull() {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(page("1", "1", "C1", null));
+
+        var result = new MainframeGatewayImpl(connection, "Test").searchCustomers("Jane");
+
+        assertEquals(1, result.size());
+        assertNull(result.get(0).getDateOfBirth());
+    }
+
     private static MessageResponse page(String total, String items, String id) {
+        return page(total, items, id, "1990-05-01");
+    }
+
+    private static MessageResponse page(String total, String items, String id, String dateOfBirth) {
         HashMap<String, String> values = new HashMap<>();
         values.put("total", total);
         values.put("items", items);
@@ -49,7 +63,7 @@ class MainframeGatewayCustomerSearchTest {
         values.put("1:firstName", "Jane");
         values.put("1:familyName", "Smith");
         values.put("1:title", "Ms");
-        values.put("1:dateOfBirth", "1990-05-01");
+        if (dateOfBirth != null) values.put("1:dateOfBirth", dateOfBirth);
         return new MessageResponse(new Status(1), values);
     }
 }
