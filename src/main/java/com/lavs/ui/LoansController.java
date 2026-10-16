@@ -33,15 +33,19 @@ public class LoansController {
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
     private VBox addLoanView;
+    private AddLoanController addLoanController;
     private final com.lavs.business.SessionLoanStore sessionLoans = new com.lavs.business.SessionLoanStore();
     private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
     private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
 
-    private java.util.function.Supplier<List<CustomersController.CustomerSummary>> customerPreviews = List::of;
+    private com.lavs.business.CustomerService customerService;
 
-    public void setCustomerPreviews(java.util.function.Supplier<List<CustomersController.CustomerSummary>> supplier) {
-        customerPreviews = supplier;
+    public void setCustomerService(com.lavs.business.CustomerService service) {
+        customerService = java.util.Objects.requireNonNull(service);
+        if (addLoanController != null) addLoanController.setCustomerService(service);
     }
+
+    public void dispose() { if (addLoanController != null) addLoanController.dispose(); }
 
     public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
         this.onSaved = onSaved;
@@ -56,10 +60,11 @@ public class LoansController {
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
-        controller.configure(customerPreviews.get(), () -> {
+        controller.configure(List.of(), () -> {
             showList(true);
             onCancel.run();
         });
+        if (customerService != null) controller.setCustomerService(customerService);
         if (customer != null) controller.setPrimaryBorrower(customer);
         controller.setOnSave(draft -> {
             var saved = sessionLoans.save(draft);
@@ -75,6 +80,7 @@ public class LoansController {
         listView.setVisible(false);
         listView.setManaged(false);
         addLoanView = editor;
+        addLoanController = controller;
         VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
         ((VBox) listView.getParent()).getChildren().add(editor);
         if (customer == null) controller.focusBorrowerSearch();
@@ -153,6 +159,8 @@ public class LoansController {
     }
     private void showList(boolean visible) {
         if (addLoanView != null) {
+            addLoanController.dispose();
+            addLoanController = null;
             ((VBox) listView.getParent()).getChildren().remove(addLoanView);
             addLoanView = null;
         }

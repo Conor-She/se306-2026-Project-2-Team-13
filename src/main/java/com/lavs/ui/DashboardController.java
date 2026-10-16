@@ -121,11 +121,11 @@ public class DashboardController {
         showHome();
     }
 
-    public void dispose() { customersViewController.dispose(); }
+    public void dispose() { customersViewController.dispose(); loansViewController.dispose(); }
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
         customersViewController.setCustomerService(service);
-        loansViewController.setCustomerPreviews(customersViewController::customerPreviews);
+        loansViewController.setCustomerService(service);
     }
 
     public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {

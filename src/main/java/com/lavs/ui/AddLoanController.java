@@ -10,6 +10,10 @@ import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
 import com.lavs.business.LoanSummary;
 import com.lavs.model.Repayment;
+import com.lavs.business.CustomerService;
+import javafx.animation.PauseTransition;
+import javafx.concurrent.Task;
+import javafx.util.Duration;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -53,6 +57,80 @@ public class AddLoanController {
     private Runnable onCancel = () -> {};
     private java.util.function.Consumer<LoanDraft> onSave;
     private boolean saved;
+    private CustomerService customerService;
+    private CustomerLookup borrowerLookup, coborrowerLookup;
+
+    public void setCustomerService(CustomerService service) {
+        dispose();
+        customerService = java.util.Objects.requireNonNull(service);
+        borrowerLookup = new CustomerLookup(customerSearch, customerResults, false);
+        coborrowerLookup = new CustomerLookup(coborrowerSearch, coborrowerResults, true);
+        customerSearch.setOnAction(event -> borrowerLookup.refresh(true));
+        coborrowerSearch.setOnAction(event -> coborrowerLookup.refresh(true));
+        searchCustomers();
+        searchCoborrowers();
+    }
+
+    public void dispose() {
+        if (borrowerLookup != null) borrowerLookup.stop();
+        if (coborrowerLookup != null) coborrowerLookup.stop();
+    }
+
+    /** Each field owns its debounce and request version so late replies cannot replace newer results. */
+    private final class CustomerLookup {
+        private final TextField field;
+        private final ListView<CustomersController.CustomerSummary> results;
+        private final boolean coborrower;
+        private final PauseTransition delay = new PauseTransition(Duration.millis(300));
+        private long version;
+        private Task<List<CustomersController.CustomerSummary>> task;
+
+        CustomerLookup(TextField field, ListView<CustomersController.CustomerSummary> results, boolean coborrower) {
+            this.field = field;
+            this.results = results;
+            this.coborrower = coborrower;
+        }
+
+        void stop() {
+            version++;
+            delay.stop();
+            if (task != null) task.cancel();
+        }
+
+        void refresh(boolean immediate) {
+            stop();
+            long request = version;
+            String query = field.getText().strip();
+            results.getItems().clear();
+            boolean visible = !query.isEmpty() && (!coborrower || draft.coborrowers.size() < 3);
+            results.setVisible(visible);
+            results.setManaged(visible);
+            if (!visible) return;
+            results.setPlaceholder(new Label("Searching customers..."));
+            Task<List<CustomersController.CustomerSummary>> search = new Task<>() {
+                @Override protected List<CustomersController.CustomerSummary> call() {
+                    return customerService.search(query).stream().map(preview -> new CustomersController.CustomerSummary(
+                            preview.customerId().value(),
+                            (java.util.Objects.toString(preview.firstName(), "") + " "
+                                    + java.util.Objects.toString(preview.lastName(), "")).strip(),
+                            "", "", preview.dateOfBirth())).toList();
+                }
+            };
+            task = search;
+            search.setOnSucceeded(event -> {
+                if (request != version) return;
+                results.getItems().setAll(search.getValue().stream()
+                        .filter(customer -> !coborrower || eligibleCoborrower(customer)).toList());
+                results.setPlaceholder(new Label(coborrower ? "No eligible customers found" : "No customers found"));
+            });
+            search.setOnFailed(event -> {
+                if (request == version) results.setPlaceholder(new Label("Unable to search customers. Press Enter to retry."));
+            });
+            delay.setOnFinished(event -> java.util.concurrent.CompletableFuture.runAsync(search));
+            if (immediate) java.util.concurrent.CompletableFuture.runAsync(search);
+            else delay.playFromStart();
+        }
+    }
 
     public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
 
@@ -148,6 +226,7 @@ public class AddLoanController {
     }
 
     private void searchCustomers() {
+        if (borrowerLookup != null) { borrowerLookup.refresh(false); return; }
         String query = customerSearch.getText().strip().toLowerCase(Locale.ROOT);
         customerResults.getItems().setAll(query.isEmpty() ? List.of() : customers.stream()
                 .filter(c -> c.name().toLowerCase(Locale.ROOT).contains(query)
@@ -317,6 +396,7 @@ public class AddLoanController {
     }
 
     private void searchCoborrowers() {
+        if (coborrowerLookup != null) { coborrowerLookup.refresh(false); return; }
         String query = coborrowerSearch.getText().strip().toLowerCase(Locale.ROOT);
         coborrowerResults.getItems().setAll(query.isEmpty() || draft.coborrowers.size() >= 3 ? List.of()
                 : customers.stream().filter(this::eligibleCoborrower)
