@@ -103,8 +103,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
         return new Customer(message.getNumber(), message.getTitle(), message.getFirstName(),
                 message.getFamilyName(),
-                customer.getDateOfBirth(), // mainframe returns a String, Customer wants LocalDate -
-                                            // needs a parser once dateOfBirth format is confirmed
+                customer.getDateOfBirth(), // The create response may omit optional fields.
                 message.getNationality());
     }
 
@@ -145,10 +144,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
             Search message = new Search(page, query, CATEGORY_PAGE_SIZE);
             sendOrThrow(message);
             for (Search.Item item : message.getItems()) {
+                // Search responses may omit the optional date of birth.
                 results.add(new Customer(item.getNumber(), item.getTitle(), item.getFirstName(),
-                        item.getFamilyName(),
-                        item.getDateOfBirth() == null || item.getDateOfBirth().isBlank()
-                                ? null : LocalDate.parse(item.getDateOfBirth()), null));
+                        item.getFamilyName(), parseDate(item.getDateOfBirth()), null));
             }
             if (message.getItems().length == 0 || page * CATEGORY_PAGE_SIZE >= message.getTotal()) {
                 return results;
@@ -164,9 +162,12 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
         return new Customer(message.getNumber(), message.getTitle(), message.getFirstName(),
                 message.getFamilyName(),
-                message.getDateOfBirth() == null || message.getDateOfBirth().isBlank()
-                        ? null : LocalDate.parse(message.getDateOfBirth()),
+                parseDate(message.getDateOfBirth()),
                 message.getNationality());
+    }
+
+    private static LocalDate parseDate(String value) {
+        return value == null || value.isBlank() ? null : LocalDate.parse(value);
     }
 
     @Override
