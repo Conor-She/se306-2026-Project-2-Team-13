@@ -33,9 +33,9 @@ public class LoansController {
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
     private VBox addLoanView;
-    private final com.lavs.business.SessionLoanStore sessionLoans = new com.lavs.business.SessionLoanStore();
+    private com.lavs.business.LoanSubmissionService submission;
     private final javafx.collections.ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
-    private java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved = loan -> {};
+    private java.util.function.Consumer<com.lavs.business.LoanSubmissionService.SavedLoan> onSaved = loan -> {};
 
     private java.util.function.Supplier<List<CustomersController.CustomerSummary>> customerPreviews = List::of;
 
@@ -43,8 +43,12 @@ public class LoansController {
         customerPreviews = supplier;
     }
 
-    public void setOnSaved(java.util.function.Consumer<com.lavs.business.SessionLoanStore.SavedLoan> onSaved) {
+    public void setOnSaved(java.util.function.Consumer<com.lavs.business.LoanSubmissionService.SavedLoan> onSaved) {
         this.onSaved = onSaved;
+    }
+
+    public void setLoanSubmissionService(com.lavs.business.LoanSubmissionService submission) {
+        this.submission = submission;
     }
 
     @FXML private void openAddLoan() throws java.io.IOException {
@@ -62,7 +66,10 @@ public class LoansController {
         });
         if (customer != null) controller.setPrimaryBorrower(customer);
         controller.setOnSave(draft -> {
-            var saved = sessionLoans.save(draft);
+            if (submission == null) {
+                throw new IllegalStateException("Saving loans is not connected to the mainframe.");
+            }
+            var saved = submission.submit(draft);
             var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
             loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
                     draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),

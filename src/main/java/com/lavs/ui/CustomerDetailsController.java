@@ -13,6 +13,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.ColumnConstraints;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import com.lavs.ui.CustomerRecordEditor.Kind;
+
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
 /** Customer summary header and navigation for the customer details page. */
@@ -154,7 +157,7 @@ public class CustomerDetailsController {
         customerTabs.selectToggle(customerTabs.getToggles().get(0));
     }
     public CustomersController.CustomerSummary getCustomer() { return customer; }
-    public void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    public void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         editing.addSessionLoan(customer, loan);
     }
     public void setOnBack(Runnable onBack) { this.onBack = onBack; }

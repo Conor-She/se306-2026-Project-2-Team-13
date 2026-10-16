@@ -113,7 +113,7 @@ final class CustomerDetailsEditing {
 
     private static String text(String value) { return value == null ? "" : value; }
 
-    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.SessionLoanStore.SavedLoan loan) {
+    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
         var draft = loan.draft();
         target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
