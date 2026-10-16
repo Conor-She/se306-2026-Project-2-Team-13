@@ -55,6 +55,38 @@ class MainframeCustomerRegistrationServiceTest {
         verify(gateway, never()).createCustomer(any());
     }
 
+    @Test void savesWizardNotesAgainstTheCreatedCustomer() throws Exception {
+        var gateway = gateway();
+        var draft = draft();
+        draft.notes.add(Map.of("text", "First\nSecond"));
+        assertTrue(new MainframeCustomerRegistrationService(gateway).validate(draft).isEmpty());
+        assertEquals("C013", new MainframeCustomerRegistrationService(gateway).save(draft));
+        var note = ArgumentCaptor.forClass(CustomerNote.class);
+        verify(gateway).addNote(note.capture());
+        assertEquals("C013", note.getValue().getCustomerId());
+        assertEquals("First\nSecond", note.getValue().getNoteText());
+        assertNull(note.getValue().getNoteId());
+    }
+
+    @Test void noteRetryKeepsCreatedCustomerAndConfirmedNotes() throws Exception {
+        var gateway = gateway();
+        var draft = draft();
+        draft.notes.add(Map.of("text", "First"));
+        draft.notes.add(Map.of("text", "Second"));
+        when(gateway.addNote(any())).thenAnswer(call -> call.getArgument(0))
+                .thenThrow(new IllegalStateException("Unavailable")).thenAnswer(call -> call.getArgument(0));
+        var service = new MainframeCustomerRegistrationService(gateway);
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(draft));
+        var changed = draft.copy();
+        changed.notes.set(0, Map.of("text", "Changed"));
+        assertThrows(CustomerRegistrationService.RegistrationException.class, () -> service.save(changed));
+        assertEquals("C013", service.save(draft));
+        verify(gateway, times(1)).createCustomer(any());
+        var notes = ArgumentCaptor.forClass(CustomerNote.class);
+        verify(gateway, times(3)).addNote(notes.capture());
+        assertEquals(java.util.List.of("First", "Second", "Second"), notes.getAllValues().stream().map(CustomerNote::getNoteText).toList());
+    }
+
     @Test void retryContinuesWithoutRecreatingCustomerOrConfirmedAddresses() throws Exception {
         var gateway = gateway();
         var draft = draft();

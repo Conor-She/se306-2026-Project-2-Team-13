@@ -28,6 +28,12 @@ public class CustomerDetailsController {
     @FXML private GridPane overviewCards;
     @FXML private javafx.scene.layout.HBox primaryEmployerRow;
     private CustomerDetailsEditing editing;
+    private CustomerNotesEditing noteEditing;
+
+    public void setCustomerService(com.lavs.business.CustomerService service) {
+        noteEditing = new CustomerNotesEditing(notesList, service);
+        if (customer != null) noteEditing.select(customer.customerId());
+    }
     private Consumer<CustomersController.CustomerSummary> onCustomerChanged = updated -> {};
     @FXML private ScrollPane detailsContent;
     @FXML private ScrollPane loansContent;
@@ -105,6 +111,7 @@ public class CustomerDetailsController {
             loansContent.setManaged(loans);
             notesContent.setVisible(notes);
             notesContent.setManaged(notes);
+            if (notes && noteEditing != null) noteEditing.refresh();
             documentsContent.setVisible(documents);
             documentsContent.setManaged(documents);
             guarantorsContent.setVisible(guarantors);
@@ -115,15 +122,18 @@ public class CustomerDetailsController {
     public void setCustomer(CustomersController.CustomerSummary customer) {
         this.customer = editing.select(customer);
         resetView();
+        if (noteEditing != null) noteEditing.select(customer.customerId());
     }
 
     public void setCustomerDetails(com.lavs.model.CustomerDetails details) {
         this.customer = editing.select(details);
         setReadOnly(backButton.getParent());
         resetView();
+        if (noteEditing != null) noteEditing.select(customer.customerId());
     }
 
     private void setReadOnly(javafx.scene.Node node) {
+        if (node == notesList && noteEditing != null) return;
         if (node instanceof Button button && button != backButton
                 && button != viewAllEmail && button != viewAllPhone && button != viewAllAddress
                 && !"+  Add Loan".equals(button.getText())) {
@@ -170,7 +180,10 @@ public class CustomerDetailsController {
     @FXML private void addEmployer() { editing.add(Kind.EMPLOYMENT); }
     @FXML private void editEmployment() { editing.editDetails(Kind.EMPLOYMENT); }
     @FXML private void addLoan() { if (customer != null) onAddLoan.accept(customer); }
-    @FXML private void addNote() { editing.add(Kind.NOTE); }
+    @FXML private void addNote() {
+        if (noteEditing != null) noteEditing.edit(null);
+        else editing.add(Kind.NOTE);
+    }
     @FXML private void addDocument() { editing.add(Kind.DOCUMENT); }
     @FXML private void addGuarantor() { editing.add(Kind.GUARANTOR); }
     @FXML private void back() { onBack.run(); }
