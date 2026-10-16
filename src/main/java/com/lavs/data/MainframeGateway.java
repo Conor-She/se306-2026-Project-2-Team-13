@@ -54,6 +54,9 @@ public interface MainframeGateway {
     CustomerNote addNote(CustomerNote note);
     CustomerNote updateNote(CustomerNote note);
     void deleteNote(String noteId);
+    default List<CustomerNote> getNotes(String customerId) {
+        return List.of();
+    }
     List<CustomerDocument> getDocuments(String customerId);
     CustomerDocument addDocument(CustomerDocument document);
     CustomerDocument updateDocument(CustomerDocument document);

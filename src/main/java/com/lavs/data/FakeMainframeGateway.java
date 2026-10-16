@@ -34,6 +34,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private final Map<String, List<Phone>> phones = new HashMap<>();
     private final Map<String, List<Email>> emails = new HashMap<>();
     private final Map<String, List<Employer>> employers = new HashMap<>();
+    private final Map<String, List<CustomerNote>> notes = new HashMap<>();
     private final Map<String, List<Guarantor>> guarantors = new HashMap<>();
     private final Map<String, Payment> payments = new HashMap<>();
     private final Map<String, List<CustomerDocument>> documents = new HashMap<>();
@@ -45,6 +46,7 @@ public class FakeMainframeGateway implements MainframeGateway {
     private long nextPhoneNumber = 1;
     private long nextEmailNumber = 1;
     private long nextEmployerNumber = 1;
+    private int nextNoteNumber = 1;
     private int nextLoanNumber = 1;
     private int nextCoBorrowerNumber = 1;
     private int nextGuarantorNumber = 1;
@@ -340,7 +342,18 @@ public class FakeMainframeGateway implements MainframeGateway {
     @Override
     public CustomerNote addNote(CustomerNote note) {
         checkAvailability();
-        return note;
+        String noteId = note.getNoteId() != null
+                ? note.getNoteId()
+                : "FAKE-NOTE-" + nextNoteNumber++;
+        CustomerNote stored = new CustomerNote(noteId, note.getCustomerId(),
+                note.getNoteText(), note.getDateAdded());
+        return store(notes, stored.getCustomerId(), stored);
+    }
+
+    @Override
+    public List<CustomerNote> getNotes(String customerId) {
+        checkAvailability();
+        return read(notes, customerId);
     }
 
     @Override

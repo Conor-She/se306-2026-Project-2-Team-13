@@ -27,6 +27,7 @@ import mainframe.client.messages.customer.AddAddress;
 import mainframe.client.messages.customer.AddDocumentMetadata;
 import mainframe.client.messages.customer.AddEmail;
 import mainframe.client.messages.customer.AddEmployer;
+import mainframe.client.messages.customer.AddNote;
 import mainframe.client.messages.customer.AddPhoneNumber;
 import mainframe.client.messages.customer.AddRelationship;
 import mainframe.client.messages.customer.Create;
@@ -414,7 +415,39 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public CustomerNote addNote(CustomerNote note) {
-        throw new UnsupportedOperationException("Not yet implemented - needs customer.AddNote");
+        AddNote message = new AddNote(note.getCustomerId(), note.getNoteText(), "Customer note");
+        sendOrThrow(message);
+
+        return new CustomerNote(String.valueOf(message.getId()), message.getCustomer(),
+                message.getLines(), LocalDate.now());
+    }
+
+    @Override
+    public List<CustomerNote> getNotes(String customerId) {
+        List<CustomerNote> notes = new ArrayList<>();
+        long page = 1;
+        while (true) {
+            mainframe.client.messages.customerNote.List message =
+                    new mainframe.client.messages.customerNote.List(customerId, page, 100);
+            sendOrThrow(message);
+
+            mainframe.client.messages.customerNote.List.Item[] items = message.getItems();
+            for (mainframe.client.messages.customerNote.List.Item item : items) {
+                mainframe.client.messages.customerNote.Retrieve note =
+                        new mainframe.client.messages.customerNote.Retrieve(
+                                item.getId(), customerId);
+                sendOrThrow(note);
+                LocalDate dateAdded = note.getDateAdded() == null
+                        || note.getDateAdded().isBlank()
+                                ? LocalDate.now() : LocalDate.parse(note.getDateAdded());
+                notes.add(new CustomerNote(String.valueOf(note.getId()), customerId,
+                        note.getLines(), dateAdded));
+            }
+            if (items.length == 0 || notes.size() >= message.getTotal()) {
+                return List.copyOf(notes);
+            }
+            page++;
+        }
     }
 
     @Override

@@ -11,8 +11,8 @@ public class CustomerNote {
     public CustomerNote(String noteId, String customerId, String noteText,
             LocalDate dateAdded) {
         // Basic structural checks only
-        if (noteId == null || noteId.isBlank()) {
-            throw new IllegalArgumentException("noteId must not be null or blank");
+        if (noteId != null && noteId.isBlank()) {
+            throw new IllegalArgumentException("noteId must not be blank");
         }
         if (customerId == null || customerId.isBlank()) {
             throw new IllegalArgumentException("customerId must not be null or blank");
