@@ -72,6 +72,7 @@ class CustomerAddLoanNavigationTest {
             Button next = (Button) loansView.lookup("#next");
             next.fire();
             next.fire();
+            next.fire();
             assertEquals("Finish", next.getText());
             next.fire();
             next.fire(); // A second click must not create another loan.

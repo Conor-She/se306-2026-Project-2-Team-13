@@ -18,7 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 
-/** Three-step loan wizard. Persistence is not yet connected to the sample loan list. */
+/** Four-step loan wizard with optional co-borrowers and customer notes. */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
@@ -28,13 +28,13 @@ public class AddLoanController {
     @FXML private DatePicker startDate, renewDate;
     @FXML private ScrollPane loanScroll;
     @FXML private String scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle;
-    @FXML private VBox detailsPane, coborrowersPane, coborrowerRows;
+    @FXML private VBox detailsPane, coborrowersPane, notesPane, coborrowerRows;
     @FXML private TextField coborrowerSearch;
     @FXML private ListView<CustomersController.CustomerSummary> coborrowerResults;
     @FXML private Label coborrowerCount, emptyCoborrowers, marker0, marker1, stepName0, stepName1;
     @FXML private Button back, next;
     @FXML private VBox reviewPane, reviewCoborrowers;
-    @FXML private Label marker2, stepName2, reviewBorrower, reviewType, reviewPrincipal,
+    @FXML private Label marker2, stepName2, marker3, stepName3, reviewBorrower, reviewType, reviewPrincipal,
             reviewInterest, reviewPaymentFrequency, reviewRateFrequency, reviewTerm,
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
@@ -53,10 +53,48 @@ public class AddLoanController {
     private Runnable onCancel = () -> {};
     private java.util.function.Consumer<LoanDraft> onSave;
     private boolean saved;
+    @FXML private TextArea noteText;
+    @FXML private ListView<String> noteList;
+    @FXML private Label reviewNotes;
+    @FXML private Button saveNote;
+
+    @FXML private void saveNote() {
+        String text = noteText.getText().strip();
+        if (text.isBlank()) { showMessage("Enter a customer note before saving it."); return; }
+        int index = noteList.getSelectionModel().getSelectedIndex();
+        if (index < 0) draft.notes.add(text);
+        else draft.notes.set(index, text);
+        refreshNotes();
+    }
+
+    @FXML private void deleteNote() {
+        int index = noteList.getSelectionModel().getSelectedIndex();
+        if (index >= 0) draft.notes.remove(index);
+        refreshNotes();
+    }
+
+    @FXML private void newNote() {
+        noteList.getSelectionModel().clearSelection();
+        noteText.clear();
+        saveNote.setText("Add note");
+    }
+
+    private void refreshNotes() {
+        noteList.getItems().setAll(draft.notes);
+        newNote();
+    }
 
     public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
 
     @FXML private void initialize() {
+        noteList.setPlaceholder(new Label("No customer notes added."));
+        noteList.getSelectionModel().selectedIndexProperty().addListener((obs, old, selected) -> {
+            int index = selected.intValue();
+            if (index >= 0 && index < draft.notes.size()) {
+                noteText.setText(draft.notes.get(index));
+                saveNote.setText("Update note");
+            }
+        });
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
         var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
         dueDateColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().getDueDate().format(dateFormat)));
@@ -174,7 +212,7 @@ public class AddLoanController {
     public boolean confirmLeave() {
         boolean hasUncommittedDate = !startDate.getEditor().getText().isBlank()
                 || !renewDate.getEditor().getText().isBlank();
-        if (!draft.hasData() && !hasUncommittedDate) return true;
+        if (!draft.hasData() && !hasUncommittedDate && noteText.getText().isBlank()) return true;
         return confirmDiscardDetails();
     }
 
@@ -194,7 +232,7 @@ public class AddLoanController {
         if (saved) return;
         String error = validateDetails();
         if (error != null) { showMessage(error); return; }
-        if (step == 2 || step == 1 || editingReview) {
+        if (step >= 2 || editingReview) {
             try {
                 updateSchedule();
             } catch (IllegalArgumentException | ArithmeticException exception) {
@@ -204,7 +242,7 @@ public class AddLoanController {
                 return;
             }
         }
-        if (step == 2) {
+        if (step == 3) {
             if (onSave == null) {
                 showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
                 return;
@@ -218,7 +256,7 @@ public class AddLoanController {
                 showMessage(exception.getMessage());
             }
         } else {
-            int target = editingReview ? 2 : step + 1;
+            int target = editingReview ? 3 : step + 1;
             editingReview = false;
             showStep(target);
         }
@@ -232,6 +270,8 @@ public class AddLoanController {
     }
 
     @FXML private void editCoborrowers() { editStep(1); }
+
+    @FXML private void editNotes() { editStep(2); }
 
     private void editStep(int target) {
         editingReview = true;
@@ -248,9 +288,9 @@ public class AddLoanController {
 
     private void showStep(int selectedStep) {
         step = selectedStep;
-        VBox[] panes = {detailsPane, coborrowersPane, reviewPane};
-        Label[] markers = {marker0, marker1, marker2};
-        Label[] names = {stepName0, stepName1, stepName2};
+        VBox[] panes = {detailsPane, coborrowersPane, notesPane, reviewPane};
+        Label[] markers = {marker0, marker1, marker2, marker3};
+        Label[] names = {stepName0, stepName1, stepName2, stepName3};
         for (int index = 0; index < panes.length; index++) {
             panes[index].setVisible(index == step);
             panes[index].setManaged(index == step);
@@ -259,7 +299,7 @@ public class AddLoanController {
         }
         back.setVisible(step > 0 && !editingReview);
         back.setManaged(back.isVisible());
-        next.setText(step == 2 ? "Finish" : editingReview ? "Update and return to Review" : "Next");
+        next.setText(step == 3 ? "Finish" : editingReview ? "Update and return to Review" : "Next");
         reviewNotice.setVisible(editingReview);
         reviewNotice.setManaged(editingReview);
         message.setVisible(false);
@@ -269,12 +309,15 @@ public class AddLoanController {
             renderCoborrowers();
             focusCoborrowerSearch();
         } else if (step == 2) {
+            javafx.application.Platform.runLater(noteText::requestFocus);
+        } else if (step == 3) {
             renderReview();
             javafx.application.Platform.runLater(next::requestFocus);
         } else focusBorrowerSearch();
     }
 
     private void renderReview() {
+        reviewNotes.setText(draft.notes.isEmpty() ? "No customer notes added." : String.join("\n\n", draft.notes));
         reviewBorrower.setText(draft.primaryBorrower.name() + " | Customer ID: " + draft.primaryBorrower.customerId());
         reviewType.setText(draft.details.getOrDefault("loanType", ""));
         java.text.NumberFormat currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
@@ -362,6 +405,7 @@ public class AddLoanController {
     }
 
     String validateDetails() {
+        if (step == 2 && !noteText.getText().isBlank()) return "Add or update the customer note, or clear the editor before continuing.";
         if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
         String prerequisiteError = prerequisiteError();
         if (prerequisiteError != null) return prerequisiteError;

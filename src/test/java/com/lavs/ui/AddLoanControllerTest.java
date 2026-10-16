@@ -11,6 +11,36 @@ import static org.junit.jupiter.api.Assertions.*;
 class AddLoanControllerTest {
     @BeforeAll static void startToolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
 
+    @Test void addsEditsAndDeletesCustomerNotesInLoanDraft() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            loader.load();
+            AddLoanController controller = loader.getController();
+            TextArea text = (TextArea) loader.getNamespace().get("noteText");
+            ListView<?> notes = (ListView<?>) loader.getNamespace().get("noteList");
+            Button save = (Button) loader.getNamespace().get("saveNote");
+            text.setText("Discuss payment dates");
+            save.fire();
+            assertEquals(List.of("Discuss payment dates"), controller.getDraft().notes);
+            notes.getSelectionModel().select(0);
+            assertEquals("Discuss payment dates", text.getText());
+            text.setText("Payment dates confirmed");
+            save.fire();
+            assertEquals(List.of("Payment dates confirmed"), controller.getDraft().notes);
+            var snapshot = controller.getDraft();
+            snapshot.notes.clear();
+            assertEquals(1, controller.getDraft().notes.size());
+            notes.getSelectionModel().select(0);
+            ((Button) loader.getNamespace().get("deleteNote")).fire();
+            assertTrue(controller.getDraft().notes.isEmpty());
+            text.setText(" ");
+            save.fire();
+            assertTrue(controller.getDraft().notes.isEmpty());
+            assertTrue(((Label) loader.getNamespace().get("message")).isVisible());
+            return null;
+        });
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
     void cancelRequiresConfirmationForEnteredDetails(boolean discard) throws Exception {
@@ -130,6 +160,14 @@ class AddLoanControllerTest {
             Button next = (Button) loader.getNamespace().get("next");
             Button back = (Button) loader.getNamespace().get("back");
             next.fire();
+            var notesPane = (javafx.scene.layout.VBox) loader.getNamespace().get("notesPane");
+            assertTrue(notesPane.isVisible());
+            assertFalse(((javafx.scene.layout.VBox) loader.getNamespace().get("reviewPane")).isVisible());
+            assertEquals("Next", next.getText());
+            back.fire();
+            assertTrue(coPane.isVisible());
+            next.fire();
+            next.fire(); // Notes are optional.
             assertTrue(((javafx.scene.layout.VBox) loader.getNamespace().get("reviewPane")).isVisible());
             assertFalse(coPane.isVisible());
             assertEquals("Finish", next.getText());
@@ -164,20 +202,36 @@ class AddLoanControllerTest {
             next.fire();
             assertEquals("Amelia Adams | Customer ID: C001", ((Label) loader.getNamespace().get("reviewBorrower")).getText());
             back.fire();
+            assertTrue(notesPane.isVisible());
+            back.fire();
             assertTrue(coPane.isVisible());
             assertEquals("Next", next.getText());
             back.fire();
             ((TextField) loader.getNamespace().get("principal")).setText("600000");
             next.fire();
             next.fire();
+            next.fire();
             assertEquals("$600,000.00", ((Label) loader.getNamespace().get("reviewPrincipal")).getText());
+            back.fire();
             back.fire();
             while (!rows.getChildren().isEmpty()) {
                 row = (javafx.scene.layout.HBox) rows.getChildren().get(0);
                 ((Button) row.getChildren().get(2)).fire();
             }
             ((Button) loader.getNamespace().get("next")).fire();
+            next.fire();
             assertEquals("Co-borrowers (0/3)", ((Label) loader.getNamespace().get("reviewCoborrowerCount")).getText());
+            ((Button) loader.getNamespace().get("editNotes")).fire();
+            assertTrue(notesPane.isVisible());
+            assertFalse(((javafx.scene.layout.VBox) loader.getNamespace().get("detailsPane")).isVisible());
+            TextArea noteText = (TextArea) loader.getNamespace().get("noteText");
+            noteText.setText("Follow up next week");
+            next.fire();
+            assertTrue(notesPane.isVisible(), "Uncommitted notes must be added before leaving the step");
+            ((Button) loader.getNamespace().get("saveNote")).fire();
+            next.fire();
+            assertEquals("Follow up next week", ((Label) loader.getNamespace().get("reviewNotes")).getText());
+            assertEquals("Finish", next.getText());
             next.fire();
             assertTrue(((Label) loader.getNamespace().get("message")).getText().contains("No loan has been saved"));
             ((Button) loader.getNamespace().get("editLoanDetails")).fire();

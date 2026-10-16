@@ -16,9 +16,10 @@ public class LoanDraft {
     public LocalDate startDate;
     public LocalDate renewDate;
     public final List<Borrower> coborrowers = new ArrayList<>();
+    public final List<String> notes = new ArrayList<>();
 
     public boolean hasData() {
-        return primaryBorrower != null || !coborrowers.isEmpty() || startDate != null || renewDate != null
+        return primaryBorrower != null || !notes.isEmpty() || !coborrowers.isEmpty() || startDate != null || renewDate != null
                 || details.entrySet().stream().anyMatch(entry -> !entry.getValue().isBlank()
                         && !(entry.getKey().equals("status") && entry.getValue().equals("New")));
     }
@@ -31,6 +32,7 @@ public class LoanDraft {
         copy.renewDate = renewDate;
         // Borrower records and LocalDate values are immutable.
         copy.coborrowers.addAll(coborrowers);
+        copy.notes.addAll(notes);
         return copy;
     }
 }
