@@ -1,6 +1,7 @@
 package com.lavs.business;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -296,5 +297,38 @@ class LoanSubmissionServiceTest {
 
         assertTrue(exception.getMessage().contains("could not be cancelled"));
         assertEquals(Loan.Status.NEW, failing.findLoansByCustomer("C001").get(0).getStatus());
+    }
+
+        // Ported from SessionLoanStoreTest: the saved loan keeps its own copy of the draft
+    @Test
+    void theSavedLoanKeepsItsOwnCopyOfTheDraft() {
+        addEligibleCustomer(gateway);
+        LoanDraft draft = draft();
+
+        SavedLoan saved = service.submit(draft);
+        draft.details.put("principal", "1");
+        saved.draft().details.clear();
+
+        assertEquals("12000", saved.draft().details.get("principal"));
+    }
+
+    @Test
+    void theScheduleBelongsToTheNewLoanAndIsPaidOffAtTheEnd() {
+        addEligibleCustomer(gateway);
+
+        SavedLoan saved = service.submit(draft());
+
+        assertEquals(saved.loanId(), saved.schedule().get(0).getLoanId());
+        assertEquals(0, saved.schedule().get(11).getRemainingBalance());
+    }
+
+    @Test
+    void eachLoanGetsItsOwnId() {
+        addEligibleCustomer(gateway);
+
+        SavedLoan first = service.submit(draft());
+        SavedLoan second = service.submit(draft());
+
+        assertNotEquals(first.loanId(), second.loanId());
     }
 }
