@@ -48,7 +48,7 @@ public class CustomerService {
         }
         return new CustomerDetails(customer, gateway.getAddresses(customerId),
                 gateway.getPhones(customerId), gateway.getEmails(customerId),
-                gateway.getEmployers(customerId));
+                gateway.getEmployers(customerId), gateway.getNotes(customerId));
     }
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,

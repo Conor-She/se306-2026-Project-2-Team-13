@@ -99,6 +99,11 @@ final class CustomerDetailsEditing {
             if (!loaded.details.containsKey(Kind.EMPLOYMENT)) loaded.details.put(Kind.EMPLOYMENT, record);
             else loaded.records.get(Kind.EMPLOYMENT).add(record);
         });
+        details.notes().forEach(note -> loaded.records.get(Kind.NOTE).add(values(
+                "title", "Customer note", "text", text(note.getNoteText()),
+                "date", note.getDateAdded() == null ? LocalDate.now().toString()
+                        : note.getDateAdded().toString(),
+                "author", "Mainframe")));
         var contact = loaded.details.get(Kind.CONTACT);
         loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
                 contact.get("phone"), contact.get("email"));
