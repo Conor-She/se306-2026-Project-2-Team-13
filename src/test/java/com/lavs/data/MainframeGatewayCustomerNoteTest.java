@@ -12,6 +12,23 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 
 class MainframeGatewayCustomerNoteTest {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "2026-10-16",
+            "2026-10-16T17:35:46.4670000+13:00",
+            "2026-10-16T23:35:46.467Z",
+            "2026-10-16T17:35:46"
+    })
+    void readsDateOnlyAndTimestampDatesWithoutLosingTheRecordedDay(String dateAdded) {
+        var connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(
+                response("page", "1", "items", "1", "total", "1", "1:id", "42"),
+                response("id", "42", "lines", "Customer note", "type", "General", "dateAdded", dateAdded));
+        var note = new MainframeGatewayImpl(connection, 13).getNotes("C001").get(0);
+        assertEquals(LocalDate.of(2026, 10, 16), note.getDateAdded());
+        assertEquals("Customer note", note.getNoteText());
+    }
+
     private static MessageResponse response(String... values) {
         var data = new HashMap<String, String>();
         for (int index = 0; index < values.length; index += 2) data.put(values[index], values[index + 1]);

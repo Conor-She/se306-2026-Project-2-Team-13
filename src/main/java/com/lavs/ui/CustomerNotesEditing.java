@@ -110,6 +110,10 @@ final class CustomerNotesEditing {
         dialog.getDialogPane().setContent(form);
         var save = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, save);
+        var buttonBar = (ButtonBar) dialog.getDialogPane().lookup(".button-bar");
+        buttonBar.setButtonOrder("C+O");
+        dialog.getDialogPane().lookupButton(ButtonType.CANCEL)
+                .setStyle(EDIT.replace("#9693ca", "#D95733").replace("#393a7b", "#D95733"));
         var saveButton = dialog.getDialogPane().lookupButton(save);
         saveButton.setStyle(EDIT);
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {

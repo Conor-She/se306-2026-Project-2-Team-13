@@ -2,6 +2,7 @@ package com.lavs.data;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -449,7 +450,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 sendOrThrow(retrieve);
                 String date = retrieve.getDateAdded();
                 notes.add(new CustomerNote(item.getId().toString(), customerId, retrieve.getLines(),
-                        date == null || date.isBlank() ? null : LocalDate.parse(date), retrieve.getType(), retrieve.getAuthor()));
+                        date == null || date.isBlank() ? null : LocalDate.parse(date,
+                                date.contains("T") ? DateTimeFormatter.ISO_DATE_TIME : DateTimeFormatter.ISO_LOCAL_DATE),
+                        retrieve.getType(), retrieve.getAuthor()));
             }
             seen += message.getItems().length;
             if (message.getItems().length == 0 || seen >= message.getTotal()) return List.copyOf(notes);
