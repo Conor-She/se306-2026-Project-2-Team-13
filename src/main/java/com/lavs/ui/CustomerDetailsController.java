@@ -34,6 +34,7 @@ public class CustomerDetailsController {
     private CustomerNotesEditing noteEditing;
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
+        editing.setCustomerService(service);
         noteEditing = new CustomerNotesEditing(notesList, service);
         if (customer != null) noteEditing.select(customer.customerId());
     }
@@ -139,12 +140,18 @@ public class CustomerDetailsController {
         if (node == notesList && noteEditing != null) return;
         if (node instanceof Button button && button != backButton
                 && button != viewAllEmail && button != viewAllPhone && button != viewAllAddress
-                && !"+  Add Loan".equals(button.getText())) {
+                && !"+  Add Loan".equals(button.getText()) && !isCustomerEditButton(button)) {
             button.setDisable(true);
-            button.setTooltip(new javafx.scene.control.Tooltip("Editing existing customer records is not connected yet."));
+            button.setTooltip(new javafx.scene.control.Tooltip("This record type is not editable here yet."));
         }
         if (node instanceof ScrollPane scroll && scroll.getContent() != null) setReadOnly(scroll.getContent());
         if (node instanceof javafx.scene.Parent parent) parent.getChildrenUnmodifiable().forEach(this::setReadOnly);
+    }
+
+    private boolean isCustomerEditButton(Button button) {
+        String action = button.getAccessibleText();
+        return action != null && (action.startsWith("Edit ") || action.startsWith("Delete ")
+                || action.equals("Add contact information") || action.equals("Add employer"));
     }
 
     private void resetView() {
