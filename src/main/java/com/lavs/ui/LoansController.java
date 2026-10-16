@@ -51,6 +51,17 @@ public class LoansController {
         this.submission = submission;
     }
 
+    // Saving talks to the mainframe, so in the app it runs on a background thread
+    private java.util.concurrent.Executor saveExecutor = task -> {
+        Thread thread = new Thread(task, "lavs-save-loan");
+        thread.setDaemon(true);
+        thread.start();
+    };
+
+    public void setSaveExecutor(java.util.concurrent.Executor saveExecutor) {
+        this.saveExecutor = saveExecutor;
+    }
+
     @FXML private void openAddLoan() throws java.io.IOException {
         openAddLoan(null, this::showListAndFocusSearch);
     }
@@ -60,6 +71,7 @@ public class LoansController {
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
         AddLoanController controller = loader.getController();
+        controller.setSaveExecutor(saveExecutor);
         controller.configure(customerPreviews.get(), () -> {
             showList(true);
             onCancel.run();
@@ -69,14 +81,18 @@ public class LoansController {
             if (submission == null) {
                 throw new IllegalStateException("Saving loans is not connected to the mainframe.");
             }
+            // The slow part: runs off the screen thread, and throws if the loan wasn't created
             var saved = submission.submit(draft);
-            var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
-            loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
-                    draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),
-                    draft.details.get("loanType")));
-            onSaved.accept(saved);
-            onShown();
-            if (customer != null) onCancel.run();
+            // Only a loan that really exists on the mainframe reaches the screen
+            AddLoanController.runOnFxThread(() -> {
+                var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
+                loans.add(new LoanSummary(saved.loanId(), draft.primaryBorrower.customerId(), draft.primaryBorrower.name(),
+                        draft.details.get("status"), currency.format(new java.math.BigDecimal(draft.details.get("principal"))),
+                        draft.details.get("loanType")));
+                onSaved.accept(saved);
+                onShown();
+                if (customer != null) onCancel.run();
+            });
         });
         showList(true);
         listView.setVisible(false);

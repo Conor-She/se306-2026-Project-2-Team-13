@@ -43,8 +43,11 @@ class CustomerAddLoanNavigationTest {
                     true, true));
             gateway.addEmployer(new com.lavs.model.Employer(1L, ethan.customerId(), "Acme Ltd",
                     "Engineer", 90000, "Full-time"));
-            ((LoansController) loader.getNamespace().get("loansViewController"))
-                    .setLoanSubmissionService(new com.lavs.business.LoanSubmissionService(gateway));
+            LoansController loansController =
+                    (LoansController) loader.getNamespace().get("loansViewController");
+            loansController.setLoanSubmissionService(
+                    new com.lavs.business.LoanSubmissionService(gateway));
+            loansController.setSaveExecutor(Runnable::run);
             details.setCustomer(ethan);
             customers.showCustomerLoans();
             root.applyCss();

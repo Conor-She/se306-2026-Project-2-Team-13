@@ -9,6 +9,8 @@ import com.lavs.business.LoanPrerequisiteChecker;
 import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
 import com.lavs.business.LoanSummary;
+import com.lavs.business.LoanSubmissionException;
+import com.lavs.data.MainframeException;
 import com.lavs.model.Repayment;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
@@ -53,6 +55,12 @@ public class AddLoanController {
     private Runnable onCancel = () -> {};
     private java.util.function.Consumer<LoanDraft> onSave;
     private boolean saved;
+    private boolean saving;
+    private java.util.concurrent.Executor saveExecutor = Runnable::run;
+
+    public void setSaveExecutor(java.util.concurrent.Executor saveExecutor) {
+        this.saveExecutor = saveExecutor;
+    }
 
     public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
 
@@ -168,6 +176,7 @@ public class AddLoanController {
     }
 
     @FXML private void cancel() {
+        if (saving) return;
         if (confirmLeave()) onCancel.run();
     }
 
@@ -191,7 +200,7 @@ public class AddLoanController {
     }
 
     @FXML private void next() {
-        if (saved) return;
+        if (saved || saving) return;
         String error = validateDetails();
         if (error != null) { showMessage(error); return; }
         if (step == 2 || step == 1 || editingReview) {
@@ -209,19 +218,66 @@ public class AddLoanController {
                 showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
                 return;
             }
-            try {
-                next.setDisable(true);
-                onSave.accept(draft.copy());
-                saved = true;
-            } catch (IllegalArgumentException exception) {
-                next.setDisable(false);
-                showMessage(exception.getMessage());
-            }
+            save();
         } else {
             int target = editingReview ? 2 : step + 1;
             editingReview = false;
             showStep(target);
         }
+    }
+
+        // Saves on the save executor. Next and Back stay disabled until it finishes, so the loan
+    // can't be saved twice, and a failure re-enables the form with a clear message.
+    private void save() {
+        LoanDraft snapshot = draft.copy();
+        saving = true;
+        next.setDisable(true);
+        back.setDisable(true);
+        showMessage("Saving the loan to the mainframe...");
+        saveExecutor.execute(() -> {
+            try {
+                onSave.accept(snapshot);
+                runOnFxThread(() -> {
+                    saved = true;
+                    saving = false;
+                    back.setDisable(false);
+                    message.setVisible(false);
+                    message.setManaged(false);
+                });
+            } catch (RuntimeException failure) {
+                runOnFxThread(() -> {
+                    saving = false;
+                    next.setDisable(false);
+                    back.setDisable(false);
+                    showMessage(describeSaveFailure(failure, snapshot.primaryBorrower.name()));
+                });
+            }
+        });
+    }
+
+    /** What the person sees when a save fails. Every message says no loan was saved. */
+    static String describeSaveFailure(RuntimeException failure, String borrowerName) {
+        if (failure instanceof LoanPrerequisiteException prerequisite) {
+            return prerequisiteMessage(borrowerName, prerequisite) + " No loan has been saved.";
+        }
+        if (failure instanceof MainframeException mainframe) {
+            return mainframe.getType() == MainframeException.Type.UNAVAILABLE
+                    ? "The mainframe could not be reached, so no loan has been saved. "
+                            + "Check your connection and try again."
+                    : "The mainframe rejected the loan, so no loan has been saved: "
+                            + mainframe.getMessage();
+        }
+        if (failure instanceof LoanSubmissionException || failure instanceof IllegalArgumentException) {
+            return failure.getMessage();
+        }
+        return "The loan could not be saved: "
+                + (failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage());
+    }
+
+    /** Runs the action now if already on the screen thread, otherwise queues it there. */
+    static void runOnFxThread(Runnable action) {
+        if (javafx.application.Platform.isFxApplicationThread()) action.run();
+        else javafx.application.Platform.runLater(action);
     }
 
     @FXML private void editBorrower() { editStep(0); }
@@ -244,7 +300,10 @@ public class AddLoanController {
         message.setManaged(true);
     }
 
-    @FXML private void back() { showStep(Math.max(0, step - 1)); }
+    @FXML private void back() {
+        if (saving) return;
+        showStep(Math.max(0, step - 1));
+    }
 
     private void showStep(int selectedStep) {
         step = selectedStep;
@@ -389,15 +448,19 @@ public class AddLoanController {
             prerequisiteService.validate(draft.primaryBorrower.customerId());
             return null;
         } catch (LoanPrerequisiteException exception) {
-            if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage()))
-                return draft.primaryBorrower.name() + " has no mailing address recorded. "
-                        + "Add an address marked as mailing to this customer's record before continuing with the loan.";
-            if (LoanPrerequisiteChecker.CONTACT_MESSAGE.equals(exception.getMessage()))
-                return draft.primaryBorrower.name() + " has no phone number or email recorded. "
-                        + "Add at least one alternate contact to this customer's record before continuing with the loan.";
-            return draft.primaryBorrower.name() + " has no employer recorded and needs a guarantor. "
-                    + "Add a guarantor to this customer's record before continuing with the loan.";
+            return prerequisiteMessage(draft.primaryBorrower.name(), exception);
         }
+    }
+
+    private static String prerequisiteMessage(String borrowerName, LoanPrerequisiteException exception) {
+        if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage()))
+            return borrowerName + " has no mailing address recorded. "
+                    + "Add an address marked as mailing to this customer's record before continuing with the loan.";
+        if (LoanPrerequisiteChecker.CONTACT_MESSAGE.equals(exception.getMessage()))
+            return borrowerName + " has no phone number or email recorded. "
+                    + "Add at least one alternate contact to this customer's record before continuing with the loan.";
+        return borrowerName + " has no employer recorded and needs a guarantor. "
+                + "Add a guarantor to this customer's record before continuing with the loan.";
     }
 
     private void refreshPrerequisiteNotice() {
