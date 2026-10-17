@@ -32,9 +32,18 @@ final class CustomerRecordEditor {
                 field("type", "Loan type", "Home Loan", "Personal Loan", "Car Loan", "Other"),
                 field("amount", "Amount (NZD)"), field("rate", "Interest rate (%)"),
                 field("status", "Status", "Active", "Pending", "Closed"))),
+        SAVED_LOAN("loan", List.of(
+                field("type", "Loan type", "TABLE_LOAN", "REDUCING_BALANCE", "INTEREST_ONLY"),
+                field("amount", "Amount (NZD)"), field("rate", "Interest rate (%)"),
+                field("termMonths", "Term (months)"), field("paymentAmount", "Payment amount (NZD)"))),
+        SAVED_GUARANTOR("guarantor", List.of(field("customerId", "Guarantor customer ID"),
+                field("relationship", "Relationship"))),
         NOTE("note", List.of(field("title", "Title"), field("text", "Note"), field("author", "Author"))),
         DOCUMENT("document", List.of(field("fileName", "Document name"),
                 field("type", "Document type", "Identity", "Address", "Income", "Bank Statement", "Other"),
+                field("date", "Upload date"))),
+        SAVED_DOCUMENT("document", List.of(field("fileName", "Document name"),
+                field("type", "Document type"),
                 field("date", "Upload date"))),
         GUARANTOR("guarantor", List.of(field("firstName", "First name"), field("lastName", "Last name"), field("relationship", "Relationship"),
                 field("phone", "Phone"), field("email", "Email"), field("status", "Status", "Active", "Inactive")));
@@ -213,7 +222,11 @@ final class CustomerRecordEditor {
                 errors.put(field.key, "Enter a valid email address.");
             } else if (field.key.equals("phone") && !value.matches("\\+?[0-9 ()-]{7,20}")) {
                 errors.put(field.key, "Enter a valid phone number.");
-            } else if (List.of("income", "amount", "rate").contains(field.key)) {
+            } else if (field.key.equals("termMonths")) {
+                try {
+                    if (Integer.parseInt(value) <= 0) errors.put(field.key, "Enter a positive number of months.");
+                } catch (NumberFormatException invalid) { errors.put(field.key, "Enter a positive whole number."); }
+            } else if (List.of("income", "amount", "rate", "paymentAmount").contains(field.key)) {
                 try {
                     BigDecimal number = new BigDecimal(value);
                     if (!value.matches("[0-9]+(\\.[0-9]{1,2})?") || number.signum() < 0

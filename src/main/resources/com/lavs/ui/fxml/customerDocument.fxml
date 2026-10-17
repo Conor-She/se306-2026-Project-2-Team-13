@@ -2,13 +2,13 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="12" minWidth="0">
-  <Label text="File name" style="-fx-font-weight: bold;"/>
+  <Label text="File name (required)" style="-fx-font-weight: bold;"/>
   <TextField fx:id="fileName" accessibleText="File name" promptText="e.g. payslip.pdf" maxWidth="Infinity"/>
   <Label fx:id="fileNameError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
-  <Label text="Document type" style="-fx-font-weight: bold;"/>
+  <Label text="Document type (required)" style="-fx-font-weight: bold;"/>
   <TextField fx:id="documentType" accessibleText="Document type" promptText="e.g. Payslip or proof of identity" maxWidth="Infinity"/>
   <Label fx:id="documentTypeError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
-  <Label text="Upload date (yyyy-MM-dd)" style="-fx-font-weight: bold;"/>
+  <Label text="Upload date (required, yyyy-MM-dd)" style="-fx-font-weight: bold;"/>
   <TextField fx:id="uploadDate" accessibleText="Upload date" promptText="yyyy-MM-dd" maxWidth="Infinity"/>
   <Label fx:id="uploadDateError" visible="false" managed="false" wrapText="true" style="-fx-text-fill: #b42318; -fx-font-size: 13px;"/>
 </VBox>

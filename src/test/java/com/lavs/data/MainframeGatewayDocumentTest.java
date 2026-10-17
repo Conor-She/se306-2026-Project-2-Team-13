@@ -8,8 +8,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.lavs.model.CustomerDocument;
+import com.lavs.model.CustomerDraft;
+import com.lavs.business.MainframeCustomerRegistrationService;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.Map;
 import mainframe.client.Connection;
 import mainframe.client.MessageRequest;
 import mainframe.client.MessageResponse;
@@ -19,6 +22,59 @@ import org.mockito.ArgumentCaptor;
 
 class MainframeGatewayDocumentTest {
     private static final LocalDate UPLOAD_DATE = LocalDate.of(2026, 10, 14);
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = " ")
+    void loadsDocumentsWhenBackendOmitsUploadDate(String uploadDate) {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(response(
+                "page", "1", "total", "1", "items", "1", "1:id", "41",
+                "1:fileName", "licence", "1:type", "Proof of Identity", "1:uploadDate", uploadDate));
+        var gateway = new MainframeGatewayImpl(connection, 1L);
+
+        var documents = gateway.getDocuments("C001");
+
+        assertEquals(1, documents.size());
+        assertEquals("licence", documents.get(0).getFileName());
+        assertNull(documents.get(0).getUploadDate());
+    }
+
+    @Test
+    void wizardSavesDocumentWithRequiredBackendFieldsAndReloadsTimestamp() throws Exception {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenAnswer(call -> {
+            MessageRequest request = call.getArgument(0);
+            return switch (request.getRequestType()) {
+                case "customer.create" -> response("number", "C001");
+                case "customer.addDocument" -> {
+                    if (request.getValue("fileType") == null || request.getValue("size") == null) {
+                        yield new MessageResponse(new Status(400, "Missing fileType or size", 1),
+                                new HashMap<>());
+                    }
+                    assertEquals("C001", request.getValue("customer"));
+                    yield response("id", "41");
+                }
+                case "customerDocument.list" -> response("page", "1", "total", "1", "items", "1",
+                        "1:id", "41", "1:fileName", "Driver's License", "1:type", "Proof of Identity",
+                        "1:uploadDate", "2026-10-14T12:34:56");
+                default -> throw new AssertionError("Unexpected request: " + request.getRequestType());
+            };
+        });
+        MainframeGateway gateway = new MainframeGatewayImpl(connection, 1L);
+        var draft = new CustomerDraft();
+        draft.personal.putAll(Map.of("title", "Ms", "firstName", "Ada", "lastName", "Lovelace",
+                "dateOfBirth", "10-12-1990", "nationality", "New Zealand"));
+        draft.documents.add(Map.of("fileName", "Driver's License", "documentType", "Proof of Identity",
+                "uploadDate", UPLOAD_DATE.toString()));
+
+        String customerId = new MainframeCustomerRegistrationService(gateway).save(draft);
+
+        var documents = gateway.getDocuments(customerId);
+        assertEquals(1, documents.size());
+        assertEquals("Driver's License", documents.get(0).getFileName());
+        assertEquals(UPLOAD_DATE, documents.get(0).getUploadDate());
+    }
 
     @Test
     void addsOnlyDocumentMetadata() {
@@ -38,8 +94,8 @@ class MainframeGatewayDocumentTest {
         assertEquals("payslip.pdf", request.getValue().getValue("fileName"));
         assertEquals("Income", request.getValue().getValue("type"));
         assertEquals(UPLOAD_DATE.toString(), request.getValue().getValue("uploadDate"));
-        assertNull(request.getValue().getValue("fileType"));
-        assertNull(request.getValue().getValue("size"));
+        assertEquals("application/octet-stream", request.getValue().getValue("fileType"));
+        assertEquals("0", request.getValue().getValue("size"));
     }
 
     @Test

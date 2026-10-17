@@ -140,7 +140,10 @@ public class CustomerDetailsController {
         if (node == notesList && noteEditing != null) return;
         if (node instanceof Button button && button != backButton
                 && button != viewAllEmail && button != viewAllPhone && button != viewAllAddress
-                && !"+  Add Loan".equals(button.getText()) && !isCustomerEditButton(button)) {
+                && !"+  Add Loan".equals(button.getText())
+                && !"+  Add Document".equals(button.getText())
+                && !"+  Add Guarantor".equals(button.getText())
+                && !isCustomerEditButton(button)) {
             button.setDisable(true);
             button.setTooltip(new javafx.scene.control.Tooltip("This record type is not editable here yet."));
         }
@@ -150,7 +153,7 @@ public class CustomerDetailsController {
 
     private boolean isCustomerEditButton(Button button) {
         String action = button.getAccessibleText();
-        return action != null && (action.startsWith("Edit ") || action.startsWith("Delete ")
+        return action != null && (action.startsWith("Actions for ") || action.startsWith("Edit ") || action.startsWith("Delete ")
                 || action.equals("Add contact information") || action.equals("Add employer"));
     }
 

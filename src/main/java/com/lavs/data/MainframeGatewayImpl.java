@@ -472,7 +472,11 @@ public class MainframeGatewayImpl implements MainframeGateway {
             mainframe.client.messages.customerDocument.List.Item[] items = message.getItems();
             for (mainframe.client.messages.customerDocument.List.Item item : items) {
                 documents.add(new CustomerDocument(Long.toString(item.getId()), customerId,
-                        item.getFileName(), item.getType(), LocalDate.parse(item.getUploadDate())));
+                        item.getFileName(), item.getType(),
+                        item.getUploadDate() == null || item.getUploadDate().isBlank() ? null
+                                : LocalDate.parse(item.getUploadDate(),
+                                item.getUploadDate().contains("T")
+                                        ? DateTimeFormatter.ISO_DATE_TIME : DateTimeFormatter.ISO_LOCAL_DATE)));
             }
             if (items.length == 0 || page * 100 >= message.getTotal()) {
                 return List.copyOf(documents);

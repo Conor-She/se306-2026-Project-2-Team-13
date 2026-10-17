@@ -193,6 +193,8 @@ public class CustomersController {
             searchField.setDisable(false);
             if (version != searchVersion) return;
             resultsHeading.setText("Could not retrieve customer details. Select the customer to retry.");
+            java.util.logging.Logger.getLogger(CustomersController.class.getName()).log(
+                    java.util.logging.Level.WARNING, "Could not retrieve customer details", task.getException());
         });
         requests.execute(task);
     }
