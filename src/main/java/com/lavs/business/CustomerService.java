@@ -55,7 +55,7 @@ public class CustomerService {
                 .toList();
     }
 
-    /** Retrieves personal details and every address, phone, email and employer record. */
+    /** Retrieves customer details and existing related records. Notes load separately on their tab. */
     public CustomerDetails getById(CustomerId id) {
         Objects.requireNonNull(id, "id must not be null");
         String customerId = id.value();
@@ -65,7 +65,8 @@ public class CustomerService {
         }
         return new CustomerDetails(customer, gateway.getAddresses(customerId),
             gateway.getPhones(customerId), gateway.getEmails(customerId),
-            gateway.getEmployers(customerId), loansOf(customerId));
+            gateway.getEmployers(customerId), loansOf(customerId),
+            gateway.getDocuments(customerId), gateway.getGuarantors(customerId));
     }
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,

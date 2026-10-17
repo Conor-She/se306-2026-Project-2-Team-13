@@ -125,6 +125,14 @@ final class CustomerDetailsEditing {
         // mainframe's list doesn't already have them, so a loan saved just now isn't shown twice.
         var loanRecords = loaded.records.get(Kind.LOAN);
         details.loans().forEach(loan -> loanRecords.add(loanRecord(loan)));
+        details.documents().forEach(document -> loaded.records.get(Kind.DOCUMENT).add(values(
+                "id", document.getDocumentId(), "fileName", document.getFileName(),
+                "type", document.getDocumentType(), "date", document.getUploadDate().toString())));
+        details.guarantors().forEach(guarantor -> loaded.records.get(Kind.GUARANTOR).add(values(
+                "id", guarantor.getGuarantorId(),
+                "firstName", "Customer " + guarantor.getGuarantorCustomerId(), "lastName", "",
+                "relationship", guarantor.getRelationshipType(),
+                "phone", "Not provided", "email", "Not provided", "status", "Not provided")));
         State previous = sessions.get(customer.getCustomerId());
         if (previous != null) {
             Set<String> knownIds = new HashSet<>();
@@ -692,6 +700,11 @@ final class CustomerDetailsEditing {
     }
     private Button actions(Kind kind, Map<String, String> record, String accessibleText) {
         Button button = new Button("\u22EE"); button.setStyle(ACTION); button.setAccessibleText(accessibleText);
+        if (state.persisted && (kind == Kind.LOAN || kind == Kind.DOCUMENT || kind == Kind.GUARANTOR)) {
+            button.setDisable(true);
+            button.setTooltip(new Tooltip("This record type is not editable here yet."));
+            return button;
+        }
         ContextMenu menu = new ContextMenu();
         MenuItem edit = new MenuItem("Edit " + kind.title);
         edit.setOnAction(action -> editRecord(kind, record));

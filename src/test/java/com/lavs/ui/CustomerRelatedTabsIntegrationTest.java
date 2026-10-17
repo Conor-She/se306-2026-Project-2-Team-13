@@ -1,0 +1,84 @@
+package com.lavs.ui;
+
+import com.lavs.business.CustomerService;
+import com.lavs.data.FakeMainframeGateway;
+import com.lavs.model.*;
+import java.time.LocalDate;
+import java.util.List;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Exercises backend retrieval through the actual customer tab views. */
+class CustomerRelatedTabsIntegrationTest {
+    @BeforeAll static void toolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
+
+    @ParameterizedTest
+    @CsvSource({"loans, LOAN-101", "notes, Existing backend note",
+            "documents, passport.pdf", "guarantors, Customer C3"})
+    void listsExistingRecordsAndClearsThemWhenSelectingAnEmptyCustomer(String tab, String expected) throws Exception {
+        var gateway = new FakeMainframeGateway();
+        gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
+        gateway.createCustomer(new Customer("C2", "Mr", "John", "Smith", null, "NZ"));
+        gateway.addDocument(new CustomerDocument("DOC-1", "C1", "passport.pdf", "Identity", LocalDate.of(2026, 1, 2)));
+        gateway.addGuarantor(new Guarantor("G1", "C1", "C3", "Parent"));
+        gateway.addNote(new CustomerNote("N1", "C1", "Existing backend note", LocalDate.of(2026, 1, 2), "General", "Staff"));
+        gateway.createLoan(new Loan("LOAN-101", "C1", Loan.Status.NEW, 12000, 12,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
+                1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+        var service = new CustomerService(gateway);
+        var populated = service.getById(new CustomerId("C1"));
+        var empty = service.getById(new CustomerId("C2"));
+        var loader = new FXMLLoader(Main.class.getResource("fxml/customerDetails.fxml"));
+        Parent root = JavaFxTestSupport.run(() -> {
+            Parent view = loader.load();
+            new Scene(view, 1100, 800);
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerService(service);
+            controller.setCustomerDetails(populated);
+            ((ToggleButton) loader.getNamespace().get(tab + "Tab")).fire();
+            view.applyCss(); view.layout();
+            return view;
+        });
+        awaitText(loader, tab, expected);
+        JavaFxTestSupport.run(() -> {
+            assertTrue(root.lookup("#" + tab + "Content").isVisible());
+            if (tab.equals("documents")) {
+                assertTrue(hasText(loader, tab, "Identity"));
+                assertTrue(hasText(loader, tab, "2 Jan 2026"));
+            }
+            if (tab.equals("guarantors")) assertTrue(hasText(loader, tab, "Parent"));
+            // Persisted records must not expose the preview's local-only editing actions.
+            if (!tab.equals("notes")) {
+                Parent content = (Parent) loader.getNamespace().get(tab + "Table");
+                assertTrue(content.lookupAll(".button").stream().allMatch(javafx.scene.Node::isDisabled));
+            }
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerDetails(empty);
+            ((ToggleButton) loader.getNamespace().get(tab + "Tab")).fire();
+            return null;
+        });
+        awaitText(loader, tab, "No " + tab + " added.");
+        JavaFxTestSupport.run(() -> { assertFalse(hasText(loader, tab, expected)); return null; });
+    }
+
+    private static boolean hasText(FXMLLoader loader, String tab, String text) {
+        Parent content = (Parent) loader.getNamespace().get(tab.equals("notes") ? "notesList" : tab + "Table");
+        return content.lookupAll(".label").stream().filter(Label.class::isInstance)
+                .map(Label.class::cast).anyMatch(label -> text.equals(label.getText()));
+    }
+
+    private static void awaitText(FXMLLoader loader, String tab, String text) throws Exception {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            if (JavaFxTestSupport.run(() -> hasText(loader, tab, text))) return;
+            Thread.sleep(20);
+        }
+        fail("Expected " + tab + " tab to contain: " + text);
+    }
+}
