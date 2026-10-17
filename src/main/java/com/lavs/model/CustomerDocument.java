@@ -25,7 +25,8 @@ public class CustomerDocument {
         if (documentType == null || documentType.isBlank()) {
             throw new IllegalArgumentException("documentType must not be null or blank");
         }
-        if (uploadDate == null) {
+        // Existing mainframe records may not include an upload date.
+        if (uploadDate == null && documentId == null) {
             throw new IllegalArgumentException("uploadDate must not be null");
         }
 
@@ -53,6 +54,7 @@ public class CustomerDocument {
         return documentType;
     }
 
+    /** Returns null when a persisted backend record has no upload date. */
     public LocalDate getUploadDate() {
         return uploadDate;
     }

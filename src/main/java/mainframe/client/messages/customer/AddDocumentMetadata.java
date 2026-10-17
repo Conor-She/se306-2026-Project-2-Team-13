@@ -27,6 +27,10 @@ public final class AddDocumentMetadata implements Message {
         MessageRequest request = new MessageRequest(MessageRequest.UPDATE, "customer.addDocument");
         request.setValue("customer", customer);
         request.setValue("fileName", fileName);
+        // The mainframe requires these fields even for a metadata-only record.
+        // No file contents are supplied, so its stored content size is zero.
+        request.setValue("fileType", "application/octet-stream");
+        request.setValue("size", "0");
         request.setValue("type", type);
         request.setValue("uploadDate", uploadDate);
         MessageResponse response = connection.send(request);

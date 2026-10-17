@@ -26,6 +26,7 @@ class CustomerRelatedTabsIntegrationTest {
         gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
         gateway.createCustomer(new Customer("C2", "Mr", "John", "Smith", null, "NZ"));
         gateway.addDocument(new CustomerDocument("DOC-1", "C1", "passport.pdf", "Identity", LocalDate.of(2026, 1, 2)));
+        gateway.addDocument(new CustomerDocument("DOC-2", "C1", "licence", "Identity", null));
         gateway.addGuarantor(new Guarantor("G1", "C1", "C3", "Parent"));
         gateway.addNote(new CustomerNote("N1", "C1", "Existing backend note", LocalDate.of(2026, 1, 2), "General", "Staff"));
         gateway.createLoan(new Loan("LOAN-101", "C1", Loan.Status.NEW, 12000, 12,
@@ -51,6 +52,7 @@ class CustomerRelatedTabsIntegrationTest {
             if (tab.equals("documents")) {
                 assertTrue(hasText(loader, tab, "Identity"));
                 assertTrue(hasText(loader, tab, "2 Jan 2026"));
+                assertTrue(hasText(loader, tab, "Not provided"));
             }
             if (tab.equals("guarantors")) assertTrue(hasText(loader, tab, "Parent"));
             // Persisted records must not expose the preview's local-only editing actions.
