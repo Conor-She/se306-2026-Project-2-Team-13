@@ -131,6 +131,7 @@ final class CustomerDetailsEditing {
                 document.getUploadDate() == null ? "" : document.getUploadDate().toString())));
         details.guarantors().forEach(guarantor -> loaded.records.get(Kind.GUARANTOR).add(values(
                 "id", guarantor.getGuarantorId(),
+                "customerId", guarantor.getGuarantorCustomerId(),
                 "firstName", "Customer " + guarantor.getGuarantorCustomerId(), "lastName", "",
                 "relationship", guarantor.getRelationshipType(),
                 "phone", "Not provided", "email", "Not provided", "status", "Not provided")));
@@ -370,6 +371,10 @@ final class CustomerDetailsEditing {
     void add(Kind kind) { editRecord(kind, null); }
 
     private void editRecord(Kind kind, Map<String, String> record) {
+        if (state.persisted && (kind == Kind.DOCUMENT || kind == Kind.GUARANTOR || kind == Kind.LOAN)) {
+            editPersistedRecord(kind, record);
+            return;
+        }
         State target = state;
         Map<String, String> editorDraft = record == null ? new LinkedHashMap<>() : record;
         if (record == null && (kind == Kind.NOTE || kind == Kind.DOCUMENT)) editorDraft.put("date", LocalDate.now().toString());
@@ -396,6 +401,59 @@ final class CustomerDetailsEditing {
                 ? Map.of("id", "This loan ID already exists for the customer.") : Map.of()).show();
     }
 
+    private void editPersistedRecord(Kind kind, Map<String, String> record) {
+        State target = state;
+        if (customerService == null) {
+            showSaveError(new IllegalStateException("Customer editing is not connected"));
+            return;
+        }
+        String customerId = target.summary.customerId();
+        Map<String, String> original = record == null ? new LinkedHashMap<>() : new LinkedHashMap<>(record);
+        Kind editorKind = kind == Kind.GUARANTOR ? Kind.SAVED_GUARANTOR
+                : kind == Kind.DOCUMENT ? Kind.SAVED_DOCUMENT : kind;
+        com.lavs.model.Loan existingLoan;
+        try {
+            existingLoan = kind == Kind.LOAN
+                    ? customerService.getLoan(customerId, original.get("id")) : null;
+        } catch (RuntimeException failure) { showSaveError(failure); return; }
+        if (existingLoan != null) {
+            editorKind = Kind.SAVED_LOAN;
+            original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().name());
+            original.put("termMonths", existingLoan.getTermMonths() == null ? "" : existingLoan.getTermMonths().toString());
+            original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
+        }
+        if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
+        CustomerRecordEditor.create(window(), editorKind, original, record == null, saved -> {
+            persistRelated(target, () -> {
+                if (kind == Kind.DOCUMENT) {
+                    customerService.saveDocument(new com.lavs.model.CustomerDocument(
+                            record == null ? null : record.get("id"), customerId, saved.get("fileName"),
+                            saved.get("type"), LocalDate.parse(saved.get("date"))));
+                } else if (kind == Kind.GUARANTOR) {
+                    customerService.saveGuarantor(new com.lavs.model.Guarantor(
+                            record == null ? null : record.get("id"), customerId,
+                            saved.get("customerId"), saved.get("relationship")));
+                } else {
+                    customerService.updateLoan(new com.lavs.model.Loan(existingLoan.getLoanId(), customerId,
+                            existingLoan.getStatus(), Double.parseDouble(saved.get("amount")),
+                            Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
+                            existingLoan.isFloating(), existingLoan.getStartDate(), existingLoan.getRenewDate(),
+                            Double.parseDouble(saved.get("paymentAmount")), existingLoan.getPaymentFrequency(),
+                            existingLoan.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
+                }
+            });
+        }).show();
+    }
+
+    private void persistRelated(State target, Runnable mutation) {
+        if (state != target) return;
+        try {
+            mutation.run();
+            onChange.accept(select(customerService.getById(
+                    new com.lavs.model.CustomerId(target.summary.customerId()))));
+        } catch (RuntimeException failure) { showSaveError(failure); }
+    }
+
     private void save(State target, Consumer<State> change, Runnable afterSave) {
         if (state != target) return;
         State draft = new State(target);
@@ -417,21 +475,38 @@ final class CustomerDetailsEditing {
             com.lavs.model.CustomerDetails requested = toCustomerDetails(draft);
             customerService.update(requested.customer(), requested.addresses(), requested.phones(),
                     requested.emails(), requested.employers());
+        } catch (RuntimeException failure) {
+            showSaveError(failure);
+            return;
+        }
+        try {
             CustomersController.CustomerSummary updated = select(customerService.getById(
                     new com.lavs.model.CustomerId(draft.summary.customerId())));
             onChange.accept(updated);
             afterSave.run();
         } catch (RuntimeException failure) {
-            showSaveError(failure);
+            showError("Refresh failed", "Changes were saved, but customer details could not be reloaded",
+                    "Reopen the customer to check the saved records before retrying.", failure);
         }
     }
 
     private void showSaveError(RuntimeException failure) {
+        showError("Save failed", "Customer changes could not be saved",
+                "Saving could not be confirmed. Check the customer's saved records before retrying.", failure);
+    }
+
+    private void showError(String title, String heading, String message, RuntimeException failure) {
+        java.util.logging.Logger.getLogger(CustomerDetailsEditing.class.getName()).log(
+                java.util.logging.Level.WARNING, heading, failure);
+        if (failure instanceof com.lavs.data.MainframeException || failure instanceof IllegalArgumentException) {
+            if (failure.getMessage() != null && !failure.getMessage().isBlank())
+                message += "\n\n" + failure.getMessage();
+        }
         Alert alert = new Alert(Alert.AlertType.ERROR,
-                "Your changes were not saved. Check the details and connection, then try again.", ButtonType.OK);
+                message, ButtonType.OK);
         if (window() != null) alert.initOwner(window());
-        alert.setHeaderText("Customer changes could not be saved");
-        alert.setTitle("Save failed");
+        alert.setHeaderText(heading);
+        alert.setTitle(title);
         alert.getDialogPane().setId("customerSaveError");
         alert.show();
     }
@@ -441,7 +516,8 @@ final class CustomerDetailsEditing {
         Map<String, String> personal = source.details.get(Kind.PERSONAL);
         com.lavs.model.Customer customer = new com.lavs.model.Customer(customerId,
                 personal.get("title"), personal.get("firstName"), personal.get("lastName"),
-                LocalDate.parse(personal.get("birthDate"), CustomerRecordEditor.BIRTH_DATE),
+                personal.get("birthDate").isBlank() ? null
+                        : LocalDate.parse(personal.get("birthDate"), CustomerRecordEditor.BIRTH_DATE),
                 personal.get("nationality"));
         List<Map<String, String>> contacts = new ArrayList<>();
         for (String type : List.of("Email", "Phone", "Address")) {
@@ -702,20 +778,24 @@ final class CustomerDetailsEditing {
     }
     private Button actions(Kind kind, Map<String, String> record, String accessibleText) {
         Button button = new Button("\u22EE"); button.setStyle(ACTION); button.setAccessibleText(accessibleText);
-        if (state.persisted && (kind == Kind.LOAN || kind == Kind.DOCUMENT || kind == Kind.GUARANTOR)) {
-            button.setDisable(true);
-            button.setTooltip(new Tooltip("This record type is not editable here yet."));
-            return button;
-        }
         ContextMenu menu = new ContextMenu();
         MenuItem edit = new MenuItem("Edit " + kind.title);
         edit.setOnAction(action -> editRecord(kind, record));
         MenuItem remove = new MenuItem("Remove " + kind.title);
+        remove.setDisable(state.persisted && kind == Kind.LOAN);
         remove.setOnAction(action -> {
             Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Remove this " + kind.title + " from the customer?", ButtonType.CANCEL, ButtonType.OK);
             if (window() != null) confirmation.initOwner(window());
             confirmation.setHeaderText("Remove " + kind.title);
-            confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> { state.records.get(kind).remove(record); render(); });
+            State target = state;
+            confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
+                if (target.persisted) {
+                    persistRelated(target, () -> {
+                        if (kind == Kind.DOCUMENT) customerService.deleteDocument(target.summary.customerId(), record.get("id"));
+                        else if (kind == Kind.GUARANTOR) customerService.deleteGuarantor(target.summary.customerId(), record.get("id"));
+                    });
+                } else { state.records.get(kind).remove(record); render(); }
+            });
         });
         menu.getItems().addAll(edit, remove);
         button.setContextMenu(menu);

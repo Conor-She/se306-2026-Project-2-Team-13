@@ -141,6 +141,45 @@ class CustomersServiceIntegrationTest {
         await(() -> "updated@example.com".equals(label("emailValue")));
     }
 
+    @Test void addsFirstPhoneToExistingCustomerWithoutDateOfBirth() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            controller.openCustomer(table.getItems().stream().filter(item -> item.customerId().equals("C2"))
+                    .findFirst().orElseThrow());
+            return null;
+        });
+        await(() -> root.lookup("#detailsView").isVisible());
+        JavaFxTestSupport.run(() -> {
+            root.applyCss(); root.layout();
+            editButton("Add contact information").fire();
+            DialogPane pane = editor();
+            ((ComboBox<String>) pane.lookup("#edit_contactType")).setValue("Phone");
+            ((TextField) pane.lookup("#edit_value")).setText("0215551234");
+            dialogButton(pane, "Save").fire();
+            assertEquals("0215551234", label("phoneValue"));
+            return null;
+        });
+        assertEquals(1, gateway.getPhones("C2").size());
+        assertEquals("0215551234", gateway.getPhones("C2").get(0).getNumber());
+    }
+
+    @Test void reportsRefreshFailureAfterSuccessfulPhoneSave() throws Exception {
+        openJane();
+        doThrow(new IllegalStateException("Document retrieval failed")).when(gateway).getDocuments("C1");
+        JavaFxTestSupport.run(() -> {
+            editButton("Edit phone").fire();
+            DialogPane pane = editor();
+            ((TextField) pane.lookup("#edit_value")).setText("0215551234");
+            dialogButton(pane, "Save").fire();
+            DialogPane error = javafx.stage.Window.getWindows().stream().filter(javafx.stage.Window::isShowing)
+                    .map(window -> window.getScene().getRoot()).filter(DialogPane.class::isInstance)
+                    .map(DialogPane.class::cast).filter(dialog -> "customerSaveError".equals(dialog.getId()))
+                    .findFirst().orElseThrow();
+            assertTrue(error.getHeaderText().startsWith("Changes were saved"));
+            return null;
+        });
+        assertEquals("0215551234", gateway.getPhones("C1").get(0).getNumber());
+    }
+
     @Test void invalidContactAndCancelLeaveExistingCustomerUnchanged() throws Exception {
         openJane();
         JavaFxTestSupport.run(() -> {

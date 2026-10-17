@@ -4,6 +4,8 @@ import com.lavs.data.MainframeGateway;
 import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.CustomerDetails;
+import com.lavs.model.CustomerDocument;
+import com.lavs.model.Guarantor;
 import com.lavs.model.CustomerId;
 import com.lavs.model.CustomerPreview;
 import com.lavs.model.Email;
@@ -90,6 +92,43 @@ public class CustomerService {
                 .forEach(gateway::addEmployer);
 
         return created;
+    }
+
+    public void saveDocument(CustomerDocument document) {
+        var service = new CustomerDocumentService(gateway);
+        if (document.getDocumentId() == null) {
+            service.addDocument(document.getCustomerId(), document.getFileName(),
+                    document.getDocumentType(), document.getUploadDate());
+        } else service.updateDocument(document);
+    }
+
+    public void deleteDocument(String customerId, String documentId) {
+        new CustomerDocumentService(gateway).deleteDocument(customerId, documentId);
+    }
+
+    public void saveGuarantor(Guarantor guarantor) {
+        var service = new GuarantorService(gateway);
+        if (guarantor.getGuarantorId() == null) {
+            service.addGuarantor(guarantor.getCustomerId(), guarantor.getGuarantorCustomerId(),
+                    guarantor.getRelationshipType());
+        } else service.updateGuarantor(guarantor.getGuarantorId(), guarantor.getCustomerId(),
+                guarantor.getGuarantorCustomerId(), guarantor.getRelationshipType());
+    }
+
+    public void deleteGuarantor(String customerId, String guarantorId) {
+        new GuarantorService(gateway).deleteGuarantor(customerId, guarantorId);
+    }
+
+    public Loan getLoan(String customerId, String loanId) {
+        Loan loan = gateway.getLoan(loanId);
+        if (loan == null || !customerId.equals(loan.getCustomerId()))
+            throw new IllegalArgumentException("Loan does not belong to this customer");
+        return loan;
+    }
+
+    public void updateLoan(Loan loan) {
+        getLoan(loan.getCustomerId(), loan.getLoanId());
+        new LoanService(gateway).update(loan);
     }
 
     public Customer update(Customer customer, List<Address> addresses, List<Phone> phones,

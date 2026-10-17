@@ -18,6 +18,77 @@ import static org.junit.jupiter.api.Assertions.*;
 class CustomerRelatedTabsIntegrationTest {
     @BeforeAll static void toolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
 
+    @org.junit.jupiter.api.AfterEach void closeWindows() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            List.copyOf(javafx.stage.Window.getWindows()).forEach(javafx.stage.Window::hide);
+            return null;
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"documents", "guarantors", "loans"})
+    void editsPersistedRecordsAndDeletesSupportedRecords(String tab) throws Exception {
+        var gateway = new FakeMainframeGateway();
+        gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
+        gateway.createCustomer(new Customer("C3", "Mr", "John", "Jones", null, "NZ"));
+        gateway.addDocument(new CustomerDocument("DOC-1", "C1", "passport.pdf", "Identity", LocalDate.of(2026, 1, 2)));
+        gateway.addGuarantor(new Guarantor("G1", "C1", "C3", "Parent"));
+        gateway.createLoan(new Loan("LOAN-101", "C1", Loan.Status.NEW, 12000, 12,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1),
+                1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+        var service = new CustomerService(gateway);
+        var loader = new FXMLLoader(Main.class.getResource("fxml/customerDetails.fxml"));
+        JavaFxTestSupport.run(() -> {
+            Parent root = loader.load();
+            var stage = new javafx.stage.Stage();
+            stage.setScene(new Scene(root, 1100, 800)); stage.show();
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerService(service);
+            controller.setCustomerDetails(service.getById(new CustomerId("C1")));
+            ((ToggleButton) loader.getNamespace().get(tab + "Tab")).fire();
+            root.applyCss(); root.layout();
+            actionButton(loader, tab).getContextMenu().getItems().get(0).fire();
+            DialogPane pane = dialog("customerRecordEditor");
+            String field = tab.equals("documents") ? "fileName" : tab.equals("guarantors") ? "relationship" : "amount";
+            ((TextField) pane.lookup("#edit_" + field)).setText(tab.equals("loans") ? "10000" : "Updated");
+            pane.getButtonTypes().stream().filter(type -> type.getText().equals("Save"))
+                    .map(pane::lookupButton).map(Button.class::cast).findFirst().orElseThrow().fire();
+            return null;
+        });
+        if (tab.equals("documents")) assertEquals("Updated", gateway.getDocuments("C1").get(0).getFileName());
+        else if (tab.equals("guarantors")) assertEquals("Updated", gateway.getGuarantors("C1").get(0).getRelationshipType());
+        else {
+            assertEquals(10000, gateway.getLoan("LOAN-101").getPrincipal());
+            assertFalse(gateway.getRepaymentSchedule("LOAN-101").isEmpty());
+        }
+        JavaFxTestSupport.run(() -> {
+            ContextMenu menu = actionButton(loader, tab).getContextMenu();
+            if (tab.equals("loans")) { assertTrue(menu.getItems().get(1).isDisable()); return null; }
+            javafx.application.Platform.runLater(() -> {
+                DialogPane confirmation = dialog(null);
+                ((Button) confirmation.lookupButton(ButtonType.OK)).fire();
+            });
+            menu.getItems().get(1).fire();
+            return null;
+        });
+        if (tab.equals("documents")) assertTrue(gateway.getDocuments("C1").isEmpty());
+        if (tab.equals("guarantors")) assertTrue(gateway.getGuarantors("C1").isEmpty());
+    }
+
+    private static Button actionButton(FXMLLoader loader, String tab) {
+        Parent table = (Parent) loader.getNamespace().get(tab + "Table");
+        return table.lookupAll(".button").stream().filter(Button.class::isInstance)
+                .map(Button.class::cast).filter(button -> button.getContextMenu() != null).findFirst().orElseThrow();
+    }
+
+    private static DialogPane dialog(String id) {
+        return javafx.stage.Window.getWindows().stream().filter(javafx.stage.Window::isShowing)
+                .map(window -> window.getScene().getRoot()).filter(DialogPane.class::isInstance)
+                .map(DialogPane.class::cast)
+                .filter(pane -> id == null ? pane.getButtonTypes().contains(ButtonType.OK) : id.equals(pane.getId()))
+                .findFirst().orElseThrow();
+    }
+
     @ParameterizedTest
     @CsvSource({"loans, LOAN-101", "notes, Existing backend note",
             "documents, passport.pdf", "guarantors, Customer C3"})
@@ -55,10 +126,15 @@ class CustomerRelatedTabsIntegrationTest {
                 assertTrue(hasText(loader, tab, "Not provided"));
             }
             if (tab.equals("guarantors")) assertTrue(hasText(loader, tab, "Parent"));
-            // Persisted records must not expose the preview's local-only editing actions.
+            // Persisted records expose backend actions. Loan deletion is unsupported.
             if (!tab.equals("notes")) {
                 Parent content = (Parent) loader.getNamespace().get(tab + "Table");
-                assertTrue(content.lookupAll(".button").stream().allMatch(javafx.scene.Node::isDisabled));
+                assertTrue(content.lookupAll(".button").stream().noneMatch(javafx.scene.Node::isDisabled));
+                for (var node : content.lookupAll(".button")) {
+                    Button button = (Button) node;
+                    assertFalse(button.getContextMenu().getItems().get(0).isDisable());
+                    assertEquals(tab.equals("loans"), button.getContextMenu().getItems().get(1).isDisable());
+                }
             }
             CustomerDetailsController controller = loader.getController();
             controller.setCustomerDetails(empty);
