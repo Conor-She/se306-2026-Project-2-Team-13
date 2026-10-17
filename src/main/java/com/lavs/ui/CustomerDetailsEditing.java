@@ -132,7 +132,8 @@ final class CustomerDetailsEditing {
         details.guarantors().forEach(guarantor -> loaded.records.get(Kind.GUARANTOR).add(values(
                 "id", guarantor.getGuarantorId(),
                 "customerId", guarantor.getGuarantorCustomerId(),
-                "firstName", "Customer " + guarantor.getGuarantorCustomerId(), "lastName", "",
+                "firstName", details.guarantorNames().getOrDefault(guarantor.getGuarantorCustomerId(),
+                        "Name unavailable"), "lastName", "",
                 "relationship", guarantor.getRelationshipType(),
                 "phone", "Not provided", "email", "Not provided", "status", "Not provided")));
         State previous = sessions.get(customer.getCustomerId());
@@ -423,7 +424,7 @@ final class CustomerDetailsEditing {
             original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
         }
         if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
-        CustomerRecordEditor.create(window(), editorKind, original, record == null, saved -> {
+        var dialog = CustomerRecordEditor.create(window(), editorKind, original, record == null, saved -> {
             persistRelated(target, () -> {
                 if (kind == Kind.DOCUMENT) {
                     customerService.saveDocument(new com.lavs.model.CustomerDocument(
@@ -442,7 +443,16 @@ final class CustomerDetailsEditing {
                             existingLoan.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
                 }
             });
-        }).show();
+        });
+        if (kind == Kind.GUARANTOR) {
+            Set<String> excluded = new HashSet<>();
+            excluded.add(customerId);
+            target.records.get(Kind.GUARANTOR).stream().filter(other -> other != record)
+                    .map(other -> other.get("customerId")).forEach(excluded::add);
+            GuarantorCustomerPicker.install(dialog, customerService, excluded,
+                    record == null ? null : record.get("customerId"));
+        }
+        dialog.show();
     }
 
     private void persistRelated(State target, Runnable mutation) {

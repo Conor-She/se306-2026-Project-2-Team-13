@@ -91,11 +91,12 @@ class CustomerRelatedTabsIntegrationTest {
 
     @ParameterizedTest
     @CsvSource({"loans, LOAN-101", "notes, Existing backend note",
-            "documents, passport.pdf", "guarantors, Customer C3"})
+            "documents, passport.pdf", "guarantors, Alice Jones"})
     void listsExistingRecordsAndClearsThemWhenSelectingAnEmptyCustomer(String tab, String expected) throws Exception {
         var gateway = new FakeMainframeGateway();
         gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
         gateway.createCustomer(new Customer("C2", "Mr", "John", "Smith", null, "NZ"));
+        gateway.createCustomer(new Customer("C3", "Ms", "Alice", "Jones", null, "NZ"));
         gateway.addDocument(new CustomerDocument("DOC-1", "C1", "passport.pdf", "Identity", LocalDate.of(2026, 1, 2)));
         gateway.addDocument(new CustomerDocument("DOC-2", "C1", "licence", "Identity", null));
         gateway.addGuarantor(new Guarantor("G1", "C1", "C3", "Parent"));

@@ -12,6 +12,7 @@ class CustomerServiceRelatedRecordsTest {
         var gateway = new FakeMainframeGateway();
         gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
         gateway.createCustomer(new Customer("C2", "Mr", "John", "Smith", null, "NZ"));
+        gateway.createCustomer(new Customer("C3", "Ms", "Alice", "Jones", null, "NZ"));
         var document = gateway.addDocument(new CustomerDocument("D1", "C1", "passport.pdf", "Identity", LocalDate.now()));
         var guarantor = gateway.addGuarantor(new Guarantor("G1", "C1", "C3", "Parent"));
         gateway.addDocument(new CustomerDocument("D2", "C2", "other.pdf", "Address", LocalDate.now()));
@@ -19,6 +20,7 @@ class CustomerServiceRelatedRecordsTest {
         var details = new CustomerService(gateway).getById(new CustomerId("C1"));
         assertEquals(List.of(document), details.documents());
         assertEquals(List.of(guarantor), details.guarantors());
+        assertEquals("Alice Jones", details.guarantorNames().get("C3"));
         assertThrows(UnsupportedOperationException.class, () -> details.documents().clear());
         assertThrows(UnsupportedOperationException.class, () -> details.guarantors().clear());
     }

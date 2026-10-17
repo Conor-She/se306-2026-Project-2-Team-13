@@ -65,10 +65,22 @@ public class CustomerService {
         if (customer == null) {
             throw new IllegalArgumentException("Customer '" + customerId + "' does not exist");
         }
+        List<Guarantor> guarantors = gateway.getGuarantors(customerId);
+        Map<String, String> guarantorNames = new HashMap<>();
+        for (Guarantor guarantor : guarantors) {
+            String linkedId = guarantor.getGuarantorCustomerId();
+            if (guarantorNames.containsKey(linkedId)) continue;
+            Customer linked = gateway.getCustomer(linkedId);
+            if (linked != null) {
+                String name = (Objects.toString(linked.getFirstName(), "") + " "
+                        + Objects.toString(linked.getLastName(), "")).strip();
+                if (!name.isBlank()) guarantorNames.put(linkedId, name);
+            }
+        }
         return new CustomerDetails(customer, gateway.getAddresses(customerId),
             gateway.getPhones(customerId), gateway.getEmails(customerId),
             gateway.getEmployers(customerId), loansOf(customerId),
-            gateway.getDocuments(customerId), gateway.getGuarantors(customerId));
+            gateway.getDocuments(customerId), guarantors, guarantorNames);
     }
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,
