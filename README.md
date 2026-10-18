@@ -44,22 +44,22 @@ environment variables.
 
 ## How to run the app
 
-```powershell
+'''powershell
 $env:LAVS_MAINFRAME_URL = "https://animating-eraser-arrogance.ngrok-free.dev/"
 $env:LAVS_ORGANISATION_ID = "13"
 .\mvnw.cmd javafx:run
-```
+'''
 
-On macOS or Linux, use `export` and `sh ./mvnw javafx:run`. Set the variables in the same
+On macOS or Linux, use 'export' and 'sh ./mvnw javafx:run'. Set the variables in the same
 terminal you start the app from, because they last only for that window.
 
-Then sign in with the team account `Group_13`. The password is in our Canvas submission notes.
+Then sign in with the team account 'Group_13'. The password is in our Canvas submission notes.
 
 ### If sign-in fails
 
-- "Sign in is not configured" means `LAVS_MAINFRAME_URL` isn't set in the terminal you started
+- "Sign in is not configured" means 'LAVS_MAINFRAME_URL' isn't set in the terminal you started
   the app from.
-- "Use HTTPS for the mainframe URL" means the URL doesn't start with `https://`.
+- "Use HTTPS for the mainframe URL" means the URL doesn't start with 'https://'.
 - "The sign-in service is unavailable" means the URL is wrong or the mainframe can't be reached.
   Check the URL against Canvas and your connection.
 
