@@ -94,8 +94,8 @@ public class CustomersController {
         sorted.comparatorProperty().bind(customerTable.comparatorProperty());
         customerTable.setItems(sorted);
         customerTable.getSortOrder().add(nameColumn);
-        customerTable.setPlaceholder(new Label("Enter a customer name or ID to search"));
-        resultsHeading.setText("Search customers");
+        customerTable.setPlaceholder(new Label("Search Customers"));
+        resultsHeading.setText("Enter a customer name or ID to search");
         searchDelay.setOnFinished(event -> refreshCustomers());
         searchField.textProperty().addListener((obs, oldValue, value) -> {
             searchVersion++;
