@@ -70,8 +70,9 @@ class CustomersServiceIntegrationTest {
         JavaFxTestSupport.run(() -> {
             assertEquals("C1", table.getItems().get(0).customerId());
             assertEquals("Jane Smith", table.getItems().get(0).name());
-            assertEquals(3, table.getColumns().size());
-            assertEquals("Date of Birth", table.getColumns().get(2).getText());
+            assertEquals(4, table.getColumns().size());
+            assertEquals("ACTIONS", table.getColumns().get(3).getText());
+            assertEquals("DATE OF BIRTH", table.getColumns().get(2).getText());
             assertEquals(LocalDate.of(1990, 5, 1), table.getColumns().get(2).getCellData(0));
             return null;
         });
