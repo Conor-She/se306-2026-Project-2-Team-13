@@ -70,6 +70,7 @@ public class CustomersController {
         }
     }
     @FXML private TextField searchField;
+    @FXML private String customerStyles;
     @FXML private Label resultsHeading;
     @FXML private Label resultsFooter;
     @FXML private TableView<CustomerSummary> customerTable;
@@ -81,6 +82,10 @@ public class CustomersController {
 
     @FXML private void initialize() {
         root = (VBox) listView.getParent();
+        // Keep the stylesheet in FXML while retaining selectors for table skins
+        // and hover/focus states, which cannot be expressed as inline styles.
+        root.getStylesheets().add("data:text/css;base64," + java.util.Base64.getEncoder()
+                .encodeToString(customerStyles.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
         nameColumn.setCellFactory(column -> new TableCell<>() {
@@ -92,7 +97,7 @@ public class CustomersController {
                 initials.setMinSize(32, 32);
                 initials.setPrefSize(32, 32);
                 initials.setMaxSize(32, 32);
-                name.setStyle("-fx-text-fill: #393a7b;");
+                name.getStyleClass().add("customer-display-name");
                 content.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             }
             @Override protected void updateItem(String value, boolean empty) {
