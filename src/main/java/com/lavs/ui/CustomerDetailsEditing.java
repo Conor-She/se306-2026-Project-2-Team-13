@@ -584,7 +584,7 @@ final class CustomerDetailsEditing {
     }
 
     private static void normaliseAddress(Map<String, String> saved, Map<String, String> original) {
-        if (!"Address".equals(saved.get("contactType"))) return;
+        if (!"Address".equals(saved.get("contactType")) || saved.containsKey("street")) return;
         if (!Objects.equals(saved.get("value"), original.get("value"))) {
             saved.put("street", saved.get("value"));
             for (String key : List.of("suburb", "city", "postCode", "country")) saved.put(key, "");
