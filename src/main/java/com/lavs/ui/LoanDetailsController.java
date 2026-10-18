@@ -47,6 +47,8 @@ public class LoanDetailsController {
     @FXML private Label statusValue;
     @FXML private Label amountValue;
     @FXML private Label typeValue;
+    @FXML private Label interestRateValue, paymentFrequencyValue, rateFrequencyValue;
+    @FXML private Label termValue, startDateValue, renewDateValue;
     @FXML private Button loanDetailsTab;
     @FXML private Button coborrowersTab;
     @FXML private Button repaymentScheduleTab;
@@ -92,6 +94,12 @@ public class LoanDetailsController {
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
+        interestRateValue.setText(loan.rate());
+        paymentFrequencyValue.setText(loan.paymentFrequency());
+        rateFrequencyValue.setText(loan.rateFrequency());
+        termValue.setText(loan.term());
+        startDateValue.setText(loan.startDate());
+        renewDateValue.setText(loan.renewDate());
 
         payments.clear();
         recordsUnavailable = false;

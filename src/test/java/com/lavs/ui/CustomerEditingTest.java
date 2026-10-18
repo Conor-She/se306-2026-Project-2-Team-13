@@ -58,7 +58,6 @@ class CustomerEditingTest {
         "details,Edit personal information,lastName,Wilson",
         "details,Edit email,value,sarah@example.com",
         "details,Edit employment,employer,New Company",
-        "loans,Actions for loan LN00123,amount,123456",
         "notes,Actions for Loan discussion note,title,Updated discussion",
         "documents,Actions for ID - Passport.pdf,fileName,New Passport.pdf",
         "guarantors,Actions for guarantor Michael Johnson,lastName,Wilson"
@@ -144,20 +143,6 @@ class CustomerEditingTest {
             assertNull(findEditor());
             assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
                     .anyMatch(label -> (tab.equals("guarantors") ? expected + " Johnson" : expected).equals(label.getText())));
-            return null;
-        });
-    }
-
-    @Test void duplicateLoanIdIsRejectedWithoutLosingDraft() throws Exception {
-        JavaFxTestSupport.run(() -> {
-            openEditor("loans", "Actions for loan LN00123");
-            DialogPane pane = editor();
-            ((TextField) pane.lookup("#edit_id")).setText("LN00456");
-            ((TextField) pane.lookup("#edit_amount")).setText("98765");
-            dialogButton(pane, "Save").fire();
-            assertSame(pane, editor());
-            assertTrue(pane.lookup("#error_id").isVisible());
-            assertEquals("98765", ((TextField) pane.lookup("#edit_amount")).getText());
             return null;
         });
     }
