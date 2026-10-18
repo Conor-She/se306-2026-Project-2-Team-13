@@ -137,6 +137,20 @@ public class MainframeGatewayImpl implements MainframeGateway {
         
     @Override
     public List<Customer> searchCustomers(String query) {
+        query = java.util.Objects.requireNonNull(query, "query must not be null").strip();
+        if (query.isEmpty()) return List.of();
+        // Customer numbers use retrieval; the name-search endpoint does not resolve them.
+        if (query.matches("[0-9]{2}-[0-9]{4}-[0-9]{7}")) {
+            try {
+                Customer customer = getCustomer(query);
+                return customer.getCustomerId() == null ? List.of() : List.of(customer);
+            } catch (MainframeException exception) {
+                if (exception.getType() == MainframeException.Type.BUSINESS_ERROR) {
+                    return List.of();
+                }
+                throw exception;
+            }
+        }
         List<Customer> results = new ArrayList<>();
         long page = 1;
         while (true) {
