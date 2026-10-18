@@ -2,6 +2,12 @@ package com.lavs.ui;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.lavs.business.LoanSubmissionService;
+import com.lavs.data.FakeMainframeGateway;
+import com.lavs.model.Address;
+import com.lavs.model.Customer;
+import com.lavs.model.Employer;
+import com.lavs.model.Phone;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +60,26 @@ class AddLoanControllerTest {
                     new CustomersController.CustomerSummary("C003", "Charlotte Brown", "", ""),
                     new CustomersController.CustomerSummary("C004", "Ethan Chen", "", ""),
                     new CustomersController.CustomerSummary("C005", "Isla Jones", "", "")), () -> {});
+            var gateway = new FakeMainframeGateway();
+            for (String customerId : List.of("C001", "C003", "C004", "C006", "C007")) {
+                gateway.createCustomer(
+                        new Customer(customerId, "", "Test", "Customer", null, "NZ"));
+            }
+            gateway.addAddress(address(1L, "C006", false));
+            gateway.addPhone(phone(1L, "C006"));
+            gateway.addEmployer(employer(1L, "C006"));
+            gateway.addAddress(address(2L, "C007", true));
+            gateway.addEmployer(employer(2L, "C007"));
+            gateway.addAddress(address(3L, "C003", true));
+            gateway.addPhone(phone(3L, "C003"));
+            gateway.addAddress(address(4L, "C004", true));
+            gateway.addPhone(phone(4L, "C004"));
+            gateway.addEmployer(employer(4L, "C004"));
+            gateway.addAddress(address(5L, "C001", true));
+            gateway.addPhone(phone(5L, "C001"));
+            gateway.addEmployer(employer(5L, "C001"));
+            controller.setPrerequisiteValidator(
+                    new LoanSubmissionService(gateway)::validatePrerequisites);
             assertNotNull(controller.validateDetails());
             controller.setPrimaryBorrower(new CustomersController.CustomerSummary("C006", "Liam Patel", "", ""));
             assertTrue(controller.validateDetails().contains("mailing address"));
@@ -193,6 +219,65 @@ class AddLoanControllerTest {
         });
     }
 
+    @Test void blocksContinuingWhenLiveEligibilityChecksAreUnavailable() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            javafx.scene.Parent root = loader.load();
+            new javafx.scene.Scene(root, 1008, 662);
+            root.applyCss();
+            root.layout();
+            AddLoanController controller = loader.getController();
+
+            controller.setPrimaryBorrower(
+                    new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
+
+            assertTrue(controller.validateDetails().contains("Connect to the mainframe"));
+            assertTrue(((Label) loader.getNamespace().get("prerequisiteNotice")).isVisible());
+            ((Button) loader.getNamespace().get("next")).fire();
+            assertFalse(((javafx.scene.layout.VBox) loader.getNamespace().get("coborrowersPane")).isVisible());
+            return null;
+        });
+    }
+
+    // Clicking a result clears the search, which used to empty the list mid-click. JavaFX
+    // reports that IndexOutOfBoundsException to the FX thread's handler, so capture it there.
+    @Test void clickingASearchResultDoesNotThrow() throws Exception {
+        List<Throwable> uncaught = new java.util.concurrent.CopyOnWriteArrayList<>();
+        JavaFxTestSupport.run(() -> {
+            var fxThread = Thread.currentThread();
+            var previous = fxThread.getUncaughtExceptionHandler();
+            fxThread.setUncaughtExceptionHandler((thread, failure) -> uncaught.add(failure));
+            var stage = new javafx.stage.Stage();
+            try {
+                var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+                stage.setScene(new javafx.scene.Scene(loader.load(), 1008, 662));
+                stage.show();
+                AddLoanController controller = loader.getController();
+                controller.configure(List.of(
+                        new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""),
+                        new CustomersController.CustomerSummary("C002", "Amelia Baker", "", "")), () -> {});
+                controller.setPrerequisiteValidator(customerId -> {});
+
+                ((TextField) loader.getNamespace().get("customerSearch")).setText("Amelia");
+                ListView<?> primaryResults = (ListView<?>) loader.getNamespace().get("customerResults");
+                pressCell(primaryResults, 1);
+                assertEquals("C002", controller.getDraft().primaryBorrower.customerId());
+                assertFalse(primaryResults.isVisible());
+
+                ((TextField) loader.getNamespace().get("coborrowerSearch")).setText("Amelia");
+                ListView<?> coResults = (ListView<?>) loader.getNamespace().get("coborrowerResults");
+                pressCell(coResults, 0);
+                assertEquals("C001", controller.getDraft().coborrowers.get(0).customerId());
+                assertFalse(coResults.isVisible());
+            } finally {
+                stage.close();
+                fxThread.setUncaughtExceptionHandler(previous);
+            }
+            return null;
+        });
+        assertTrue(uncaught.isEmpty(), () -> "FX thread threw: " + uncaught);
+    }
+
     @Test void primaryAndCoborrowerPickersSearchAllBackendCustomersForEachQuery() throws Exception {
         FXMLLoader[] loader = new FXMLLoader[1];
         AddLoanController[] controller = new AddLoanController[1];
@@ -253,6 +338,34 @@ class AddLoanControllerTest {
         Thread.sleep(500); // Let the 300 ms type-ahead debounce and FX result update complete.
     }
 
+    // A real mouse press, which goes through ListView's own click handling.
+    private static void pressCell(ListView<?> list, int index) {
+        list.getScene().getRoot().applyCss();
+        list.getScene().getRoot().layout();
+        var cell = list.lookupAll(".list-cell").stream()
+                .map(node -> (ListCell<?>) node)
+                .filter(c -> c.isVisible() && c.getIndex() == index && !c.isEmpty())
+                .findFirst().orElseThrow();
+        var centre = cell.localToScene(cell.getWidth() / 2, cell.getHeight() / 2);
+        javafx.event.Event.fireEvent(cell, new javafx.scene.input.MouseEvent(
+                javafx.scene.input.MouseEvent.MOUSE_PRESSED, centre.getX(), centre.getY(),
+                centre.getX(), centre.getY(),
+                javafx.scene.input.MouseButton.PRIMARY, 1,
+                false, false, false, false, true, false, false, false, false, true, null));
+    }
+
+    private static Address address(Long id, String customerId, boolean mailing) {
+        return new Address(id, customerId, "10 Main St", "CBD", "Auckland", "1010", "NZ", mailing);
+    }
+
+    private static Phone phone(Long id, String customerId) {
+        return new Phone(id, customerId, "0211234567", true, true);
+    }
+
+    private static Employer employer(Long id, String customerId) {
+        return new Employer(id, customerId, "Acme Ltd", "Engineer", 90000, "Full-time");
+    }
+
     /**
      * A failed save shows a clear message, leaves the form usable, and a retry can succeed
      * without saving twice
@@ -267,6 +380,7 @@ class AddLoanControllerTest {
             AddLoanController controller = loader.getController();
             int[] attempts = {0};
             controller.setSaveExecutor(Runnable::run);
+            controller.setPrerequisiteValidator(customerId -> {});
             controller.setOnSave(draft -> {
                 attempts[0]++;
                 if (attempts[0] == 1) {

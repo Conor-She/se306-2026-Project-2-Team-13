@@ -1,10 +1,14 @@
 package com.lavs.ui;
 
 import com.lavs.business.CustomerService;
+import com.lavs.business.LoanSubmissionService;
 import com.lavs.data.FakeMainframeGateway;
+import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.CustomerId;
 import com.lavs.model.CustomerPreview;
+import com.lavs.model.Employer;
+import com.lavs.model.Phone;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -42,12 +46,16 @@ class LoanWizardCustomerSearchTest {
         gateway.createCustomer(new Customer("C001", "Ms", "Amelia", "Adams", null, "NZ"));
         gateway.createCustomer(new Customer("C002", "Mr", "Benjamin", "Baker", null, "NZ"));
         gateway.createCustomer(new Customer("C004", "Mr", "Ethan", "Chen", null, "NZ"));
+        gateway.addAddress(new Address(1L, "C001", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        gateway.addPhone(new Phone(1L, "C001", "0211234567", true, true));
+        gateway.addEmployer(new Employer(1L, "C001", "Acme Ltd", "Engineer", 90000, "Full-time"));
         var loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));
         JavaFxTestSupport.run(() -> {
             root = loader.load();
             new Scene(root, 1100, 800);
             dashboard = loader.getController();
             dashboard.setCustomerService(new CustomerService(gateway));
+            dashboard.setLoanSubmissionService(new LoanSubmissionService(gateway));
             if (earlierSearch) {
                 Parent customers = (Parent) loader.getNamespace().get("customersView");
                 TextField search = (TextField) customers.lookup("#searchField");

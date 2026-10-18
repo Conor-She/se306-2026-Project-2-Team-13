@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import com.lavs.model.LoanDraft;
-import com.lavs.business.StubLoanPrerequisiteService;
 import com.lavs.business.LoanPrerequisiteChecker;
 import com.lavs.business.LoanPrerequisiteException;
 import com.lavs.business.LoanSchedulePreviewService;
@@ -46,8 +45,7 @@ public class AddLoanController {
             reviewStartDate, reviewRenewDate, reviewStatus, reviewCoborrowerCount;
     @FXML private String coborrowerRowStyle, removeButtonStyle;
     private final LoanDraft draft = new LoanDraft();
-    private java.util.function.Consumer<String> prerequisiteValidator =
-            new StubLoanPrerequisiteService()::validate;
+    private java.util.function.Consumer<String> prerequisiteValidator;
     @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
     @FXML private TableView<Repayment> repaymentTable;
@@ -207,9 +205,7 @@ public class AddLoanController {
         long request = ++primarySearchVersion;
         primarySearchDelay.stop();
         if (query.isEmpty()) {
-            customerResults.getItems().clear();
-            customerResults.setVisible(false);
-            customerResults.setManaged(false);
+            hideResults(customerResults);
             return;
         }
         customerResults.setPlaceholder(new Label(customerService == null
@@ -436,14 +432,23 @@ public class AddLoanController {
                 && draft.coborrowers.stream().noneMatch(c -> c.customerId().equals(customer.customerId()));
     }
 
+    // Choosing a result clears the search while the list is still handling that click, and
+    // emptying the list then makes JavaFX throw IndexOutOfBoundsException. Hide it now and
+    // empty it once the click is done, unless a new search has shown it again.
+    private void hideResults(ListView<CustomersController.CustomerSummary> results) {
+        results.setVisible(false);
+        results.setManaged(false);
+        javafx.application.Platform.runLater(() -> {
+            if (!results.isVisible()) results.getItems().clear();
+        });
+    }
+
     private void searchCoborrowers() {
         String query = coborrowerSearch.getText() == null ? "" : coborrowerSearch.getText().strip();
         long request = ++coborrowerSearchVersion;
         coborrowerSearchDelay.stop();
         if (query.isEmpty() || draft.coborrowers.size() >= 3) {
-            coborrowerResults.getItems().clear();
-            coborrowerResults.setVisible(false);
-            coborrowerResults.setManaged(false);
+            hideResults(coborrowerResults);
             return;
         }
         coborrowerResults.setPlaceholder(new Label(customerService == null
@@ -579,6 +584,10 @@ public class AddLoanController {
 
     private String prerequisiteError() {
         if (draft.primaryBorrower == null) return null;
+        if (prerequisiteValidator == null) {
+            return "Could not check " + draft.primaryBorrower.name()
+                    + "'s loan requirements. Connect to the mainframe and try again.";
+        }
         try {
             prerequisiteValidator.accept(draft.primaryBorrower.customerId());
             return null;
