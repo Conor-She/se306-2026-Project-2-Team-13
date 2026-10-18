@@ -41,7 +41,6 @@ import mainframe.client.messages.customer.Retrieve;
 import mainframe.client.messages.customer.Search;
 import mainframe.client.messages.customer.Update;
 import mainframe.client.messages.customer.UpdateAddress;
-import mainframe.client.messages.customer.UpdateDocument;
 import mainframe.client.messages.customer.UpdateEmail;
 import mainframe.client.messages.customer.UpdateEmployer;
 import mainframe.client.messages.customer.UpdatePhoneNumber;
@@ -501,12 +500,12 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public CustomerDocument updateDocument(CustomerDocument document) {
-        long id = parseDocumentId(document.getDocumentId());
-        UpdateDocument message = new UpdateDocument(document.getCustomerId(), id,
-                document.getFileName(), document.getDocumentType(),
-                document.getUploadDate().toString());
-        sendOrThrow(message);
-        return document;
+        // The mainframe has no customer.updateDocument operation, so replace the record.
+        // Add first: if the delete then fails, a duplicate is left rather than data lost.
+        parseDocumentId(document.getDocumentId());
+        CustomerDocument replacement = addDocument(document);
+        deleteDocument(document.getCustomerId(), document.getDocumentId());
+        return replacement;
     }
 
     @Override

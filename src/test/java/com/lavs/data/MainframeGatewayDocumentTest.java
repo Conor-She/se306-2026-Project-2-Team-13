@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -99,25 +100,28 @@ class MainframeGatewayDocumentTest {
     }
 
     @Test
-    void updatesMetadataForAnExistingDocument() {
+    void updatesDocumentByAddingReplacementThenDeletingOriginal() {
         Connection connection = mock(Connection.class);
-        when(connection.send(any(MessageRequest.class))).thenReturn(response());
+        when(connection.send(any(MessageRequest.class))).thenReturn(response("id", "42"));
         MainframeGateway gateway = new MainframeGatewayImpl(connection, "Test Organisation");
         CustomerDocument document = new CustomerDocument("41", "C001", "passport.pdf",
                 "Identity", UPLOAD_DATE);
 
-        assertEquals(document, gateway.updateDocument(document));
+        CustomerDocument replacement = gateway.updateDocument(document);
+        assertEquals("42", replacement.getDocumentId());
+        assertEquals("passport.pdf", replacement.getFileName());
+        assertEquals("Identity", replacement.getDocumentType());
         ArgumentCaptor<MessageRequest> request = ArgumentCaptor.forClass(MessageRequest.class);
-        verify(connection).send(request.capture());
-        assertEquals(MessageRequest.UPDATE, request.getValue().getMessageType());
-        assertEquals("customer.updateDocument", request.getValue().getRequestType());
-        assertEquals("C001", request.getValue().getValue("customer"));
-        assertEquals("41", request.getValue().getValue("id"));
-        assertEquals("passport.pdf", request.getValue().getValue("fileName"));
-        assertEquals("Identity", request.getValue().getValue("type"));
-        assertEquals(UPLOAD_DATE.toString(), request.getValue().getValue("uploadDate"));
-        assertNull(request.getValue().getValue("fileType"));
-        assertNull(request.getValue().getValue("size"));
+        verify(connection, times(2)).send(request.capture());
+        MessageRequest add = request.getAllValues().get(0);
+        assertEquals("customer.addDocument", add.getRequestType());
+        assertEquals("C001", add.getValue("customer"));
+        assertEquals("passport.pdf", add.getValue("fileName"));
+        assertEquals("Identity", add.getValue("type"));
+        MessageRequest delete = request.getAllValues().get(1);
+        assertEquals("customer.deleteDocument", delete.getRequestType());
+        assertEquals("C001", delete.getValue("customer"));
+        assertEquals("41", delete.getValue("id"));
     }
 
     @Test
