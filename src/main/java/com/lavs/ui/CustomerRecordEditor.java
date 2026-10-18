@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.ArrayList;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -62,7 +63,13 @@ final class CustomerRecordEditor {
     static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d MMM uuuu", java.util.Locale.ENGLISH);
     private static final String INPUT_STYLE = "-fx-background-color: white; -fx-border-color: #b9b7cd; "
             + "-fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 9;";
+    private static final List<String> ADDRESS_KEYS = List.of("street", "suburb", "city", "postCode", "country");
 
+    /** One-line form of an address, used for display. */
+    static String addressText(Map<String, String> values) {
+        return ADDRESS_KEYS.stream().map(key -> values.getOrDefault(key, "").strip())
+                .filter(part -> !part.isBlank()).collect(java.util.stream.Collectors.joining(", "));
+    }
     private CustomerRecordEditor() {}
 
     static Dialog<Map<String, String>> create(Window owner, Kind kind, Map<String, String> original,
@@ -88,6 +95,8 @@ final class CustomerRecordEditor {
         Map<String, Control> inputs = new LinkedHashMap<>();
         Map<String, Label> errors = new LinkedHashMap<>();
         Map<String, String> draft = new LinkedHashMap<>(original);
+        List<Node> valueNodes = new ArrayList<>();
+        List<Node> addressNodes = new ArrayList<>();
         for (Field field : kind.fields) {
             Label label = requiredLabel(field.label);
             Control input;
@@ -126,6 +135,36 @@ final class CustomerRecordEditor {
             inputs.put(field.key, input);
             errors.put(field.key, error);
             form.getChildren().addAll(label, input, error);
+            if (field.key.equals("value")) { valueNodes.add(label); valueNodes.add(input); }
+        }
+        if (kind == Kind.CONTACT_RECORD) {
+            String[][] addressFields = {{"street", "Street address", "true"}, {"suburb", "Suburb", "false"},
+                    {"city", "City", "true"}, {"postCode", "Post code", "false"}, {"country", "Country", "true"}};
+            for (String[] f : addressFields) {
+                boolean required = f[2].equals("true");
+                Label label = required ? requiredLabel(f[1]) : new Label(f[1]);
+                if (!required) label.setStyle("-fx-text-fill: #393a7b; -fx-font-weight: bold;");
+                String initial = original.getOrDefault(f[0], "");
+                // An address with no separate parts yet starts with its whole text in the street box
+                if (f[0].equals("street") && !original.containsKey("street"))
+                    initial = original.getOrDefault("value", "");
+                TextField input = new TextField(initial);
+                input.setId("edit_" + f[0]);
+                input.setAccessibleText(f[1]);
+                input.setStyle(INPUT_STYLE);
+                label.setLabelFor(input);
+                Label error = new Label();
+                error.setId("error_" + f[0]);
+                error.setWrapText(true);
+                error.setStyle("-fx-text-fill: #b42318; -fx-font-size: 12px;");
+                error.setVisible(false);
+                error.setManaged(false);
+                inputs.put(f[0], input);
+                errors.put(f[0], error);
+                form.getChildren().addAll(label, input, error);
+                addressNodes.add(label);
+                addressNodes.add(input);
+            }
         }
         CheckBox primary = new CheckBox("Make primary");
         primary.setId("edit_primary");
@@ -140,6 +179,9 @@ final class CustomerRecordEditor {
                 primary.setText("Primary " + String.valueOf(type.getValue()).toLowerCase(java.util.Locale.ROOT));
                 boolean phone = "Phone".equals(type.getValue());
                 texts.setVisible(phone); texts.setManaged(phone);
+                boolean address = "Address".equals(type.getValue());
+                valueNodes.forEach(n -> { n.setVisible(!address); n.setManaged(!address); });
+                addressNodes.forEach(n -> { n.setVisible(address); n.setManaged(address); });
             };
             type.valueProperty().addListener((observable, old, value) -> updatePreferences.run());
             updatePreferences.run();
@@ -168,6 +210,8 @@ final class CustomerRecordEditor {
                 values.put("primary", Boolean.toString(primary.isSelected()));
                 values.put("texts", Boolean.toString("Phone".equals(values.get("contactType")) && texts.isSelected()));
             }
+            if ("Address".equals(values.get("contactType"))) values.put("value", addressText(values));
+            else ADDRESS_KEYS.forEach(values::remove);
             Map<String, String> invalid = validate(kind, values, adding);
             invalid.putAll(extraValidation.apply(values));
             errors.forEach((key, error) -> {
@@ -255,6 +299,11 @@ final class CustomerRecordEditor {
                 errors.put("value", "Enter a valid email address.");
             if (!value.isBlank() && type.equals("Phone") && !value.matches("\\+?[0-9 ()-]{7,20}"))
                 errors.put("value", "Enter a valid phone number.");
+            if (type.equals("Address")) {
+                errors.remove("value");
+                for (String key : List.of("street", "city", "country"))
+                    if (values.getOrDefault(key, "").isBlank()) errors.put(key, "This field is required.");
+            }
         }
         return errors;
     }

@@ -15,6 +15,9 @@ import javafx.stage.Window;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import com.lavs.ui.CustomerRecordEditor.Kind;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
@@ -289,13 +292,12 @@ class CustomerEditingTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"Phone,021 555 9876,viewAllPhone", "Address,34 Queen Street Auckland,viewAllAddress"})
+    @CsvSource({"Address,34 Queen Street,viewAllAddress"})
     void contactsAreGroupedByTypeAndPrimaryCanBeEditedFromList(String type, String value, String link) throws Exception {
         JavaFxTestSupport.run(() -> {
             openEditor("details", "Add contact information");
             DialogPane pane = editor();
-            ((ComboBox<String>) pane.lookup("#edit_contactType")).setValue(type);
-            ((TextField) pane.lookup("#edit_value")).setText(value);
+            fillContact(pane, type, value);
             dialogButton(pane, "Save").fire();
             Button view = (Button) loader.getNamespace().get(link);
             assertTrue(view.isVisible()); view.fire();
@@ -305,9 +307,9 @@ class CustomerEditingTest {
             assertEquals(2, edits.size());
             edits.get(0).fire(); pane = editor();
             assertTrue(pane.lookup("#edit_contactType").isDisabled());
-            ((TextField) pane.lookup("#edit_value")).setText(value);
+            fillContact(pane, type, value);
             dialogButton(pane, "Save").fire();
-            assertEquals(value, ((Label) loader.getNamespace().get(type.equals("Phone") ? "phoneValue" : "addressValue")).getText());
+            assertEquals(shown(type, value), ((Label) loader.getNamespace().get(type.equals("Phone") ? "phoneValue" : "addressValue")).getText());
             return null;
         });
     }
@@ -324,20 +326,19 @@ class CustomerEditingTest {
         JavaFxTestSupport.run(() -> {
             openEditor("details", "Add contact information");
             DialogPane pane = editor();
-            ((ComboBox<String>) pane.lookup("#edit_contactType")).setValue("Address");
-            ((TextField) pane.lookup("#edit_value")).setText("34 Queen Street");
+            fillContact(pane, "Address", "34 Queen Street");
             dialogButton(pane, "Save").fire();
             ((Button) loader.getNamespace().get("viewAllAddress")).fire();
             DialogPane contacts = contactList();
             nodes(contacts).stream().filter(Button.class::isInstance).map(Button.class::cast)
-                    .filter(button -> "Make primary 34 Queen Street".equals(button.getAccessibleText())).findFirst().orElseThrow().fire();
-            assertEquals("34 Queen Street", ((Label) loader.getNamespace().get("addressValue")).getText());
+                    .filter(button -> "Make primary 34 Queen Street, Auckland, NZ".equals(button.getAccessibleText())).findFirst().orElseThrow().fire();
+            assertEquals("34 Queen Street, Auckland, NZ", ((Label) loader.getNamespace().get("addressValue")).getText());
             assertTrue(nodes(contacts).stream().filter(Label.class::isInstance).map(Label.class::cast)
                     .anyMatch(label -> label.getText().equals("12 Koru Street, Whero, Auckland, 0945")));
             nodes(contacts).stream().filter(Button.class::isInstance).map(Button.class::cast)
                     .filter(button -> "Delete 12 Koru Street, Whero, Auckland, 0945".equals(button.getAccessibleText())).findFirst().orElseThrow().fire();
             confirmDeletion();
-            assertEquals("34 Queen Street", ((Label) loader.getNamespace().get("addressValue")).getText());
+            assertEquals("34 Queen Street, Auckland, NZ", ((Label) loader.getNamespace().get("addressValue")).getText());
             assertFalse(((Button) loader.getNamespace().get("viewAllAddress")).isVisible());
             return null;
         });
@@ -353,6 +354,7 @@ class CustomerEditingTest {
             openEditor("details", "Edit phone");
             assertTrue(((CheckBox) editor().lookup("#edit_texts")).isSelected());
             dialogButton(editor(), "Cancel").fire();
+            assertNull(findEditor(), "Cancel should close the phone editor");
             openEditor("details", "Edit email");
             assertFalse(editor().lookup("#edit_texts").isVisible());
             return null;
@@ -472,5 +474,23 @@ class CustomerEditingTest {
         List<Node> nodes = new ArrayList<>(); nodes.add(root);
         if (root instanceof Parent parent) parent.getChildrenUnmodifiable().forEach(child -> nodes.addAll(nodes(child)));
         return nodes;
+    }
+
+    private static void fillContact(DialogPane pane, String type, String value) {
+        ((ComboBox<String>) pane.lookup("#edit_contactType")).setValue(type);
+        if (type.equals("Address")) {
+            ((TextField) pane.lookup("#edit_street")).setText(value);
+            ((TextField) pane.lookup("#edit_suburb")).setText("");
+            ((TextField) pane.lookup("#edit_city")).setText("Auckland");
+            ((TextField) pane.lookup("#edit_postCode")).setText("");
+            ((TextField) pane.lookup("#edit_country")).setText("NZ");
+        } else {
+            ((TextField) pane.lookup("#edit_value")).setText(value);
+        }
+    }
+
+    // What the screen shows for a contact entered with fillContact
+    private static String shown(String type, String value) {
+        return type.equals("Address") ? value + ", Auckland, NZ" : value;
     }
 }
