@@ -763,7 +763,9 @@ final class CustomerDetailsEditing {
                 table.add(label(record.get("rate") + "%"), 3, row);
                 table.add(status(record.get("status")), 4, row);
                 Button review = new Button("Review Loan");
-                review.setStyle(ACTION);
+                review.setStyle("-fx-background-color: #5b55b5; -fx-text-fill: white; -fx-font-size: 12px;"
+                        + " -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6; -fx-cursor: hand;");
+                review.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 review.setAccessibleText("Review loan " + record.get("id"));
                 review.setOnAction(event -> onReviewLoan.accept(record.get("id")));
                 table.add(review, 5, row);

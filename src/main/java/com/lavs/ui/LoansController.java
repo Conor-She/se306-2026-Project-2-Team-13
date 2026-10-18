@@ -30,9 +30,17 @@ import javafx.scene.layout.VBox;
 public class LoansController {
     public static final String NOT_CONNECTED = "Connect to the mainframe to search loans";
     public static final String SEARCH_PROMPT = "Enter a loan ID or customer name or ID";
+    private static final String NOT_RECORDED = "Not recorded";
 
     public record LoanSummary(String loanId, String customerId, String customerName,
-            String status, String amount, String type) {
+            String status, String amount, String type,
+            String rate, String paymentFrequency, String rateFrequency,
+            String term, String startDate, String renewDate) {
+        public LoanSummary(String loanId, String customerId, String customerName,
+                String status, String amount, String type) {
+            this(loanId, customerId, customerName, status, amount, type,
+                    NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED);
+        }
     }
 
     @FXML private TextField searchField;
@@ -237,7 +245,10 @@ public class LoansController {
         String status = loan.getStatus() == null ? "Not recorded" : titleCase(loan.getStatus().name());
         String type = loan.getType() == null ? "Not recorded" : titleCase(loan.getType().name());
         return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), listing.customerName(), status,
-                currency.format(loan.getPrincipal()), type);
+                currency.format(loan.getPrincipal()), type,
+                java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros().toPlainString() + "%",
+                enumText(loan.getPaymentFrequency()), enumText(loan.getRateFrequency()),
+                termText(loan.getTermMonths()), dateText(loan.getStartDate()), dateText(loan.getRenewDate()));
     }
 
     private static String titleCase(String value) {
@@ -248,6 +259,26 @@ public class LoansController {
             result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
         }
         return result.toString();
+    }
+
+    private static final java.time.format.DateTimeFormatter DATE_FORMAT =
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ENGLISH);
+
+    private static String enumText(Enum<?> value) {
+        return value == null ? NOT_RECORDED : titleCase(value.name());
+    }
+
+    private static String dateText(java.time.LocalDate date) {
+        return date == null ? NOT_RECORDED : date.format(DATE_FORMAT);
+    }
+
+    private static String termText(Integer months) {
+        if (months == null) return NOT_RECORDED;
+        if (months % 12 == 0) {
+            int years = months / 12;
+            return years + (years == 1 ? " year" : " years");
+        }
+        return months + (months == 1 ? " month" : " months");
     }
 
     private void updateEmptyState() {
