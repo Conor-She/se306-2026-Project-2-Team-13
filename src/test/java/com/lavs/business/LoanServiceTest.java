@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.lavs.data.FakeMainframeGateway;
 import com.lavs.data.MainframeException;
 import com.lavs.model.Address;
+import com.lavs.model.Customer;
 import com.lavs.model.Employer;
 import com.lavs.model.Guarantor;
 import com.lavs.model.Loan;
@@ -117,6 +118,7 @@ class LoanServiceTest {
     void createsLoanForUnemployedCustomerWithGuarantor() {
         addAddress(true);
         addPhone();
+        gateway.createCustomer(new Customer("C002", "Mr", "Taylor", "Guarantor", null, "NZ"));
         gateway.addGuarantor(new Guarantor("G001", "C001", "C002", "Parent"));
 
         LoanWithSchedule result = service.create(newLoan());

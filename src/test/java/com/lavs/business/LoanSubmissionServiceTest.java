@@ -1,5 +1,6 @@
 package com.lavs.business;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,7 +11,9 @@ import com.lavs.data.FakeMainframeGateway;
 import com.lavs.data.MainframeException;
 import com.lavs.model.Address;
 import com.lavs.model.CoBorrower;
+import com.lavs.model.Customer;
 import com.lavs.model.Employer;
+import com.lavs.model.Guarantor;
 import com.lavs.model.Loan;
 import com.lavs.model.LoanDraft;
 import com.lavs.model.Phone;
@@ -211,7 +214,7 @@ class LoanSubmissionServiceTest {
 
     // --- Failures: a clear error, and no loan is created ---
 
-    // The real prerequisite checks now run, instead of the stub's fixtures
+    // The same live prerequisite checks run before saving and from the wizard.
     @Test
     void blocksACustomerWhoFailsAPrerequisite() {
         gateway.addAddress(
@@ -224,6 +227,84 @@ class LoanSubmissionServiceTest {
 
         assertEquals(LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE, exception.getMessage());
         assertNothingWasCreated(gateway);
+    }
+
+    @Test
+    void validatesTheSelectedCustomersCurrentRecords() {
+        gateway.createCustomer(new Customer("C101", "Ms", "Jamie", "Pass", null, "NZ"));
+        gateway.createCustomer(new Customer("C102", "Mr", "Alex", "Fail", null, "NZ"));
+        gateway.addAddress(
+                new Address(1L, "C101", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        gateway.addPhone(new Phone(1L, "C101", "0211234567", true, true));
+        gateway.addEmployer(new Employer(1L, "C101", "Acme Ltd", "Engineer", 90000, "Full-time"));
+
+        gateway.addAddress(
+                new Address(2L, "C102", "5 Queen St", "CBD", "Auckland", "1010", "NZ", false));
+        gateway.addPhone(new Phone(2L, "C102", "0211234567", true, true));
+        gateway.addEmployer(new Employer(2L, "C102", "Acme Ltd", "Engineer", 90000, "Full-time"));
+
+        assertDoesNotThrow(() -> service.validatePrerequisites("C101"));
+        LoanPrerequisiteException exception = assertThrows(LoanPrerequisiteException.class,
+                () -> service.validatePrerequisites("C102"));
+        assertEquals(LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE, exception.getMessage());
+    }
+
+    @Test
+    void validatesAChosenGuarantorAgainstItsActualCustomerRecord() {
+        gateway.createCustomer(new Customer("C001", "Ms", "Jamie", "Borrower", null, "NZ"));
+        gateway.addAddress(
+                new Address(1L, "C001", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        gateway.addPhone(new Phone(1L, "C001", "0211234567", true, true));
+        gateway.addGuarantor(new Guarantor("G001", "C001", "C002", "Parent"));
+
+        LoanPrerequisiteException missingGuarantorCustomer = assertThrows(
+                LoanPrerequisiteException.class, () -> service.validatePrerequisites("C001"));
+        assertEquals(GuarantorRequirementValidator.GUARANTOR_REQUIRED_MESSAGE,
+                missingGuarantorCustomer.getMessage());
+
+        gateway.createCustomer(new Customer("C002", "Mr", "Taylor", "Guarantor", null, "NZ"));
+
+        assertDoesNotThrow(() -> service.validatePrerequisites("C001"));
+    }
+
+    // The real mainframe rejects a lookup for a missing customer instead of returning nothing.
+    @Test
+    void treatsARejectedGuarantorLookupAsNoGuarantor() {
+        var rejectingGateway = guarantorLookupFailsWith(MainframeException.Type.BUSINESS_ERROR);
+        addUnemployedCustomerWithGuarantor(rejectingGateway);
+
+        LoanPrerequisiteException exception = assertThrows(LoanPrerequisiteException.class,
+                () -> new LoanSubmissionService(rejectingGateway).validatePrerequisites("C001"));
+        assertEquals(GuarantorRequirementValidator.GUARANTOR_REQUIRED_MESSAGE, exception.getMessage());
+    }
+
+    @Test
+    void reportsAnOutageDuringTheGuarantorLookup() {
+        var unavailableGateway = guarantorLookupFailsWith(MainframeException.Type.UNAVAILABLE);
+        addUnemployedCustomerWithGuarantor(unavailableGateway);
+
+        MainframeException exception = assertThrows(MainframeException.class,
+                () -> new LoanSubmissionService(unavailableGateway).validatePrerequisites("C001"));
+        assertEquals(MainframeException.Type.UNAVAILABLE, exception.getType());
+    }
+
+    private static FakeMainframeGateway guarantorLookupFailsWith(MainframeException.Type type) {
+        return new FakeMainframeGateway() {
+            @Override
+            public Customer getCustomer(String customerId) {
+                if ("C002".equals(customerId)) {
+                    throw new MainframeException(type, 1, "Customer lookup failed");
+                }
+                return super.getCustomer(customerId);
+            }
+        };
+    }
+
+    private static void addUnemployedCustomerWithGuarantor(FakeMainframeGateway gateway) {
+        gateway.addAddress(
+                new Address(1L, "C001", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        gateway.addPhone(new Phone(1L, "C001", "0211234567", true, true));
+        gateway.addGuarantor(new Guarantor("G001", "C001", "C002", "Parent"));
     }
 
     @Test

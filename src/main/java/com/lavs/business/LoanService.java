@@ -1,6 +1,9 @@
 package com.lavs.business;
 
+import com.lavs.data.MainframeException;
 import com.lavs.data.MainframeGateway;
+import com.lavs.model.Employer;
+import com.lavs.model.Guarantor;
 import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 import java.util.EnumMap;
@@ -147,8 +150,34 @@ public class LoanService {
         prerequisiteChecker.checkHasMailingAddress(gateway.getAddresses(customerId));
         prerequisiteChecker.checkHasAlternateContact(
                 gateway.getPhones(customerId), gateway.getEmails(customerId));
-        guarantorValidator.validate(
-                customerId, gateway.getEmployers(customerId), gateway.getGuarantors(customerId));
+
+        List<Employer> employers = gateway.getEmployers(customerId);
+        boolean hasEmployer = employers != null && employers.stream()
+                .anyMatch(employer -> customerId.equals(employer.getCustomerId()));
+        if (hasEmployer) {
+            guarantorValidator.validate(customerId, employers, List.of());
+            return;
+        }
+
+        // A saved relationship only counts if its linked guarantor is still a customer.
+        List<Guarantor> guarantors = gateway.getGuarantors(customerId);
+        List<Guarantor> existingGuarantors = guarantors == null ? List.of() : guarantors.stream()
+                .filter(guarantor -> customerId.equals(guarantor.getCustomerId()))
+                .filter(guarantor -> customerExists(guarantor.getGuarantorCustomerId()))
+                .toList();
+        guarantorValidator.validate(customerId, employers, existingGuarantors);
+    }
+
+    // The mainframe rejects a lookup for a customer that doesn't exist, so that
+    // business error means "not a customer"; an outage still reaches the caller.
+    private boolean customerExists(String customerId) {
+        if (customerId == null || customerId.isBlank()) return false;
+        try {
+            return gateway.getCustomer(customerId) != null;
+        } catch (MainframeException exception) {
+            if (exception.getType() == MainframeException.Type.UNAVAILABLE) throw exception;
+            return false;
+        }
     }
 
     /** Checks whether the backend customer has the records required to create a loan. */
