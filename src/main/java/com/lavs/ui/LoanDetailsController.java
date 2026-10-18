@@ -19,7 +19,6 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -30,7 +29,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -94,6 +92,9 @@ public class LoanDetailsController {
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
+        boolean active = "Active".equals(loan.status());
+        editLoanButton.setDisable(active);
+        editLoanButton.setTooltip(new Tooltip(active ? "Active loans can't be edited." : "Edit loan"));
         interestRateValue.setText(loan.rate());
         paymentFrequencyValue.setText(loan.paymentFrequency());
         rateFrequencyValue.setText(loan.rateFrequency());
@@ -181,6 +182,13 @@ public class LoanDetailsController {
         selectTab(paymentsTab, paymentsView);
     }
 
+    @FXML private Button editLoanButton;
+    private com.lavs.business.CustomerService customerService;
+
+    public void setCustomerService(com.lavs.business.CustomerService service) {
+        customerService = service;
+    }
+
     private void selectTab(Button selectedTab, VBox selectedView) {
         for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
@@ -195,6 +203,44 @@ public class LoanDetailsController {
 
     @FXML private void addPayment() {
         editPayment(null);
+    }
+
+    @FXML private void editLoan() {
+        if (loan == null || customerService == null) return;
+        com.lavs.model.Loan existing;
+        try {
+            existing = customerService.getLoan(loan.customerId(), loan.loanId());
+        } catch (RuntimeException failure) { showEditError(failure); return; }
+        var original = new java.util.LinkedHashMap<String, String>();
+        original.put("id", existing.getLoanId());
+        original.put("status", loan.status());
+        original.put("type", existing.getType() == null ? "" : existing.getType().name());
+        original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal()).toPlainString());
+        original.put("rate", java.math.BigDecimal.valueOf(existing.getInterestRate())
+                .stripTrailingZeros().toPlainString());
+        original.put("termMonths", existing.getTermMonths() == null ? "" : existing.getTermMonths().toString());
+        original.put("paymentAmount", Double.toString(existing.getPaymentAmount()));
+        CustomerRecordEditor.create(loanHeading.getScene().getWindow(), CustomerRecordEditor.Kind.SAVED_LOAN,
+                original, false, saved -> {
+            try {
+                customerService.updateLoan(new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
+                        existing.getStatus(), Double.parseDouble(saved.get("amount")),
+                        Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
+                        existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
+                        Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
+                        existing.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
+                setLoan(LoansController.summaryFor(
+                        customerService.getLoan(loan.customerId(), loan.loanId()), loan.customerName()));
+            } catch (RuntimeException failure) { showEditError(failure); }
+        }).show();
+    }
+
+    private void showEditError(RuntimeException failure) {
+        Alert alert = new Alert(Alert.AlertType.ERROR,
+                failure.getMessage() == null ? "The loan could not be saved." : failure.getMessage());
+        alert.setHeaderText("Could not edit loan");
+        if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
+        alert.showAndWait();
     }
 
     private void editPayment(Payment existingPayment) {

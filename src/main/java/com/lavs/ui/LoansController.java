@@ -79,6 +79,7 @@ public class LoansController {
 
     public void setCustomerService(CustomerService service) {
         customerService = service;
+        detailsViewController.setCustomerService(service);
         if (activeAddLoanController != null && service != null) {
             activeAddLoanController.setCustomerSearchService(service, requestExecutor);
         }
@@ -240,11 +241,14 @@ public class LoansController {
     }
 
     private static LoanSummary summaryOf(LoanBrowsingService.LoanListing listing) {
-        Loan loan = listing.loan();
+        return summaryFor(listing.loan(), listing.customerName());
+    }
+
+    static LoanSummary summaryFor(Loan loan, String customerName) {
         NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
         String status = loan.getStatus() == null ? "Not recorded" : titleCase(loan.getStatus().name());
         String type = loan.getType() == null ? "Not recorded" : titleCase(loan.getType().name());
-        return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), listing.customerName(), status,
+        return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), customerName, status,
                 currency.format(loan.getPrincipal()), type,
                 java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros().toPlainString() + "%",
                 enumText(loan.getPaymentFrequency()), enumText(loan.getRateFrequency()),

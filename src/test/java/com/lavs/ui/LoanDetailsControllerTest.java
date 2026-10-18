@@ -256,4 +256,39 @@ class LoanDetailsControllerTest {
             return null;
         });
     }
+
+        private static DialogPane editorDialog() {
+        return Window.getWindows().stream().filter(Window::isShowing)
+                .map(w -> w.getScene().getRoot()).filter(DialogPane.class::isInstance)
+                .map(DialogPane.class::cast).filter(p -> "customerRecordEditor".equals(p.getId()))
+                .findFirst().orElseThrow();
+    }
+
+    @Test void editLoanIsDisabledForActiveLoansOnly() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            assertTrue(button("Edit loan").isDisabled(), "LN-1 is Active, so it cannot be edited");
+            controller.setLoan(loan("LN-2", "Sarah Johnson", "New", "$12,000", "Table Loan"));
+            assertFalse(button("Edit loan").isDisabled());
+            return null;
+        });
+    }
+
+    @Test void editingALoanSavesItToTheMainframeAndRefreshesThePage() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            gateway.createLoan(new Loan("LN-2", "67670442", Loan.Status.NEW, 12000, 5,
+                    Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1),
+                    1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+            controller.setCustomerService(new com.lavs.business.CustomerService(gateway));
+            controller.setLoan(loan("LN-2", "Sarah Johnson", "New", "$12,000", "Table Loan"));
+            button("Edit loan").fire();
+            DialogPane pane = editorDialog();
+            ((TextField) pane.lookup("#edit_amount")).setText("15000");
+            ((TextField) pane.lookup("#edit_rate")).setText("4.5");
+            click(pane, "Save");
+            assertEquals(15000, gateway.getLoan("LN-2").getPrincipal());
+            assertEquals("$15,000.00", text("amountValue"));
+            assertEquals("4.5%", text("interestRateValue"));
+            return null;
+        });
+    }
 }
