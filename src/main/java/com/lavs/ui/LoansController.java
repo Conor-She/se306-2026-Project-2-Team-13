@@ -290,6 +290,23 @@ public class LoansController {
         showList(false);
     }
 
+    /** Opens a loan's details page by ID, e.g. from a customer's Loans tab. */
+    public void openLoan(String loanId, Runnable onNotFound) {
+        if (loanBrowsingService == null) { onNotFound.run(); return; }
+        requestExecutor.execute(() -> {
+            try {
+                var match = loanBrowsingService.search(loanId).loans().stream()
+                        .filter(listing -> loanId.equals(listing.loan().getLoanId())).findFirst();
+                Platform.runLater(() -> {
+                    if (match.isPresent()) openDetails(summaryOf(match.get()));
+                    else onNotFound.run();
+                });
+            } catch (RuntimeException failure) {
+                Platform.runLater(onNotFound);
+            }
+        });
+    }
+
     private void showListAndFocusSearch() {
         showList(true);
         focusSearch();
