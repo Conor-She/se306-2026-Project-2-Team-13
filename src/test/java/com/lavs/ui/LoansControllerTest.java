@@ -95,6 +95,29 @@ class LoansControllerTest {
         });
     }
 
+    @Test void typingSearchesAutomaticallyAndClearingResetsResults() throws Exception {
+        var resultsReady = new java.util.concurrent.CountDownLatch(1);
+        step(() -> {
+            loan("L1", "C1", 10000, Loan.Type.TABLE_LOAN);
+            connect();
+            table().getItems().addListener((javafx.collections.ListChangeListener<LoansController.LoanSummary>) change -> {
+                if (!table().getItems().isEmpty()) resultsReady.countDown();
+            });
+            TextField field = (TextField) loader.getNamespace().get("searchField");
+            field.setText("Smith");
+            field.setText("Johnson");
+        });
+        assertTrue(resultsReady.await(5, java.util.concurrent.TimeUnit.SECONDS),
+                "Typing should find loans without pressing Enter");
+        step(() -> {
+            assertEquals("L1", table().getItems().get(0).loanId());
+            ((TextField) loader.getNamespace().get("searchField")).clear();
+            assertTrue(table().getItems().isEmpty());
+            assertEquals("Search loans", heading());
+            assertEquals(LoansController.SEARCH_PROMPT, placeholder());
+        });
+    }
+
     @Test void searchingShowsTheMainframesLoans() throws Exception {
         step(() -> {
             loan("L2", "C1", 20000, null);

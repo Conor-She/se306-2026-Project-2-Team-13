@@ -286,9 +286,8 @@ public class LoanDetailsController {
             Button deleteButton = iconButton("delete", "Delete payment " + payment.getPaymentId());
             deleteButton.setOnAction(event -> deletePayment(payment));
             HBox buttons = new HBox(4, editButton, deleteButton);
-            buttons.setAlignment(Pos.CENTER_RIGHT);
+            buttons.setAlignment(Pos.CENTER);
             buttons.setMinWidth(Region.USE_PREF_SIZE);
-            buttons.setPadding(new Insets(0, 12, 0, 0));
             paymentRows.add(buttons, 4, row);
             row++;
         }
