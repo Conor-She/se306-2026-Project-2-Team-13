@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import javafx.application.Platform;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -50,6 +52,7 @@ public class LoansController {
     });
     private Executor requestExecutor = defaultRequestExecutor;
     private final AtomicLong searchSequence = new AtomicLong();
+    private final PauseTransition searchDelay = new PauseTransition(Duration.millis(300));
     private LoanBrowsingService loanBrowsingService;
     private CustomerService customerService;
     private LoanSubmissionService submission;
@@ -158,6 +161,19 @@ public class LoansController {
         loanTable.getSortOrder().add(idColumn);
         resultsHeading.setText("Search loans");
         updateEmptyState();
+        searchDelay.setOnFinished(event -> searchLoans());
+        searchField.textProperty().addListener((observable, oldValue, value) -> {
+            searchSequence.incrementAndGet();
+            loans.clear();
+            loanTable.setTooltip(null);
+            if (value == null || value.isBlank()) {
+                searchLoans();
+            } else {
+                resultsHeading.setText("Searching loans...");
+                loanTable.setPlaceholder(new Label("Searching loans..."));
+                searchDelay.playFromStart();
+            }
+        });
         searchField.setOnAction(event -> searchLoans());
         loanTable.setRowFactory(table -> {
             TableRow<LoanSummary> row = new TableRow<>();
@@ -170,6 +186,7 @@ public class LoansController {
     }
 
     @FXML private void searchLoans() {
+        searchDelay.stop();
         String query = searchField.getText() == null ? "" : searchField.getText().strip();
         long request = searchSequence.incrementAndGet();
         loans.clear();
@@ -261,6 +278,7 @@ public class LoansController {
     }
 
     public void dispose() {
+        searchDelay.stop();
         searchSequence.incrementAndGet();
         if (activeAddLoanController != null) activeAddLoanController.dispose();
         defaultRequestExecutor.shutdownNow();
