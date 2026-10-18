@@ -512,12 +512,16 @@ final class CustomerDetailsEditing {
             if (failure.getMessage() != null && !failure.getMessage().isBlank())
                 message += "\n\n" + failure.getMessage();
         }
-        Alert alert = new Alert(Alert.AlertType.ERROR,
-                message, ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
         if (window() != null) alert.initOwner(window());
         alert.setHeaderText(heading);
         alert.setTitle(title);
         alert.getDialogPane().setId("customerSaveError");
+        // The default content label truncates long mainframe messages to "...".
+        Label content = new Label(message);
+        content.setWrapText(true);
+        content.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        alert.getDialogPane().setContent(content);
         alert.show();
     }
 
