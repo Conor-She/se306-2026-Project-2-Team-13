@@ -36,7 +36,7 @@ final class CustomerRecordEditor {
         SAVED_LOAN("loan", List.of(
                 field("type", "Loan type", "TABLE_LOAN", "REDUCING_BALANCE", "INTEREST_ONLY"),
                 field("amount", "Amount (NZD)"), field("rate", "Interest rate (%)"),
-                field("termMonths", "Term (months)"), field("paymentAmount", "Payment amount (NZD)"))),
+                field("paymentAmount", "Payment amount (NZD)"))),
         SAVED_GUARANTOR("guarantor", List.of(field("customerId", "Guarantor customer ID"),
                 field("relationship", "Relationship"))),
         NOTE("note", List.of(field("title", "Title"), field("text", "Note"), field("author", "Author"))),

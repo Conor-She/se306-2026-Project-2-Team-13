@@ -102,8 +102,8 @@
                               <Label fx:id="rateFrequencyValue" text="Monthly" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
-                              <Label text="Term" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="termValue" text="30 years" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label text="Payment Amount" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
+                              <Label fx:id="paymentAmountValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
                               <Label text="Start Date" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
@@ -160,6 +160,7 @@
                 </HBox>
                 <GridPane hgap="12" style="-fx-padding: 0 12;">
                     <columnConstraints><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /><ColumnConstraints percentWidth="25" fillWidth="true" /></columnConstraints>
+
                     <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="0" style="-fx-padding: 14 16; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-background-color: white;"><Label text="Total Repayments" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" /><Label fx:id="repaymentTotalValue" text="Loading..." styleClass="repayment-summary-value"  style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #393a7b;" /></VBox>
 <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="1" style="-fx-padding: 14 16; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-background-color: white;"><Label text="Principal" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" /><Label fx:id="repaymentPrincipalValue" text="Loading..." styleClass="repayment-summary-value"  style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #393a7b;" /></VBox>
 <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="2" style="-fx-padding: 14 16; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-background-color: white;"><Label text="Total Interest" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" /><Label fx:id="repaymentInterestValue" text="Loading..." styleClass="repayment-summary-value"  style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #393a7b;" /></VBox>

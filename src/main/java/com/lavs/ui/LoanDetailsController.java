@@ -48,7 +48,7 @@ public class LoanDetailsController {
     @FXML private Label amountValue;
     @FXML private Label typeValue;
     @FXML private Label interestRateValue, paymentFrequencyValue, rateFrequencyValue;
-    @FXML private Label termValue, startDateValue, renewDateValue;
+    @FXML private Label paymentAmountValue, startDateValue, renewDateValue;
     @FXML private Button loanDetailsTab;
     @FXML private Button coborrowersTab;
     @FXML private Button repaymentScheduleTab;
@@ -103,7 +103,7 @@ public class LoanDetailsController {
         interestRateValue.setText(loan.rate());
         paymentFrequencyValue.setText(loan.paymentFrequency());
         rateFrequencyValue.setText(loan.rateFrequency());
-        termValue.setText(loan.term());
+        paymentAmountValue.setText(loan.paymentAmount());
         startDateValue.setText(loan.startDate());
         renewDateValue.setText(loan.renewDate());
 
@@ -229,7 +229,6 @@ public class LoanDetailsController {
         original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal()).toPlainString());
         original.put("rate", java.math.BigDecimal.valueOf(existing.getInterestRate())
                 .stripTrailingZeros().toPlainString());
-        original.put("termMonths", existing.getTermMonths() == null ? "" : existing.getTermMonths().toString());
         original.put("paymentAmount", Double.toString(existing.getPaymentAmount()));
         CustomerRecordEditor.create(loanHeading.getScene().getWindow(), CustomerRecordEditor.Kind.SAVED_LOAN,
                 original, false, saved -> {
@@ -239,7 +238,7 @@ public class LoanDetailsController {
                         Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
                         existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
                         Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
-                        existing.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
+                        existing.getRateFrequency(), termFor(existing)));
                 setLoan(LoansController.summaryFor(
                         customerService.getLoan(loan.customerId(), loan.loanId()), loan.customerName()));
             } catch (RuntimeException failure) { showEditError(failure); }
@@ -252,6 +251,15 @@ public class LoanDetailsController {
         alert.setHeaderText("Could not edit loan");
         if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
         alert.showAndWait();
+    }
+
+    // The mainframe doesn't store the term, but the renew date is the start date plus the term,
+    // so it can be recovered from those two dates.
+    private static Integer termFor(com.lavs.model.Loan loan) {
+        if (loan.getTermMonths() != null) return loan.getTermMonths();
+        if (loan.getStartDate() == null || loan.getRenewDate() == null) return null;
+        long months = java.time.temporal.ChronoUnit.MONTHS.between(loan.getStartDate(), loan.getRenewDate());
+        return months > 0 ? (int) months : null;
     }
 
     private void editPayment(Payment existingPayment) {

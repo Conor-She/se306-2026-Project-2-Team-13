@@ -131,9 +131,9 @@ class LoansControllerTest {
             assertEquals("Search results (2)", heading());
             assertEquals(List.of(
                                     new LoansController.LoanSummary("L1", "C1", "Sarah Johnson", "New", "$10,000.00", "Reducing Balance",
-                        "6.5%", "Monthly", "Monthly", "1 year", "01/01/2026", "01/01/2027"),
+                        "6.5%", "Monthly", "Monthly", "$500.00", "01/01/2026", "01/01/2027"),
                 new LoansController.LoanSummary("L2", "C1", "Sarah Johnson", "New", "$20,000.00", "Not recorded",
-                        "6.5%", "Monthly", "Monthly", "1 year", "01/01/2026", "01/01/2027")),
+                        "6.5%", "Monthly", "Monthly", "$500.00", "01/01/2026", "01/01/2027")),
                     table().getItems());
             search("L3");
         });

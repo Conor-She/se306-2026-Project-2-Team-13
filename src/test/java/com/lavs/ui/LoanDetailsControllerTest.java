@@ -325,7 +325,7 @@ class LoanDetailsControllerTest {
         JavaFxTestSupport.run(() -> {
             gateway.createLoan(new Loan("LN-2", "67670442", Loan.Status.NEW, 12000, 5,
                     Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1),
-                    1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+                    1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null));
             controller.setCustomerService(new com.lavs.business.CustomerService(gateway));
             controller.setLoan(loan("LN-2", "Sarah Johnson", "New", "$12,000", "Table Loan"));
             button("Edit loan").fire();
@@ -336,6 +336,7 @@ class LoanDetailsControllerTest {
             assertEquals(15000, gateway.getLoan("LN-2").getPrincipal());
             assertEquals("$15,000.00", text("amountValue"));
             assertEquals("4.5%", text("interestRateValue"));
+            assertEquals("$1,066.19", text("paymentAmountValue"));
             return null;
         });
     }

@@ -420,7 +420,6 @@ final class CustomerDetailsEditing {
         if (existingLoan != null) {
             editorKind = Kind.SAVED_LOAN;
             original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().name());
-            original.put("termMonths", existingLoan.getTermMonths() == null ? "" : existingLoan.getTermMonths().toString());
             original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
         }
         if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
@@ -440,7 +439,7 @@ final class CustomerDetailsEditing {
                             Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
                             existingLoan.isFloating(), existingLoan.getStartDate(), existingLoan.getRenewDate(),
                             Double.parseDouble(saved.get("paymentAmount")), existingLoan.getPaymentFrequency(),
-                            existingLoan.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
+                            existingLoan.getRateFrequency(), existingLoan.getTermMonths()));
                 }
             });
         });
