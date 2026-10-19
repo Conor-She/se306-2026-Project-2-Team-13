@@ -89,7 +89,7 @@ public class LoanDetailsController {
 
     public void setLoan(LoansController.LoanSummary loan) {
         this.loan = loan;
-        coborrowers.select(loan.loanId());
+        coborrowers.select(loan.loanId(), loan.customerId());
         loanHeading.setText("Loan ID: " + loan.loanId());
         customerHeading.setText(loan.customerName() + " | " + loan.customerId());
         loanInfoBanner.setText("This loan is currently " + loan.status().toLowerCase(Locale.ROOT)
@@ -121,6 +121,7 @@ public class LoanDetailsController {
     /** Allows tests to run backend requests deterministically. */
     public void setRequestExecutor(Executor executor) {
         requestExecutor = executor == null ? ForkJoinPool.commonPool() : executor;
+        configureCoborrowers();
     }
 
     private void loadLoanRecords(String loanId) {
@@ -195,9 +196,32 @@ public class LoanDetailsController {
 
     @FXML private Button editLoanButton;
     private com.lavs.business.CustomerService customerService;
+    private com.lavs.business.CoBorrowerService coBorrowerService;
+    private java.util.function.Supplier<com.lavs.business.CustomerRegistrationService>
+            registrationServiceFactory;
 
     public void setCustomerService(com.lavs.business.CustomerService service) {
         customerService = service;
+        configureCoborrowers();
+    }
+
+    public void setCoBorrowerService(com.lavs.business.CoBorrowerService service) {
+        coBorrowerService = service;
+        configureCoborrowers();
+    }
+
+    public void setRegistrationServiceFactory(
+            java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
+        registrationServiceFactory = factory;
+        configureCoborrowers();
+    }
+
+    private void configureCoborrowers() {
+        if (coborrowers == null) return;
+        coborrowers.configure(customerService, coBorrowerService, registrationServiceFactory,
+                requestExecutor, () -> {
+                    if (loan != null) loadLoanRecords(loan.loanId());
+                });
     }
 
     private void selectTab(Button selectedTab, VBox selectedView) {
