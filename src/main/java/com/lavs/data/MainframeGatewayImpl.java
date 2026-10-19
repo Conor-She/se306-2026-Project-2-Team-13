@@ -676,6 +676,17 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
         sendOrThrow(message);
 
+        // The mainframe only builds a loan's repayment schedule when the loan is
+        // updated, not when it is created, so a new loan would show no schedule
+        // until it was first edited. Resending the same terms as an update makes
+        // the schedule available straight away.
+        sendOrThrow(new mainframe.client.messages.loan.Update(
+                loan.getCustomerId(), message.getLoanNumber(), loan.getPaymentAmount(),
+                toMainframePaymentFrequency(loan.getPaymentFrequency()), loan.getPrincipal(),
+                loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
+                toMainframeRateType(loan), loan.getRenewDate().toString(),
+                loan.getStartDate().toString()));
+
         // The mainframe doesn't store Type or TermMonths, so carry them over
         // from the loan the MMM just entered
         return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),

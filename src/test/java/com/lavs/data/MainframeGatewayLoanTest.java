@@ -128,6 +128,42 @@ class MainframeGatewayLoanTest {
         assertEquals("L001", retrieve.getValue("number"));
     }
 
+    // The mainframe only builds the repayment schedule on an update, so creating a
+    // loan resends its terms as an update to the new loan number
+    @Test
+    void createSendsTheSameTermsAsAnUpdateSoTheScheduleIsBuilt() {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(
+                response("customerNumber", "C001", "loanNumber", "L002", "status", "New",
+                        "rateType", mainframe.client.messages.loan.Create.RATETYPE_FIXED,
+                        "rateAmount", "12.0", "rateFrequency", "Monthly", "paymentAmount", "1066.19",
+                        "paymentFrequency", "Monthly", "principal", "12000.0",
+                        "startDate", "2026-01-01", "renewalDate", "2028-01-01"),
+                response("loanNumber", "L002", "rateAmount", "12.0", "paymentAmount", "1066.19",
+                        "principal", "12000.0"));
+        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
+        Loan sent = new Loan(null, "C001", Loan.Status.NEW, 12000, 12.0,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
+                1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 24);
+
+        Loan created = gateway.createLoan(sent);
+
+        assertEquals("L002", created.getLoanId());
+        assertEquals(Integer.valueOf(24), created.getTermMonths());
+        ArgumentCaptor<MessageRequest> requests = ArgumentCaptor.forClass(MessageRequest.class);
+        verify(connection, times(2)).send(requests.capture());
+        assertEquals("loan.create", requests.getAllValues().get(0).getRequestType());
+        MessageRequest update = requests.getAllValues().get(1);
+        assertEquals("loan.update", update.getRequestType());
+        assertEquals("L002", update.getValue("loanNumber"));
+        assertEquals("C001", update.getValue("customerNumber"));
+        MessageRequest create = requests.getAllValues().get(0);
+        for (String field : new String[] {"principal", "rateAmount", "paymentAmount",
+                "startDate", "renewalDate", "rateType", "paymentFrequency", "rateFrequency"}) {
+            assertEquals(create.getValue(field), update.getValue(field), field);
+        }
+    }
+
     private static MessageResponse response(String... entries) {
         HashMap<String, String> values = new HashMap<>();
         for (int index = 0; index < entries.length; index += 2) {
