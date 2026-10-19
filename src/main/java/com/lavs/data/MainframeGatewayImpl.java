@@ -58,6 +58,7 @@ import mainframe.client.messages.loan.UpdateStatus;
 public class MainframeGatewayImpl implements MainframeGateway {
 
     private static final long CATEGORY_PAGE_SIZE = 100;
+    private static final String LOAN_TYPE_NOTE = "LAVS Loan Type";
     static final String DEFAULT_PHONE_COUNTRY_CODE = "+64";
 
     private final Connection connection;
@@ -687,6 +688,8 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 toMainframeRateType(loan), loan.getRenewDate().toString(),
                 loan.getStartDate().toString()));
 
+        addLoanType(message.getLoanNumber(), loan.getType());
+
         // The mainframe doesn't store Type or TermMonths, so carry them over
         // from the loan the MMM just entered
         return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
@@ -698,16 +701,31 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
     @Override
     public Loan getLoan(String loanId) {
+        Loan loan = retrieveLoan(loanId, null, null);
+        if (loan.getType() == Loan.Type.INTEREST_ONLY) {
+            return loan;
+        }
+
+        Loan.Type storedType = storedLoanType(loanId);
+        if (storedType == null) {
+            return loan;
+        }
+        return new Loan(loan.getLoanId(), loan.getCustomerId(), loan.getStatus(),
+                loan.getPrincipal(), loan.getInterestRate(), storedType, loan.isFloating(),
+                loan.getStartDate(), loan.getRenewDate(), loan.getPaymentAmount(),
+                loan.getPaymentFrequency(), loan.getRateFrequency(), loan.getTermMonths());
+    }
+
+    private Loan retrieveLoan(String loanId, Loan.Type knownType, Integer knownTermMonths) {
         mainframe.client.messages.loan.Retrieve message =
                 new mainframe.client.messages.loan.Retrieve(loanId);
         sendOrThrow(message);
 
-        // Type (except Interest-Only) and TermMonths can't be recovered from
-        // the mainframe, so they come back as null
         return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
                 message.getPrincipal(), message.getRateAmount(), message.getRateType(),
                 message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
-                message.getPaymentFrequency(), message.getRateFrequency(), null, null);
+                message.getPaymentFrequency(), message.getRateFrequency(), knownType,
+                knownTermMonths);
     }
 
     @Override
@@ -720,14 +738,9 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 loan.getStartDate().toString());
         sendOrThrow(message);
 
-        Loan stored = getLoan(loan.getLoanId());
-        Loan.Type type = stored.getType() == Loan.Type.INTEREST_ONLY
-                ? Loan.Type.INTEREST_ONLY
-                : loan.getType();
-        return new Loan(stored.getLoanId(), stored.getCustomerId(), stored.getStatus(),
-                stored.getPrincipal(), stored.getInterestRate(), type, stored.isFloating(),
-                stored.getStartDate(), stored.getRenewDate(), stored.getPaymentAmount(),
-                stored.getPaymentFrequency(), stored.getRateFrequency(), loan.getTermMonths());
+        Loan stored = retrieveLoan(loan.getLoanId(), loan.getType(), loan.getTermMonths());
+        saveLoanType(loan.getLoanId(), stored.getType());
+        return stored;
     }
 
     @Override
@@ -738,6 +751,64 @@ public class MainframeGatewayImpl implements MainframeGateway {
         // The reply only has the loan number and status,
         // so the loan is re-fetched using the number we sent
         return getLoan(loanId);
+    }
+
+    private void saveLoanType(String loanId, Loan.Type type) {
+        if (type == null) {
+            return;
+        }
+
+        Long noteId = loanTypeNoteId(loanId);
+        if (noteId == null) {
+            sendOrThrow(new mainframe.client.messages.loan.AddNote(
+                    type.name(), loanId, LOAN_TYPE_NOTE));
+        } else {
+            sendOrThrow(new mainframe.client.messages.loan.UpdateNote(
+                    noteId, type.name(), loanId, LOAN_TYPE_NOTE));
+        }
+    }
+
+    private void addLoanType(String loanId, Loan.Type type) {
+        if (type != null) {
+            sendOrThrow(new mainframe.client.messages.loan.AddNote(
+                    type.name(), loanId, LOAN_TYPE_NOTE));
+        }
+    }
+
+    private Loan.Type storedLoanType(String loanId) {
+        Long noteId = loanTypeNoteId(loanId);
+        if (noteId == null) {
+            return null;
+        }
+
+        var note = new mainframe.client.messages.loanNote.Retrieve(noteId, loanId);
+        sendOrThrow(note);
+        try {
+            return Loan.Type.valueOf(note.getLines().strip());
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            return null;
+        }
+    }
+
+    private Long loanTypeNoteId(String loanId) {
+        Long latestId = null;
+        long page = 1;
+        while (true) {
+            var notes = new mainframe.client.messages.loanNote.List(loanId, page, 100);
+            sendOrThrow(notes);
+
+            var items = notes.getItems();
+            for (var item : items) {
+                if (LOAN_TYPE_NOTE.equals(item.getType())
+                        && (latestId == null || item.getId() > latestId)) {
+                    latestId = item.getId();
+                }
+            }
+            if (items.length == 0 || page * 100 >= notes.getTotal()) {
+                return latestId;
+            }
+            page++;
+        }
     }
 
     @Override
