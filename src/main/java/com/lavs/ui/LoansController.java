@@ -30,9 +30,17 @@ import javafx.scene.layout.VBox;
 public class LoansController {
     public static final String NOT_CONNECTED = "Connect to the mainframe to search loans";
     public static final String SEARCH_PROMPT = "Enter a loan ID or customer name or ID";
+    private static final String NOT_RECORDED = "Not recorded";
 
     public record LoanSummary(String loanId, String customerId, String customerName,
-            String status, String amount, String type) {
+            String status, String amount, String type,
+            String rate, String paymentFrequency, String rateFrequency,
+            String paymentAmount, String startDate, String renewDate) {
+        public LoanSummary(String loanId, String customerId, String customerName,
+                String status, String amount, String type) {
+            this(loanId, customerId, customerName, status, amount, type,
+                    NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED);
+        }
     }
 
     @FXML private TextField searchField;
@@ -74,6 +82,7 @@ public class LoansController {
 
     public void setCustomerService(CustomerService service) {
         customerService = service;
+        detailsViewController.setCustomerService(service);
         if (activeAddLoanController != null && service != null) {
             activeAddLoanController.setCustomerSearchService(service, requestExecutor);
         }
@@ -253,12 +262,18 @@ public class LoansController {
     }
 
     private static LoanSummary summaryOf(LoanBrowsingService.LoanListing listing) {
-        Loan loan = listing.loan();
+        return summaryFor(listing.loan(), listing.customerName());
+    }
+
+    static LoanSummary summaryFor(Loan loan, String customerName) {
         NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
         String status = loan.getStatus() == null ? "Not recorded" : titleCase(loan.getStatus().name());
         String type = loan.getType() == null ? "Not recorded" : titleCase(loan.getType().name());
-        return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), listing.customerName(), status,
-                currency.format(loan.getPrincipal()), type);
+        return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), customerName, status,
+                currency.format(loan.getPrincipal()), type,
+                java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros().toPlainString() + "%",
+                enumText(loan.getPaymentFrequency()), enumText(loan.getRateFrequency()),
+                currency.format(loan.getPaymentAmount()), dateText(loan.getStartDate()), dateText(loan.getRenewDate()));
     }
 
     private static String titleCase(String value) {
@@ -269,6 +284,17 @@ public class LoansController {
             result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
         }
         return result.toString();
+    }
+
+    private static final java.time.format.DateTimeFormatter DATE_FORMAT =
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ENGLISH);
+
+    private static String enumText(Enum<?> value) {
+        return value == null ? NOT_RECORDED : titleCase(value.name());
+    }
+
+    private static String dateText(java.time.LocalDate date) {
+        return date == null ? NOT_RECORDED : date.format(DATE_FORMAT);
     }
 
     private void updateEmptyState() {
@@ -309,6 +335,23 @@ public class LoansController {
     void openDetails(LoanSummary loan) {
         detailsViewController.setLoan(loan);
         showList(false);
+    }
+
+    /** Opens a loan's details page by ID, e.g. from a customer's Loans tab. */
+    public void openLoan(String loanId, Runnable onNotFound) {
+        if (loanBrowsingService == null) { onNotFound.run(); return; }
+        requestExecutor.execute(() -> {
+            try {
+                var match = loanBrowsingService.search(loanId).loans().stream()
+                        .filter(listing -> loanId.equals(listing.loan().getLoanId())).findFirst();
+                Platform.runLater(() -> {
+                    if (match.isPresent()) openDetails(summaryOf(match.get()));
+                    else onNotFound.run();
+                });
+            } catch (RuntimeException failure) {
+                Platform.runLater(onNotFound);
+            }
+        });
     }
 
     private void showListAndFocusSearch() {

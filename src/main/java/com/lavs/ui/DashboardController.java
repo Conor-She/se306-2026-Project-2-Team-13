@@ -1,6 +1,7 @@
 package com.lavs.ui;
 
 import java.util.List;
+
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -52,6 +53,17 @@ public class DashboardController {
                     error.initOwner(content.getScene().getWindow());
                 error.showAndWait();
             }
+        });
+        customersViewController.setOnReviewLoan(loanId -> {
+            navigate(loansNav, loansView);
+            loansViewController.openLoan(loanId, () -> {
+                var error = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
+                        "That loan could not be opened. Please try again.");
+                error.setHeaderText("Loan not found");
+                if (content.getScene() != null && content.getScene().getWindow() != null)
+                    error.initOwner(content.getScene().getWindow());
+                error.showAndWait();
+            });
         });
         content.paddingProperty().bind(Bindings.createObjectBinding(() -> {
             double padding = Math.round(Math.max(12, Math.min(36, content.getWidth() * 0.06)));

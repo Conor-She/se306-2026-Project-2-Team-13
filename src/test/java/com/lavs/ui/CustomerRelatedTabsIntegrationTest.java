@@ -26,7 +26,7 @@ class CustomerRelatedTabsIntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"documents", "guarantors", "loans"})
+    @CsvSource({"documents", "guarantors"})
     void editsPersistedRecordsAndDeletesSupportedRecords(String tab) throws Exception {
         var gateway = new FakeMainframeGateway();
         gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
@@ -73,6 +73,38 @@ class CustomerRelatedTabsIntegrationTest {
         });
         if (tab.equals("documents")) assertTrue(gateway.getDocuments("C1").isEmpty());
         if (tab.equals("guarantors")) assertTrue(gateway.getGuarantors("C1").isEmpty());
+    }
+
+    @org.junit.jupiter.api.Test
+    void reviewLoanButtonSendsTheLoanIdToTheCallback() throws Exception {
+        var gateway = new FakeMainframeGateway();
+        gateway.createCustomer(new Customer("C1", "Ms", "Jane", "Smith", null, "NZ"));
+        gateway.createLoan(new Loan("LOAN-101", "C1", Loan.Status.NEW, 12000, 12,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1),
+                1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+        var service = new CustomerService(gateway);
+        var loader = new FXMLLoader(Main.class.getResource("fxml/customerDetails.fxml"));
+        List<String> opened = new java.util.ArrayList<>();
+        JavaFxTestSupport.run(() -> {
+            Parent view = loader.load();
+            new Scene(view, 1100, 800);
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerService(service);
+            controller.setOnReviewLoan(opened::add);
+            controller.setCustomerDetails(service.getById(new CustomerId("C1")));
+            ((ToggleButton) loader.getNamespace().get("loansTab")).fire();
+            view.applyCss(); view.layout();
+            return null;
+        });
+        awaitText(loader, "loans", "LOAN-101");
+        JavaFxTestSupport.run(() -> {
+            Parent table = (Parent) loader.getNamespace().get("loansTable");
+            table.lookupAll(".button").stream().map(Button.class::cast)
+                    .filter(button -> "Review Loan".equals(button.getText()))
+                    .findFirst().orElseThrow().fire();
+            return null;
+        });
+        assertEquals(List.of("LOAN-101"), opened);
     }
 
     private static Button actionButton(FXMLLoader loader, String tab) {
@@ -127,8 +159,14 @@ class CustomerRelatedTabsIntegrationTest {
                 assertTrue(hasText(loader, tab, "Not provided"));
             }
             if (tab.equals("guarantors")) assertTrue(hasText(loader, tab, "Parent"));
-            // Persisted records expose backend actions. Loan deletion is unsupported.
-            if (!tab.equals("notes")) {
+            if (tab.equals("loans")) {
+                Parent content = (Parent) loader.getNamespace().get("loansTable");
+                var reviewButtons = content.lookupAll(".button").stream().map(Button.class::cast)
+                        .filter(button -> "Review Loan".equals(button.getText())).toList();
+                assertFalse(reviewButtons.isEmpty());
+                // Customers opened from search are read-only, so this also checks the button stays enabled.
+                assertTrue(reviewButtons.stream().noneMatch(javafx.scene.Node::isDisabled));
+            } else if (!tab.equals("notes")) {
                 Parent content = (Parent) loader.getNamespace().get(tab + "Table");
                 assertTrue(content.lookupAll(".button").stream().noneMatch(javafx.scene.Node::isDisabled));
                 for (var node : content.lookupAll(".button")) {

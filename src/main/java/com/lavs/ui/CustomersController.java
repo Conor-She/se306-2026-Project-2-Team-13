@@ -4,18 +4,27 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+
+import com.lavs.business.CustomerService;
+import com.lavs.model.CustomerId;
+
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
-import javafx.animation.PauseTransition;
-import javafx.util.Duration;
-import javafx.concurrent.Task;
-import com.lavs.business.CustomerService;
-import com.lavs.model.CustomerId;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 /** Searches and retrieves customers through the signed-in service. */
 public class CustomersController {
@@ -267,6 +276,10 @@ public class CustomersController {
 
     public void setOnAddLoan(java.util.function.Consumer<CustomerSummary> action) {
         detailsViewController.setOnAddLoan(action);
+    }
+
+    public void setOnReviewLoan(java.util.function.Consumer<String> action) {
+        detailsViewController.setOnReviewLoan(action);
     }
 
     public void addSessionLoan(com.lavs.business.LoanSubmissionService.SavedLoan loan) {

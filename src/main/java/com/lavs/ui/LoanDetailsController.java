@@ -13,13 +13,14 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.lavs.business.LoanBrowsingService;
+import com.lavs.business.LoanWithSchedule;
 import com.lavs.model.Payment;
+import com.lavs.model.Repayment;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -30,7 +31,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -47,6 +47,8 @@ public class LoanDetailsController {
     @FXML private Label statusValue;
     @FXML private Label amountValue;
     @FXML private Label typeValue;
+    @FXML private Label interestRateValue, paymentFrequencyValue, rateFrequencyValue;
+    @FXML private Label paymentAmountValue, startDateValue, renewDateValue;
     @FXML private Button loanDetailsTab;
     @FXML private Button coborrowersTab;
     @FXML private Button repaymentScheduleTab;
@@ -57,6 +59,9 @@ public class LoanDetailsController {
     @FXML private VBox paymentsView;
     @FXML private GridPane paymentRows;
     @FXML private Label paymentsCount;
+    @FXML private GridPane repaymentScheduleTable;
+    @FXML private Label repaymentTotalValue, repaymentPrincipalValue;
+    @FXML private Label repaymentInterestValue, repaymentTermValue, repaymentsCount;
     @FXML private String paymentCellStyle;
     @FXML private String paymentRowStyle;
     @FXML private GridPane coborrowersTable;
@@ -92,10 +97,20 @@ public class LoanDetailsController {
         statusValue.setText(loan.status());
         amountValue.setText(loan.amount());
         typeValue.setText(loan.type());
+        boolean active = "Active".equals(loan.status());
+        editLoanButton.setDisable(active);
+        editLoanButton.setTooltip(new Tooltip(active ? "Active loans can't be edited." : "Edit loan"));
+        interestRateValue.setText(loan.rate());
+        paymentFrequencyValue.setText(loan.paymentFrequency());
+        rateFrequencyValue.setText(loan.rateFrequency());
+        paymentAmountValue.setText(loan.paymentAmount());
+        startDateValue.setText(loan.startDate());
+        renewDateValue.setText(loan.renewDate());
 
         payments.clear();
         recordsUnavailable = false;
         refreshPayments();
+        showRepaymentLoading();
         loadLoanRecords(loan.loanId());
     }
 
@@ -111,7 +126,10 @@ public class LoanDetailsController {
     private void loadLoanRecords(String loanId) {
         long request = recordsSequence.incrementAndGet();
         coborrowers.setRecords(loanId, List.of());
-        if (loanBrowsingService == null) return;
+        if (loanBrowsingService == null) {
+            showRepaymentUnavailable();
+            return;
+        }
 
         requestExecutor.execute(() -> {
             try {
@@ -123,6 +141,7 @@ public class LoanDetailsController {
                     recordsUnavailable = false;
                     coborrowers.setRecords(loanId, records.coBorrowers());
                     refreshPayments();
+                    refreshRepaymentSchedule(records.repaymentDetails());
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
@@ -132,6 +151,7 @@ public class LoanDetailsController {
                     recordsUnavailable = true;
                     refreshPayments();
                     coborrowers.setUnavailable(loanId);
+                    showRepaymentUnavailable();
                 });
             }
         });
@@ -173,6 +193,13 @@ public class LoanDetailsController {
         selectTab(paymentsTab, paymentsView);
     }
 
+    @FXML private Button editLoanButton;
+    private com.lavs.business.CustomerService customerService;
+
+    public void setCustomerService(com.lavs.business.CustomerService service) {
+        customerService = service;
+    }
+
     private void selectTab(Button selectedTab, VBox selectedView) {
         for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
@@ -187,6 +214,52 @@ public class LoanDetailsController {
 
     @FXML private void addPayment() {
         editPayment(null);
+    }
+
+    @FXML private void editLoan() {
+        if (loan == null || customerService == null) return;
+        com.lavs.model.Loan existing;
+        try {
+            existing = customerService.getLoan(loan.customerId(), loan.loanId());
+        } catch (RuntimeException failure) { showEditError(failure); return; }
+        var original = new java.util.LinkedHashMap<String, String>();
+        original.put("id", existing.getLoanId());
+        original.put("status", loan.status());
+        original.put("type", existing.getType() == null ? "" : existing.getType().name());
+        original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal()).toPlainString());
+        original.put("rate", java.math.BigDecimal.valueOf(existing.getInterestRate())
+                .stripTrailingZeros().toPlainString());
+        original.put("paymentAmount", Double.toString(existing.getPaymentAmount()));
+        CustomerRecordEditor.create(loanHeading.getScene().getWindow(), CustomerRecordEditor.Kind.SAVED_LOAN,
+                original, false, saved -> {
+            try {
+                customerService.updateLoan(new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
+                        existing.getStatus(), Double.parseDouble(saved.get("amount")),
+                        Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
+                        existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
+                        Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
+                        existing.getRateFrequency(), termFor(existing)));
+                setLoan(LoansController.summaryFor(
+                        customerService.getLoan(loan.customerId(), loan.loanId()), loan.customerName()));
+            } catch (RuntimeException failure) { showEditError(failure); }
+        }).show();
+    }
+
+    private void showEditError(RuntimeException failure) {
+        Alert alert = new Alert(Alert.AlertType.ERROR,
+                failure.getMessage() == null ? "The loan could not be saved." : failure.getMessage());
+        alert.setHeaderText("Could not edit loan");
+        if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
+        alert.showAndWait();
+    }
+
+    // The mainframe doesn't store the term, but the renew date is the start date plus the term,
+    // so it can be recovered from those two dates.
+    private static Integer termFor(com.lavs.model.Loan loan) {
+        if (loan.getTermMonths() != null) return loan.getTermMonths();
+        if (loan.getStartDate() == null || loan.getRenewDate() == null) return null;
+        long months = java.time.temporal.ChronoUnit.MONTHS.between(loan.getStartDate(), loan.getRenewDate());
+        return months > 0 ? (int) months : null;
     }
 
     private void editPayment(Payment existingPayment) {
@@ -300,6 +373,78 @@ public class LoanDetailsController {
         }
         paymentsCount.setText(sorted.isEmpty() ? "Showing 0 of 0"
                 : "Showing 1-" + sorted.size() + " of " + sorted.size());
+    }
+
+    private void showRepaymentLoading() {
+        clearRepaymentRows();
+        repaymentTotalValue.setText("Loading...");
+        repaymentPrincipalValue.setText("Loading...");
+        repaymentInterestValue.setText("Loading...");
+        repaymentTermValue.setText("Loading...");
+        repaymentsCount.setText("Loading...");
+    }
+
+    private void showRepaymentUnavailable() {
+        clearRepaymentRows();
+        repaymentTotalValue.setText("Unavailable");
+        repaymentPrincipalValue.setText("Unavailable");
+        repaymentInterestValue.setText("Unavailable");
+        repaymentTermValue.setText("Unavailable");
+        repaymentsCount.setText("Showing 0 of 0");
+        addRepaymentMessage("Repayment schedule could not be loaded.");
+    }
+
+    private void refreshRepaymentSchedule(LoanWithSchedule details) {
+        clearRepaymentRows();
+        repaymentTotalValue.setText(formatAmount(details.getSummary().getTotalRepayable()));
+        repaymentPrincipalValue.setText(formatAmount(details.getLoan().getPrincipal()));
+        repaymentInterestValue.setText(formatAmount(details.getSummary().getTotalInterest()));
+        repaymentTermValue.setText(formatTerm(details.getLoan().getTermMonths()));
+
+        List<Repayment> schedule = details.getSchedule();
+        for (int index = 0; index < schedule.size(); index++) {
+            Repayment repayment = schedule.get(index);
+            int row = index + 1;
+            Region divider = new Region();
+            divider.getStyleClass().add("repayment-row-divider");
+            divider.setMouseTransparent(true);
+            divider.setStyle("-fx-border-color: #edf0fc transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+            repaymentScheduleTable.add(divider, 0, row, 6, 1);
+            String[] values = {Integer.toString(row), PAYMENT_DATE_FORMAT.format(repayment.getDueDate()),
+                    formatAmount(repayment.getAmountDue()), formatAmount(repayment.getPrincipalComponent()),
+                    formatAmount(repayment.getInterestComponent()), formatAmount(repayment.getRemainingBalance())};
+            for (int column = 0; column < values.length; column++) {
+                Label cell = new Label(values[column]);
+                cell.setMaxWidth(Double.MAX_VALUE);
+                cell.setStyle("-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d;");
+                repaymentScheduleTable.add(cell, column, row);
+            }
+        }
+        if (schedule.isEmpty()) addRepaymentMessage("No repayment schedule recorded for this loan.");
+        repaymentsCount.setText(schedule.isEmpty() ? "Showing 0 of 0"
+                : "Showing 1-" + schedule.size() + " of " + schedule.size());
+    }
+
+    private void clearRepaymentRows() {
+        if (repaymentScheduleTable == null) return;
+        repaymentScheduleTable.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
+                && GridPane.getRowIndex(node) > 0);
+    }
+
+    private void addRepaymentMessage(String message) {
+        Label empty = new Label(message);
+        empty.setStyle("-fx-padding: 18 16; -fx-font-size: 11; -fx-text-fill: #55558d;");
+        repaymentScheduleTable.add(empty, 0, 1, 6, 1);
+    }
+
+    private String formatTerm(Integer termMonths) {
+        if (termMonths == null) return "Not recorded";
+        int years = termMonths / 12;
+        int months = termMonths % 12;
+        if (years == 0) return months + (months == 1 ? " month" : " months");
+        if (months == 0) return years + (years == 1 ? " year" : " years");
+        return years + (years == 1 ? " year " : " years ")
+                + months + (months == 1 ? " month" : " months");
     }
 
     private Button iconButton(String iconType, String accessibleText) {

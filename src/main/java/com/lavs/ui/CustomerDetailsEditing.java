@@ -420,7 +420,6 @@ final class CustomerDetailsEditing {
         if (existingLoan != null) {
             editorKind = Kind.SAVED_LOAN;
             original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().name());
-            original.put("termMonths", existingLoan.getTermMonths() == null ? "" : existingLoan.getTermMonths().toString());
             original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
         }
         if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
@@ -440,7 +439,7 @@ final class CustomerDetailsEditing {
                             Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
                             existingLoan.isFloating(), existingLoan.getStartDate(), existingLoan.getRenewDate(),
                             Double.parseDouble(saved.get("paymentAmount")), existingLoan.getPaymentFrequency(),
-                            existingLoan.getRateFrequency(), Integer.valueOf(saved.get("termMonths"))));
+                            existingLoan.getRateFrequency(), existingLoan.getTermMonths()));
                 }
             });
         });
@@ -762,7 +761,13 @@ final class CustomerDetailsEditing {
                 table.add(label(money(record.get("amount"))), 2, row);
                 table.add(label(record.get("rate") + "%"), 3, row);
                 table.add(status(record.get("status")), 4, row);
-                table.add(actions(kind, record, "Actions for loan " + record.get("id")), 5, row);
+                Button review = new Button("Review Loan");
+                review.setStyle("-fx-background-color: #5b55b5; -fx-text-fill: white; -fx-font-size: 12px;"
+                        + " -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6; -fx-cursor: hand;");
+                review.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                review.setAccessibleText("Review loan " + record.get("id"));
+                review.setOnAction(event -> onReviewLoan.accept(record.get("id")));
+                table.add(review, 5, row);
             } else if (kind == Kind.DOCUMENT) {
                 String colour = switch (record.get("type")) { case "Identity" -> "#7666db"; case "Address" -> "#42bda6"; default -> "#ed4d94"; };
                 HBox name = new HBox(16, icon("M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9", colour), label(record.get("fileName")));
@@ -832,5 +837,9 @@ final class CustomerDetailsEditing {
             notes.getChildren().add(row);
         }
         if (state.records.get(Kind.NOTE).isEmpty()) notes.getChildren().add(label("No notes added."));
+    }
+    private java.util.function.Consumer<String> onReviewLoan = loanId -> {};
+    public void setOnReviewLoan(java.util.function.Consumer<String> onReviewLoan) {
+        this.onReviewLoan = onReviewLoan;
     }
 }

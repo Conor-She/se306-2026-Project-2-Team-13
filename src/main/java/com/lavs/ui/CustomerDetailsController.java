@@ -153,7 +153,7 @@ public class CustomerDetailsController {
 
     private boolean isCustomerEditButton(Button button) {
         String action = button.getAccessibleText();
-        return action != null && (action.startsWith("Actions for ") || action.startsWith("Edit ") || action.startsWith("Delete ")
+        return action != null && (action.startsWith("Actions for ") || action.startsWith("Review ") || action.startsWith("Edit ") || action.startsWith("Update ") || action.startsWith("Delete ")
                 || action.equals("Add contact information") || action.equals("Add employer"));
     }
 
@@ -174,6 +174,7 @@ public class CustomerDetailsController {
     public void setOnAddLoan(Consumer<CustomersController.CustomerSummary> onAddLoan) {
         this.onAddLoan = onAddLoan;
     }
+    public void setOnReviewLoan(Consumer<String> action) { editing.setOnReviewLoan(action); }
     public void showLoansTab() {
         customerTabs.getToggles().stream().filter(toggle -> "Loans".equals(((ToggleButton) toggle).getText()))
                 .findFirst().ifPresent(customerTabs::selectToggle);

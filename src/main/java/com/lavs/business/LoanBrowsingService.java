@@ -48,11 +48,13 @@ public class LoanBrowsingService {
             String lastName, String phone, String email) {
     }
 
-    // Everything a loan's details page loads from the mainframe besides the loan
-    public record LoanRecords(List<Payment> payments, List<CoBorrowerDetails> coBorrowers) {
+    // Everything loaded when the loan details page opens
+    public record LoanRecords(List<Payment> payments, List<CoBorrowerDetails> coBorrowers,
+            LoanWithSchedule repaymentDetails) {
         public LoanRecords {
             payments = List.copyOf(payments);
             coBorrowers = List.copyOf(coBorrowers);
+            Objects.requireNonNull(repaymentDetails, "repaymentDetails must not be null");
         }
     }
 
@@ -96,13 +98,13 @@ public class LoanBrowsingService {
         if (loanId == null || loanId.isBlank()) {
             throw new IllegalArgumentException("loanId must not be null or blank");
         }
-        gateway.getLoan(loanId);
+        LoanWithSchedule repaymentDetails = new LoanService(gateway).getFullDetails(loanId);
         List<Payment> payments = gateway.getPayments(loanId);
         List<CoBorrowerDetails> coBorrowers = new ArrayList<>();
         for (CoBorrower coBorrower : gateway.getCoBorrowers(loanId)) {
             coBorrowers.add(detailsOf(coBorrower));
         }
-        return new LoanRecords(payments, coBorrowers);
+        return new LoanRecords(payments, coBorrowers, repaymentDetails);
     }
 
     private java.util.Optional<LoanListing> findLoanByNumber(String loanId) {

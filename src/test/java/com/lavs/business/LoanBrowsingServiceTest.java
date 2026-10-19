@@ -13,6 +13,7 @@ import com.lavs.model.Email;
 import com.lavs.model.Loan;
 import com.lavs.model.Payment;
 import com.lavs.model.Phone;
+import com.lavs.model.Repayment;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,6 +108,8 @@ class LoanBrowsingServiceTest {
         loan("L9", "C1", 10000);
         gateway.addPayment(new Payment("P1", "L1", null, LocalDate.of(2026, 2, 1), 500));
         gateway.addPayment(new Payment("P2", "L9", null, LocalDate.of(2026, 2, 1), 500));
+        gateway.saveRepaymentSchedule("L1", List.of(
+                new Repayment("R1", "L1", LocalDate.of(2026, 2, 1), 550, 500, 50, 9500)));
         gateway.addCoBorrower(new CoBorrower("CB1", "L1", "C2"));
         gateway.addPhone(new Phone(null, "C2", "021 000 0000", false, false));
         gateway.addPhone(new Phone(null, "C2", "021 111 1111", true, false));
@@ -115,6 +118,9 @@ class LoanBrowsingServiceTest {
         LoanBrowsingService.LoanRecords records = service.recordsFor("L1");
 
         assertEquals(List.of("P1"), records.payments().stream().map(Payment::getPaymentId).toList());
+        assertEquals(List.of("R1"), records.repaymentDetails().getSchedule().stream()
+                .map(Repayment::getRepaymentId).toList());
+        assertEquals(550, records.repaymentDetails().getSummary().getTotalRepayable());
         assertEquals(List.of(new LoanBrowsingService.CoBorrowerDetails(
                 "CB1", "C2", "Alex", "Smith", "021 111 1111", "alex@example.com")), records.coBorrowers());
     }
@@ -127,6 +133,7 @@ class LoanBrowsingServiceTest {
 
         assertTrue(records.payments().isEmpty());
         assertTrue(records.coBorrowers().isEmpty());
+        assertTrue(records.repaymentDetails().getSchedule().isEmpty());
     }
 
     @Test
