@@ -35,7 +35,7 @@ public class LoansController {
     public record LoanSummary(String loanId, String customerId, String customerName,
             String status, String amount, String type,
             String rate, String paymentFrequency, String rateFrequency,
-            String term, String startDate, String renewDate) {
+            String paymentAmount, String startDate, String renewDate) {
         public LoanSummary(String loanId, String customerId, String customerName,
                 String status, String amount, String type) {
             this(loanId, customerId, customerName, status, amount, type,
@@ -252,7 +252,7 @@ public class LoansController {
                 currency.format(loan.getPrincipal()), type,
                 java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros().toPlainString() + "%",
                 enumText(loan.getPaymentFrequency()), enumText(loan.getRateFrequency()),
-                termText(loan.getTermMonths()), dateText(loan.getStartDate()), dateText(loan.getRenewDate()));
+                currency.format(loan.getPaymentAmount()), dateText(loan.getStartDate()), dateText(loan.getRenewDate()));
     }
 
     private static String titleCase(String value) {
@@ -274,15 +274,6 @@ public class LoansController {
 
     private static String dateText(java.time.LocalDate date) {
         return date == null ? NOT_RECORDED : date.format(DATE_FORMAT);
-    }
-
-    private static String termText(Integer months) {
-        if (months == null) return NOT_RECORDED;
-        if (months % 12 == 0) {
-            int years = months / 12;
-            return years + (years == 1 ? " year" : " years");
-        }
-        return months + (months == 1 ? " month" : " months");
     }
 
     private void updateEmptyState() {
