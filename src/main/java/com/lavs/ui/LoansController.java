@@ -88,6 +88,15 @@ public class LoansController {
         }
     }
 
+    public void setCoBorrowerService(com.lavs.business.CoBorrowerService service) {
+        detailsViewController.setCoBorrowerService(service);
+    }
+
+    public void setRegistrationServiceFactory(
+            java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
+        detailsViewController.setRegistrationServiceFactory(factory);
+    }
+
     public void setLoanSubmissionService(LoanSubmissionService submission) {
         this.submission = submission;
     }

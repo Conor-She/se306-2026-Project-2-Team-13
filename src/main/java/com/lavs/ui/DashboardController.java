@@ -148,8 +148,13 @@ public class DashboardController {
         loansViewController.setLoanSubmissionService(service);
     }
 
+    public void setCoBorrowerService(com.lavs.business.CoBorrowerService service) {
+        loansViewController.setCoBorrowerService(service);
+    }
+
     public void setRegistrationServiceFactory(java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
         customersViewController.setRegistrationServiceFactory(factory);
+        loansViewController.setRegistrationServiceFactory(factory);
     }
 
     private void navigate(Button selected, VBox view) {

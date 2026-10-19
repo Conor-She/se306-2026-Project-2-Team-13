@@ -190,7 +190,7 @@ class LoansControllerTest {
             GridPane coborrowers = (GridPane) details.lookup("#coborrowersTable");
             assertTrue(coborrowers.lookupAll(".button").stream().filter(Button.class::isInstance)
                     .map(Button.class::cast)
-                    .anyMatch(b -> "Edit co-borrower for Alex Smith".equals(b.getAccessibleText())));
+                    .anyMatch(b -> "Remove co-borrower for Alex Smith".equals(b.getAccessibleText())));
         });
     }
 
