@@ -166,7 +166,7 @@
 <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="2" style="-fx-padding: 14 16; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-background-color: white;"><Label text="Total Interest" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" /><Label fx:id="repaymentInterestValue" text="Loading..." styleClass="repayment-summary-value"  style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #393a7b;" /></VBox>
 <VBox spacing="6" styleClass="repayment-summary-card" GridPane.columnIndex="3" style="-fx-padding: 14 16; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-background-color: white;"><Label text="Term" styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" /><Label fx:id="repaymentTermValue" text="Loading..." styleClass="repayment-summary-value"  style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #393a7b;" /></VBox>
                 </GridPane>
-                <GridPane fx:id="repaymentScheduleTable" styleClass="repayment-table">
+                <GridPane styleClass="repayment-table-heading">
                     <columnConstraints><ColumnConstraints percentWidth="8" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /></columnConstraints>
                     <Region styleClass="repayment-table-header" mouseTransparent="true" GridPane.columnSpan="6" GridPane.rowIndex="0"  style="-fx-background-color: #f2f6ff;" />
                     <Label text="#" styleClass="repayment-column-heading" GridPane.columnIndex="0" GridPane.rowIndex="0"  style="-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d; -fx-font-weight: bold;" />
@@ -176,6 +176,11 @@
 <Label text="Interest" styleClass="repayment-column-heading" GridPane.columnIndex="4" GridPane.rowIndex="0"  style="-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d; -fx-font-weight: bold;" />
 <Label text="Balance" styleClass="repayment-column-heading" GridPane.columnIndex="5" GridPane.rowIndex="0"  style="-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d; -fx-font-weight: bold;" />
                 </GridPane>
+                <ScrollPane prefHeight="200" fitToWidth="true" style="-fx-background: white; -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-width: 0;" VBox.vgrow="ALWAYS">
+                    <GridPane fx:id="repaymentScheduleTable" styleClass="repayment-table">
+                        <columnConstraints><ColumnConstraints percentWidth="8" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="19" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /><ColumnConstraints percentWidth="18" /></columnConstraints>
+                    </GridPane>
+                </ScrollPane>
                 <HBox style="-fx-padding: 4 16 16 16;" alignment="CENTER_LEFT">
                     <Label fx:id="repaymentsCount" text="Loading..." styleClass="repayment-muted"  style="-fx-font-size: 11; -fx-text-fill: #747ba6;" />
                 </HBox>
