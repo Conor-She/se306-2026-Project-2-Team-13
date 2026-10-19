@@ -48,6 +48,12 @@ class MainframeGatewayDocumentTest {
             MessageRequest request = call.getArgument(0);
             return switch (request.getRequestType()) {
                 case "customer.create" -> response("number", "C001");
+                case "customer.update" -> {
+                    assertEquals("C001", request.getValue("number"));
+                    assertEquals("1990-12-10", request.getValue("dateOfBirth"));
+                    yield response("number", "C001", "title", "Ms", "firstName", "Ada",
+                            "familyName", "Lovelace", "nationality", "New Zealand");
+                }
                 case "customer.addDocument" -> {
                     if (request.getValue("fileType") == null || request.getValue("size") == null) {
                         yield new MessageResponse(new Status(400, "Missing fileType or size", 1),
