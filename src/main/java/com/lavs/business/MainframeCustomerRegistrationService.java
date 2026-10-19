@@ -19,6 +19,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
     private final CustomerRegistrationService validator = new StubCustomerRegistrationService();
     private CustomerDraft pending;
     private String customerId;
+    private boolean personalDetailsConfirmed;
     private int addressIndex;
     private int phoneIndex;
     private int emailIndex;
@@ -43,13 +44,15 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         }
         try {
             if (customerId == null) {
-                var p = draft.personal;
-                Customer saved = gateway.createCustomer(new Customer(null, p.get("title"),
-                        p.get("firstName"), p.get("lastName"),
-                        LocalDate.parse(p.get("dateOfBirth"), DateTimeFormatter.ofPattern("dd-MM-uuuu")),
-                        p.get("nationality")));
+                Customer saved = gateway.createCustomer(customerFrom(draft, null));
                 customerId = Objects.requireNonNull(saved.getCustomerId(), "Missing customer ID");
                 pending = draft.copy();
+            }
+            // The mainframe create operation can return an ID without retaining dateOfBirth.
+            // Confirm the complete personal record through update once the assigned ID exists.
+            if (!personalDetailsConfirmed) {
+                gateway.updateCustomer(customerFrom(draft, customerId));
+                personalDetailsConfirmed = true;
             }
             while (addressIndex < draft.addresses.size()) {
                 var a = draft.addresses.get(addressIndex);
@@ -97,8 +100,18 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
         String result = customerId;
         customerId = null;
         pending = null;
+        personalDetailsConfirmed = false;
         addressIndex = phoneIndex = emailIndex = employerIndex = noteIndex = documentIndex = 0;
         return result;
+    }
+
+    private static Customer customerFrom(CustomerDraft draft, String customerId) {
+        var personal = draft.personal;
+        return new Customer(customerId, personal.get("title"), personal.get("firstName"),
+                personal.get("lastName"),
+                LocalDate.parse(personal.get("dateOfBirth"),
+                        DateTimeFormatter.ofPattern("dd-MM-uuuu")),
+                personal.get("nationality"));
     }
 
     private static boolean sameDraft(CustomerDraft left, CustomerDraft right) {

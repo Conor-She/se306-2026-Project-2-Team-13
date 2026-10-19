@@ -44,6 +44,9 @@ class MainframeCustomerRegistrationServiceTest {
         verify(gateway).createCustomer(customer.capture());
         assertEquals(LocalDate.of(1990, 12, 10), customer.getValue().getDateOfBirth());
         assertEquals("Ada", customer.getValue().getFirstName());
+        verify(gateway).updateCustomer(customer.capture());
+        assertEquals("C013", customer.getValue().getCustomerId());
+        assertEquals(LocalDate.of(1990, 12, 10), customer.getValue().getDateOfBirth());
         var address = ArgumentCaptor.forClass(Address.class);
         verify(gateway).addAddress(address.capture());
         assertEquals("C013", address.getValue().getCustomerId());
@@ -91,6 +94,7 @@ class MainframeCustomerRegistrationServiceTest {
         assertEquals("C013", new MainframeCustomerRegistrationService(gateway).save(draft()));
 
         verify(gateway).createCustomer(any());
+        verify(gateway).updateCustomer(any());
         verify(gateway, never()).addAddress(any());
         verify(gateway, never()).addPhone(any());
         verify(gateway, never()).addEmail(any());
@@ -111,6 +115,8 @@ class MainframeCustomerRegistrationServiceTest {
 
         String customerId = new MainframeCustomerRegistrationService(gateway).save(draft);
 
+        assertEquals(LocalDate.of(1990, 12, 10),
+                gateway.getCustomer(customerId).getDateOfBirth());
         assertEquals("0215550101", gateway.getPhones(customerId).get(0).getNumber());
         assertEquals("ada@example.com", gateway.getEmails(customerId).get(0).getEmailAddress());
         assertEquals("Analytical Engines Ltd",
@@ -141,6 +147,21 @@ class MainframeCustomerRegistrationServiceTest {
         verify(gateway, times(3)).addNote(notes.capture());
         assertEquals(java.util.List.of("First", "Second", "Second"), notes.getAllValues()
                 .stream().map(CustomerNote::getNoteText).toList());
+    }
+
+    @Test void birthDateConfirmationCanBeRetriedWithoutCreatingAnotherCustomer() throws Exception {
+        var gateway = gateway();
+        when(gateway.updateCustomer(any()))
+                .thenThrow(new IllegalStateException("Unavailable"))
+                .thenAnswer(call -> call.getArgument(0));
+        var service = new MainframeCustomerRegistrationService(gateway);
+
+        assertThrows(CustomerRegistrationService.RegistrationException.class,
+                () -> service.save(draft()));
+        assertEquals("C013", service.save(draft()));
+
+        verify(gateway, times(1)).createCustomer(any());
+        verify(gateway, times(2)).updateCustomer(any());
     }
 
     @Test void retryContinuesWithoutRecreatingCustomerOrConfirmedAddresses() throws Exception {
