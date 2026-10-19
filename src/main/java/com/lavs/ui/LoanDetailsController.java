@@ -13,7 +13,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.lavs.business.LoanBrowsingService;
+import com.lavs.business.LoanWithSchedule;
 import com.lavs.model.Payment;
+import com.lavs.model.Repayment;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -57,6 +59,9 @@ public class LoanDetailsController {
     @FXML private VBox paymentsView;
     @FXML private GridPane paymentRows;
     @FXML private Label paymentsCount;
+    @FXML private GridPane repaymentScheduleTable;
+    @FXML private Label repaymentTotalValue, repaymentPrincipalValue;
+    @FXML private Label repaymentInterestValue, repaymentTermValue, repaymentsCount;
     @FXML private String paymentCellStyle;
     @FXML private String paymentRowStyle;
     @FXML private GridPane coborrowersTable;
@@ -105,6 +110,7 @@ public class LoanDetailsController {
         payments.clear();
         recordsUnavailable = false;
         refreshPayments();
+        showRepaymentLoading();
         loadLoanRecords(loan.loanId());
     }
 
@@ -120,7 +126,10 @@ public class LoanDetailsController {
     private void loadLoanRecords(String loanId) {
         long request = recordsSequence.incrementAndGet();
         coborrowers.setRecords(loanId, List.of());
-        if (loanBrowsingService == null) return;
+        if (loanBrowsingService == null) {
+            showRepaymentUnavailable();
+            return;
+        }
 
         requestExecutor.execute(() -> {
             try {
@@ -132,6 +141,7 @@ public class LoanDetailsController {
                     recordsUnavailable = false;
                     coborrowers.setRecords(loanId, records.coBorrowers());
                     refreshPayments();
+                    refreshRepaymentSchedule(records.repaymentDetails());
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
@@ -141,6 +151,7 @@ public class LoanDetailsController {
                     recordsUnavailable = true;
                     refreshPayments();
                     coborrowers.setUnavailable(loanId);
+                    showRepaymentUnavailable();
                 });
             }
         });
@@ -354,6 +365,78 @@ public class LoanDetailsController {
         }
         paymentsCount.setText(sorted.isEmpty() ? "Showing 0 of 0"
                 : "Showing 1-" + sorted.size() + " of " + sorted.size());
+    }
+
+    private void showRepaymentLoading() {
+        clearRepaymentRows();
+        repaymentTotalValue.setText("Loading...");
+        repaymentPrincipalValue.setText("Loading...");
+        repaymentInterestValue.setText("Loading...");
+        repaymentTermValue.setText("Loading...");
+        repaymentsCount.setText("Loading...");
+    }
+
+    private void showRepaymentUnavailable() {
+        clearRepaymentRows();
+        repaymentTotalValue.setText("Unavailable");
+        repaymentPrincipalValue.setText("Unavailable");
+        repaymentInterestValue.setText("Unavailable");
+        repaymentTermValue.setText("Unavailable");
+        repaymentsCount.setText("Showing 0 of 0");
+        addRepaymentMessage("Repayment schedule could not be loaded.");
+    }
+
+    private void refreshRepaymentSchedule(LoanWithSchedule details) {
+        clearRepaymentRows();
+        repaymentTotalValue.setText(formatAmount(details.getSummary().getTotalRepayable()));
+        repaymentPrincipalValue.setText(formatAmount(details.getLoan().getPrincipal()));
+        repaymentInterestValue.setText(formatAmount(details.getSummary().getTotalInterest()));
+        repaymentTermValue.setText(formatTerm(details.getLoan().getTermMonths()));
+
+        List<Repayment> schedule = details.getSchedule();
+        for (int index = 0; index < schedule.size(); index++) {
+            Repayment repayment = schedule.get(index);
+            int row = index + 1;
+            Region divider = new Region();
+            divider.getStyleClass().add("repayment-row-divider");
+            divider.setMouseTransparent(true);
+            divider.setStyle("-fx-border-color: #edf0fc transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+            repaymentScheduleTable.add(divider, 0, row, 6, 1);
+            String[] values = {Integer.toString(row), PAYMENT_DATE_FORMAT.format(repayment.getDueDate()),
+                    formatAmount(repayment.getAmountDue()), formatAmount(repayment.getPrincipalComponent()),
+                    formatAmount(repayment.getInterestComponent()), formatAmount(repayment.getRemainingBalance())};
+            for (int column = 0; column < values.length; column++) {
+                Label cell = new Label(values[column]);
+                cell.setMaxWidth(Double.MAX_VALUE);
+                cell.setStyle("-fx-padding: 12 16; -fx-font-size: 11; -fx-text-fill: #55558d;");
+                repaymentScheduleTable.add(cell, column, row);
+            }
+        }
+        if (schedule.isEmpty()) addRepaymentMessage("No repayment schedule recorded for this loan.");
+        repaymentsCount.setText(schedule.isEmpty() ? "Showing 0 of 0"
+                : "Showing 1-" + schedule.size() + " of " + schedule.size());
+    }
+
+    private void clearRepaymentRows() {
+        if (repaymentScheduleTable == null) return;
+        repaymentScheduleTable.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
+                && GridPane.getRowIndex(node) > 0);
+    }
+
+    private void addRepaymentMessage(String message) {
+        Label empty = new Label(message);
+        empty.setStyle("-fx-padding: 18 16; -fx-font-size: 11; -fx-text-fill: #55558d;");
+        repaymentScheduleTable.add(empty, 0, 1, 6, 1);
+    }
+
+    private String formatTerm(Integer termMonths) {
+        if (termMonths == null) return "Not recorded";
+        int years = termMonths / 12;
+        int months = termMonths % 12;
+        if (years == 0) return months + (months == 1 ? " month" : " months");
+        if (months == 0) return years + (years == 1 ? " year" : " years");
+        return years + (years == 1 ? " year " : " years ")
+                + months + (months == 1 ? " month" : " months");
     }
 
     private Button iconButton(String iconType, String accessibleText) {

@@ -6,6 +6,7 @@ import com.lavs.business.LoanBrowsingService;
 import com.lavs.data.FakeMainframeGateway;
 import com.lavs.model.Loan;
 import com.lavs.model.Payment;
+import com.lavs.model.Repayment;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -46,6 +47,10 @@ class LoanDetailsControllerTest {
             gateway.addPayment(new Payment("P1", "LN-1", "R1", LocalDate.of(2025, 8, 1), 3245.67));
             gateway.addPayment(new Payment("P2", "LN-1", null, LocalDate.of(2025, 8, 15), 3245.67));
             gateway.addPayment(new Payment("P3", "LN-1", "R2", LocalDate.of(2025, 9, 1), 3245.67));
+            gateway.saveRepaymentSchedule("LN-1", List.of(
+                    new Repayment("R2", "LN-1", LocalDate.of(2025, 3, 1), 3245.67, 1245.67, 2000, 448754.33),
+                    new Repayment("R1", "LN-1", LocalDate.of(2025, 2, 1), 3000, 1000, 2000, 449000),
+                    new Repayment("R3", "LN-1", LocalDate.of(2025, 4, 1), 3500, 1500, 2000, 447254.33)));
             controller.setLoanBrowsingService(new LoanBrowsingService(gateway));
             controller.setRequestExecutor(Runnable::run);
             controller.setLoan(loan("LN-1", "Sarah Johnson", "Active", "$450,000", "Home Loan"));
@@ -71,6 +76,12 @@ class LoanDetailsControllerTest {
     }
     private String paymentCell(int row, int column) {
         return node("paymentRows", GridPane.class).getChildren().stream().filter(Label.class::isInstance)
+                .filter(n -> Integer.valueOf(row).equals(GridPane.getRowIndex(n))
+                        && Integer.valueOf(column).equals(GridPane.getColumnIndex(n)))
+                .map(Label.class::cast).map(Label::getText).findFirst().orElseThrow();
+    }
+    private String repaymentCell(int row, int column) {
+        return node("repaymentScheduleTable", GridPane.class).getChildren().stream().filter(Label.class::isInstance)
                 .filter(n -> Integer.valueOf(row).equals(GridPane.getRowIndex(n))
                         && Integer.valueOf(column).equals(GridPane.getColumnIndex(n)))
                 .map(Label.class::cast).map(Label::getText).findFirst().orElseThrow();
@@ -142,17 +153,54 @@ class LoanDetailsControllerTest {
         });
     }
 
-    @Test void repaymentScheduleContainsExactlyTwoCompleteStubRows() throws Exception {
+    @Test void repaymentScheduleUsesTheSelectedLoansRealRowsAndSummary() throws Exception {
         JavaFxTestSupport.run(() -> {
             node("repaymentScheduleTab", Button.class).fire();
             GridPane table = node("repaymentScheduleTable", GridPane.class);
             List<Label> rows = table.getChildren().stream().filter(Label.class::isInstance)
                     .map(Label.class::cast).filter(n -> GridPane.getRowIndex(n) > 0).toList();
-            assertEquals(12, rows.size());
-            assertTrue(rows.stream().allMatch(n -> GridPane.getRowIndex(n) <= 2));
-            assertTrue(rows.stream().anyMatch(n -> "15/03/2025".equals(n.getText())));
-            assertTrue(rows.stream().anyMatch(n -> "01/04/2025".equals(n.getText())));
-            assertTrue(rows.stream().anyMatch(n -> "$497,493.88".equals(n.getText())));
+            assertEquals(18, rows.size());
+            assertTrue(rows.stream().allMatch(n -> GridPane.getRowIndex(n) <= 3));
+            assertEquals("01/02/2025", repaymentCell(1, 1));
+            assertEquals("$3,000.00", repaymentCell(1, 2));
+            assertEquals("$447,254.33", repaymentCell(3, 5));
+            assertEquals("$9,745.67", text("repaymentTotalValue"));
+            assertEquals("$450,000.00", text("repaymentPrincipalValue"));
+            assertEquals("$6,000.00", text("repaymentInterestValue"));
+            assertEquals("30 years", text("repaymentTermValue"));
+            assertEquals("Showing 1-3 of 3", text("repaymentsCount"));
+            return null;
+        });
+    }
+
+    @Test void loanWithoutARepaymentScheduleShowsAnHonestEmptyState() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            gateway.createLoan(new Loan("LN-EMPTY", "67670442", Loan.Status.NEW, 12000, 5,
+                    Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1),
+                    1000, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 12));
+            controller.setLoan(loan("LN-EMPTY", "Sarah Johnson", "New", "$12,000", "Table Loan"));
+            return null;
+        });
+        JavaFxTestSupport.run(() -> {
+            assertEquals("$0.00", text("repaymentTotalValue"));
+            assertEquals("$12,000.00", text("repaymentPrincipalValue"));
+            assertEquals("Showing 0 of 0", text("repaymentsCount"));
+            assertEquals("No repayment schedule recorded for this loan.", repaymentCell(1, 0));
+            return null;
+        });
+    }
+
+    @Test void unavailableRepaymentScheduleShowsAnErrorInsteadOfOldLoanData() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            gateway.simulateUnavailable(true);
+            controller.setLoan(loan("LN-1", "Sarah Johnson", "Active", "$450,000", "Home Loan"));
+            return null;
+        });
+        JavaFxTestSupport.run(() -> {
+            assertEquals("Unavailable", text("repaymentTotalValue"));
+            assertEquals("Showing 0 of 0", text("repaymentsCount"));
+            assertEquals("Repayment schedule could not be loaded.", repaymentCell(1, 0));
+            gateway.simulateUnavailable(false);
             return null;
         });
     }
