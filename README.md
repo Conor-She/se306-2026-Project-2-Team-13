@@ -86,12 +86,11 @@ Then sign in with the team account 'Group_13'. The password is in our Canvas sub
    borrower name. Select a loan to open its details: type, principal, interest rate, payment
    and rate frequency, term, start and renewal dates and status, plus its co-borrowers,
    repayment schedule and the payments recorded against it. Note:
-   - The mainframe doesn't store a loan's term, or whether it is a table, reducing-balance or
-  interest-only loan (only interest-only can be recognised). For loans read back from the
-  mainframe, the loan details screen therefore shows the type as "Not recorded" and works the
-  term out itself, and the customer's Loans tab shows "Fixed" or "Floating". For
-  reducing-balance and interest-only loans, the schedule the mainframe holds can differ from the
-  one shown when the loan was created.
+   - The mainframe has no native field for table and reducing-balance loan types, so LAVS stores
+  the selected type as loan metadata. New loans therefore retain their type after reloading.
+  Older loans without that metadata still show "Not recorded". The mainframe also does not store
+  a loan's term. For reducing-balance and interest-only loans, the schedule the mainframe holds
+  can differ from the one shown when the loan was created.
 6. **Customer records.** Selecting a customer shows their personal details, contact and
    employment records, loans, notes, documents and guarantors. Personal details, notes and
    guarantors can be edited and are saved to the mainframe. Existing loans can't be removed. A
@@ -125,10 +124,10 @@ server.
 
 ## Known limitations
 
-- The mainframe doesn't store whether a loan is a table, reducing-balance or interest-only loan
-  (only interest-only is distinguishable), or its term. Loans read back from the mainframe
-  therefore show "Fixed" or "Floating" as their type, and for reducing-balance and
-  interest-only loans the schedule the mainframe holds can differ from the one shown when the
-  loan was created.
+- The mainframe has no native field for table and reducing-balance loan types. LAVS preserves the
+  selected type as loan metadata for newly created or edited loans, while older loans without
+  metadata still show "Not recorded". The mainframe also does not store the term. For
+  reducing-balance and interest-only loans, the schedule the mainframe holds can differ from the
+  one shown when the loan was created.
 - The mainframe can't delete a loan. If a loan is created but a co-borrower can't be added, the
   loan is cancelled instead.
