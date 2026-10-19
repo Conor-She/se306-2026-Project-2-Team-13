@@ -3,7 +3,6 @@ package com.lavs.ui;
 import javafx.fxml.FXML;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
@@ -201,12 +200,4 @@ public class CustomerDetailsController {
     @FXML private void addDocument() { editing.add(Kind.DOCUMENT); }
     @FXML private void addGuarantor() { editing.add(Kind.GUARANTOR); }
     @FXML private void back() { onBack.run(); }
-    @FXML private void showStubAction() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.initOwner(customerHeading.getScene().getWindow());
-        alert.setTitle("Customer details preview");
-        alert.setHeaderText("Co-borrowers");
-        alert.setContentText("Co-borrower records are not available in this preview.");
-        alert.showAndWait();
-    }
 }

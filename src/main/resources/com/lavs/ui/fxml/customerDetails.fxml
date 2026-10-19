@@ -129,11 +129,6 @@
     <Label text="Status" GridPane.columnIndex="4" style="$loanHeaderStyle"/>
     <Label text="Actions" GridPane.columnIndex="5" style="$loanHeaderStyle"/>
    </GridPane>
-   <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-background-color: #f2f6ff; -fx-background-radius: 9; -fx-padding: 16 20;">
-    <StackPane minWidth="24" prefWidth="24"><SVGPath content="M 7 0 A 4 4 0 1 1 7 8 A 4 4 0 1 1 7 0 Z M 17 2 A 3 3 0 1 1 17 8 A 3 3 0 1 1 17 2 Z M 0 19 C 0 7 14 7 14 19 Z M 15 10 C 23 8 24 15 24 19 H 16 Z" fill="#393A7B"/></StackPane>
-    <VBox spacing="4" minWidth="0" HBox.hgrow="ALWAYS"><Label text="Co-borrowers" style="$titleStyle"/><Label text="View and manage co-borrowers for this customer's loans." wrapText="true" style="$mutedStyle"/></VBox>
-    <Button text="View Co-borrowers   &#x203A;" onAction="#showStubAction" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #5b56b5; -fx-font-size: 11px; -fx-padding: 8 16; -fx-cursor: hand;"/>
-   </HBox>
   </VBox></content>
  </ScrollPane>
  <ScrollPane fx:id="notesContent" visible="false" managed="false" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: white; -fx-background-color: white; -fx-padding: 0;">
