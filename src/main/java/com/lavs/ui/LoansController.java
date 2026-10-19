@@ -44,6 +44,9 @@ public class LoansController {
     }
 
     @FXML private TextField searchField;
+    @FXML private String loanStyles;
+    @FXML private Label resultsFooter;
+    @FXML private TableColumn<LoanSummary, LoanSummary> actionsColumn;
     @FXML private Label resultsHeading;
     @FXML private TableView<LoanSummary> loanTable;
     @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
@@ -161,6 +164,24 @@ public class LoansController {
     protected AddLoanController createAddLoanController() { return new AddLoanController(); }
 
     @FXML private void initialize() {
+        listView.getParent().getStylesheets().add("data:text/css;base64," + java.util.Base64.getEncoder()
+                .encodeToString(loanStyles.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        resultsFooter.textProperty().bind(javafx.beans.binding.Bindings.size(loans).asString("Showing %d loans"));
+        actionsColumn.setCellValueFactory(c -> new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue()));
+        actionsColumn.setCellFactory(column -> new javafx.scene.control.TableCell<>() {
+            private final javafx.scene.control.Hyperlink view = new javafx.scene.control.Hyperlink("View loan  →");
+            {
+                view.getStyleClass().add("loan-profile-link");
+                view.setOnAction(event -> { if (getItem() != null) openDetails(getItem()); });
+                view.setOnMouseClicked(javafx.event.Event::consume);
+            }
+            @Override protected void updateItem(LoanSummary value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(null);
+                setGraphic(empty || value == null ? null : view);
+                if (!empty && value != null) view.setAccessibleText("View loan " + value.loanId());
+            }
+        });
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));
         customerIdColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));

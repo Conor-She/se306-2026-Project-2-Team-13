@@ -1,27 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.SVGPath?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lavs.ui.CustomersController" minWidth="0" minHeight="0">
- <VBox fx:id="listView" spacing="18" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS">
-  <HBox spacing="24" alignment="CENTER_LEFT" minWidth="0">
-   <Label text="Search Customers" minWidth="0" wrapText="true" styleClass="heading" style="-fx-font-size: 28; -fx-font-weight: bold;"/>
-   <Region HBox.hgrow="ALWAYS"/>
-   <Button text="+ Add New Customer" minWidth="0" wrapText="true" onAction="#openAddCustomer" style="-fx-background-color: #F8F40C; -fx-text-fill: black; -fx-font-size: 16; -fx-padding: 10 18; -fx-background-radius: 7; -fx-border-color: #393A7B; -fx-border-radius: 7;"/>
+ <fx:define>
+  <String fx:id="customerStyles" fx:value=".customer-search-page { -fx-background-color: #ffffff; }
+.customer-search-header, .customer-results-card {
+    -fx-background-color: linear-gradient(to right, #fafbff, #ffffff);
+    -fx-border-color: #dfe3ff; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 20;
+}
+.customer-header-avatar { -fx-background-color: #e8e7ff; -fx-background-radius: 40; }
+.customer-search-title { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #393a7b; }
+.customer-search-subtitle { -fx-font-size: 13px; -fx-text-fill: #6569a4; }
+.customer-add-button {
+    -fx-background-color: #F8F40C; -fx-text-fill: #393a7b;
+    -fx-font-size: 13px; -fx-font-weight: bold;
+    -fx-padding: 10 16; -fx-background-radius: 8; -fx-background-insets: 0;
+    -fx-border-color: #e1dd45; -fx-border-width: 1;
+    -fx-border-radius: 8; -fx-cursor: hand;
+}
+.customer-add-button:hover { -fx-background-color: #eeeb0b; -fx-border-color: #cfcb34; }
+.customer-add-button:pressed { -fx-background-color: #e1de0b; }
+.customer-add-button:focused { -fx-border-color: #7773cc; -fx-border-width: 2; -fx-padding: 9 15; }
+.customer-search-bar {
+    -fx-background-color: #ffffff; -fx-border-color: #dfe3ff;
+    -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 4 18;
+}
+.customer-search-input, .customer-search-input:focused {
+    -fx-background-color: transparent; -fx-border-width: 0; -fx-background-insets: 0;
+    -fx-padding: 10 0; -fx-font-size: 15px; -fx-text-fill: #393a7b; -fx-prompt-text-fill: #9295bf;
+}
+.customer-results-heading { -fx-text-fill: #6569a4; -fx-font-size: 14px; }
+.customer-results-footer { -fx-text-fill: #747ba6; -fx-font-size: 12px; -fx-padding: 5 0 0 0; }
+.customer-results-table {
+    -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0;
+    -fx-table-cell-border-color: transparent; -fx-font-size: 14px;
+}
+.customer-results-table .column-header-background { -fx-background-color: #eef0ff; -fx-background-radius: 5 5 0 0; }
+.customer-results-table .column-header, .customer-results-table .filler { -fx-background-color: transparent; -fx-border-width: 0; -fx-size: 42; }
+.customer-results-table .column-header .label {
+    -fx-alignment: CENTER_LEFT; -fx-padding: 0 14;
+    -fx-text-fill: #6569a4; -fx-font-size: 11px; -fx-font-weight: bold;
+}
+.customer-results-table .table-row-cell { -fx-background-color: transparent; -fx-border-color: transparent transparent #e9ecff transparent; -fx-border-width: 0 0 1 0; }
+.customer-results-table .table-row-cell:empty { -fx-border-width: 0; }
+.customer-results-table .table-row-cell:filled:hover { -fx-background-color: #f0f1ff; -fx-cursor: hand; }
+.customer-results-table .table-row-cell:filled:selected { -fx-background-color: #e6e5ff; }
+.customer-results-table .table-cell { -fx-alignment: CENTER_LEFT; -fx-padding: 0 14; -fx-text-fill: #393a7b; -fx-border-width: 0; }
+.customer-results-table .placeholder .label { -fx-text-fill: #747ba6; -fx-font-size: 14px; }
+.customer-initials { -fx-background-color: #ddd4f7; -fx-background-radius: 30; -fx-text-fill: #514a8e; -fx-font-size: 12px; -fx-font-weight: bold; -fx-alignment: CENTER; }
+.customer-profile-link { -fx-text-fill: #5553ac; -fx-font-size: 13px; -fx-padding: 6 0; -fx-border-width: 0; -fx-underline: false; }
+.customer-profile-link:hover { -fx-underline: true; }
+.customer-display-name { -fx-text-fill: #393a7b; }
+"/>
+ </fx:define>
+ <VBox fx:id="listView" spacing="16" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS" styleClass="customer-search-page">
+  <HBox spacing="18" alignment="CENTER_LEFT" minWidth="0" styleClass="customer-search-header">
+   <StackPane minWidth="60" prefWidth="60" maxWidth="60" minHeight="60" maxHeight="60" styleClass="customer-header-avatar">
+    <SVGPath content="M 7 0 A 4 4 0 1 1 7 8 A 4 4 0 1 1 7 0 Z M 17 2 A 3 3 0 1 1 17 8 A 3 3 0 1 1 17 2 Z M 0 19 C 0 7 14 7 14 19 Z M 15 10 C 23 8 24 15 24 19 H 16 Z" fill="#4947a5" scaleX="1.3" scaleY="1.3"/>
+   </StackPane>
+   <VBox spacing="6" HBox.hgrow="ALWAYS" minWidth="0">
+    <Label text="Search Customers" wrapText="true" styleClass="customer-search-title"/>
+    <Label text="Find and manage customer profiles." wrapText="true" styleClass="customer-search-subtitle"/>
+   </VBox>
+   <Button text="+  Add Customer" onAction="#openAddCustomer" styleClass="customer-add-button"/>
   </HBox>
+  <HBox alignment="CENTER_LEFT" spacing="12" styleClass="customer-search-bar">
+   <SVGPath content="M 14 6 A 6 6 0 1 1 2 6 A 6 6 0 1 1 14 6 M 12 11 L 18 17" fill="TRANSPARENT" stroke="#5553a6" strokeWidth="1.8" mouseTransparent="true"/>
   <TextField fx:id="searchField" promptText="Search customer ID or name"
              accessibleText="Search customer ID or name"
-             minHeight="56" prefHeight="56" maxHeight="56"
-             style="-fx-font-size: 20; -fx-padding: 12 16;"/>
-  <Label fx:id="resultsHeading" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
-  <TableView fx:id="customerTable" minWidth="0" minHeight="0" fixedCellSize="50" style="-fx-font-size: 18px;" VBox.vgrow="ALWAYS">
+             HBox.hgrow="ALWAYS" minWidth="0" styleClass="customer-search-input"/>
+  </HBox>
+  <VBox spacing="12" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS" styleClass="customer-results-card">
+  <Label fx:id="resultsHeading" wrapText="true" styleClass="customer-results-heading"/>
+  <TableView fx:id="customerTable" minWidth="0" minHeight="160" fixedCellSize="58" styleClass="customer-results-table" VBox.vgrow="ALWAYS">
    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/></columnResizePolicy>
    <columns>
-    <TableColumn fx:id="idColumn" text="Customer ID" prefWidth="110" minWidth="95"/>
-    <TableColumn fx:id="nameColumn" text="Name" prefWidth="210" minWidth="120"/>
-    <TableColumn fx:id="dateOfBirthColumn" text="Date of Birth" prefWidth="160" minWidth="140"/>
+    <TableColumn fx:id="idColumn" text="CUSTOMER ID" prefWidth="220" minWidth="155"/>
+    <TableColumn fx:id="nameColumn" text="CUSTOMER" prefWidth="360" minWidth="180"/>
+    <TableColumn fx:id="dateOfBirthColumn" text="DATE OF BIRTH" prefWidth="230" minWidth="140"/>
+    <TableColumn fx:id="actionsColumn" text="ACTIONS" prefWidth="150" minWidth="135" sortable="false"/>
    </columns>
   </TableView>
+  <Label fx:id="resultsFooter" styleClass="customer-results-footer"/>
+  </VBox>
  </VBox>
  <fx:include fx:id="detailsView" source="customerDetails.fxml" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
 </VBox>

@@ -318,14 +318,19 @@ final class CustomerDetailsEditing {
     }
 
     private HBox contactRow(String type, String value, Map<String, String> record, VBox list) {
-        VBox text = new VBox(5, label(value));
+        Label contactValue = label(value);
+        contactValue.setWrapText(true);
+        VBox text = new VBox(5, contactValue);
         if (record == null) text.getChildren().add(label(type.equals("Address") ? "Mailing address" : "Primary"));
         text.setMinWidth(0); HBox.setHgrow(text, Priority.ALWAYS);
         Button edit = new Button(); edit.setStyle(ACTION);
         edit.setAccessibleText("Edit " + value);
+        edit.setTooltip(new Tooltip("Edit " + value));
         edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6", "#55558d"));
         edit.setOnAction(event -> editContact(type, record, () -> populateContacts(type, list)));
-        VBox actions = new VBox(5, edit);
+        HBox actions = new HBox(8, edit);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setMinWidth(Region.USE_PREF_SIZE);
         actions.setVisible(!readOnly);
         actions.setManaged(!readOnly);
         if (record != null) {
@@ -333,6 +338,9 @@ final class CustomerDetailsEditing {
             int recordIndex = target.records.get(Kind.CONTACT_RECORD).indexOf(record);
             Button primary = new Button("Make primary");
             primary.setAccessibleText("Make primary " + value);
+            primary.setStyle("-fx-background-color: white; -fx-text-fill: #55558d; "
+                    + "-fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6; "
+                    + "-fx-padding: 7 10; -fx-min-height: 36; -fx-cursor: hand;");
             primary.setOnAction(event -> {
                 save(target, draft -> promoteContact(draft, type,
                         draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)),

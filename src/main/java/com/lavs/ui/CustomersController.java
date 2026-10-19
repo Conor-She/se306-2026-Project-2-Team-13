@@ -17,6 +17,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -79,17 +80,68 @@ public class CustomersController {
         }
     }
     @FXML private TextField searchField;
+    @FXML private String customerStyles;
     @FXML private Label resultsHeading;
+    @FXML private Label resultsFooter;
     @FXML private TableView<CustomerSummary> customerTable;
     @FXML private TableColumn<CustomerSummary, String> idColumn, nameColumn;
+    @FXML private TableColumn<CustomerSummary, CustomerSummary> actionsColumn;
     @FXML private TableColumn<CustomerSummary, LocalDate> dateOfBirthColumn;
     @FXML private VBox listView, detailsView;
     @FXML private CustomerDetailsController detailsViewController;
 
     @FXML private void initialize() {
         root = (VBox) listView.getParent();
+        // Keep the stylesheet in FXML while retaining selectors for table skins
+        // and hover/focus states, which cannot be expressed as inline styles.
+        root.getStylesheets().add("data:text/css;base64," + java.util.Base64.getEncoder()
+                .encodeToString(customerStyles.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
         nameColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().name()));
+        nameColumn.setCellFactory(column -> new TableCell<>() {
+            private final Label initials = new Label();
+            private final Label name = new Label();
+            private final javafx.scene.layout.HBox content = new javafx.scene.layout.HBox(12, initials, name);
+            {
+                initials.getStyleClass().add("customer-initials");
+                initials.setMinSize(32, 32);
+                initials.setPrefSize(32, 32);
+                initials.setMaxSize(32, 32);
+                name.getStyleClass().add("customer-display-name");
+                content.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            }
+            @Override protected void updateItem(String value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(null);
+                setGraphic(empty || value == null ? null : content);
+                if (!empty && value != null) {
+                    String[] parts = value.strip().split("\\s+");
+                    String letters = value.isBlank() ? "?" : parts[0].substring(0, 1)
+                            + (parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "");
+                    initials.setText(letters.toUpperCase(Locale.ROOT));
+                    name.setText(value);
+                }
+            }
+        });
+        actionsColumn.setCellValueFactory(c -> new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue()));
+        actionsColumn.setCellFactory(column -> new TableCell<>() {
+            private final Hyperlink profile = new Hyperlink("View profile  →");
+            {
+                profile.getStyleClass().add("customer-profile-link");
+                profile.setOnAction(event -> {
+                    if (getItem() != null) openCustomer(getItem());
+                });
+                profile.setOnMouseClicked(javafx.event.Event::consume);
+            }
+            @Override protected void updateItem(CustomerSummary value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(null);
+                setGraphic(empty || value == null ? null : profile);
+                if (!empty && value != null) profile.setAccessibleText("View profile for " + value.name());
+            }
+        });
+        resultsFooter.textProperty().bind(javafx.beans.binding.Bindings.size(customers)
+                .asString("Showing %d customers"));
         dateOfBirthColumn.setCellValueFactory(c ->
                 new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue().dateOfBirth()));
         dateOfBirthColumn.setCellFactory(column -> new TableCell<>() {
