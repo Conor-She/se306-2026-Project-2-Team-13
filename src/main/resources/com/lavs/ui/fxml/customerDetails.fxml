@@ -164,15 +164,14 @@
    </HBox>
    <GridPane fx:id="documentsTable" minWidth="0" style="-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8;">
     <columnConstraints>
-     <ColumnConstraints percentWidth="31"/><ColumnConstraints percentWidth="28"/>
-     <ColumnConstraints percentWidth="26"/><ColumnConstraints percentWidth="15" halignment="CENTER"/>
+     <ColumnConstraints percentWidth="50"/><ColumnConstraints percentWidth="35"/>
+     <ColumnConstraints percentWidth="15" halignment="CENTER"/>
     </columnConstraints>
     <rowConstraints><RowConstraints minHeight="34"/></rowConstraints>
-    <Region GridPane.columnSpan="4" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
+    <Region GridPane.columnSpan="3" maxWidth="Infinity" maxHeight="Infinity" style="-fx-background-color: #f2f6ff; -fx-background-radius: 8 8 0 0;"/>
     <Label text="Document Name" style="$documentHeaderStyle"><padding><Insets left="24"/></padding></Label>
     <Label text="Type" GridPane.columnIndex="1" style="$documentHeaderStyle"/>
-    <Label text="Uploaded Date" GridPane.columnIndex="2" style="$documentHeaderStyle"/>
-    <Label text="Actions" GridPane.columnIndex="3" style="$documentHeaderStyle"/>
+    <Label text="Actions" GridPane.columnIndex="2" style="$documentHeaderStyle"/>
    </GridPane>
   </VBox></content>
  </ScrollPane>

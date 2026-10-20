@@ -123,12 +123,12 @@ class CustomerDetailsControllerTest {
         JavaFxTestSupport.run(() -> {
             tab("documents").fire();
             GridPane table = table("documents");
-            assertRow(table, 0, "Document Name", "Type", "Uploaded Date", "Actions");
+            assertRow(table, 0, "Document Name", "Type", "Actions");
             String[][] documents = {
-                {"ID - Passport.pdf", "Identity", "12 Sep 2025"},
-                {"Proof of Address.pdf", "Address", "3 Aug 2025"},
-                {"Payslip.pdf", "Income", "21 Jun 2025"},
-                {"Bank Statement.pdf", "Bank Statement", "10 May 2025"}
+                {"ID - Passport.pdf", "Identity"},
+                {"Proof of Address.pdf", "Address"},
+                {"Payslip.pdf", "Income"},
+                {"Bank Statement.pdf", "Bank Statement"}
             };
             for (int index = 0; index < documents.length; index++) {
                 String[] document = documents[index];

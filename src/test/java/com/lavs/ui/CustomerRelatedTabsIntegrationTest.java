@@ -155,8 +155,8 @@ class CustomerRelatedTabsIntegrationTest {
             assertTrue(root.lookup("#" + tab + "Content").isVisible());
             if (tab.equals("documents")) {
                 assertTrue(hasText(loader, tab, "Identity"));
-                assertTrue(hasText(loader, tab, "2 Jan 2026"));
-                assertTrue(hasText(loader, tab, "Not provided"));
+                assertFalse(hasText(loader, tab, "Uploaded Date"));
+                assertFalse(hasText(loader, tab, "Not provided"));
             }
             if (tab.equals("guarantors")) assertTrue(hasText(loader, tab, "Parent"));
             if (tab.equals("loans")) {
