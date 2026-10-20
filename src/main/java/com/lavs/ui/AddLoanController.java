@@ -18,6 +18,7 @@ import javafx.animation.PauseTransition;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
@@ -87,6 +88,8 @@ public class AddLoanController {
         interestColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getInterestComponent())));
         balanceColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getRemainingBalance())));
         ScrollPaneAppearance.install(repaymentTable, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        // Let the table scroll first, then stop boundary events reaching the review page.
+        repaymentTable.addEventHandler(ScrollEvent.ANY, ScrollEvent::consume);
         ScrollPaneAppearance.install(loanScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(customerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
         ScrollPaneAppearance.install(coborrowerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
