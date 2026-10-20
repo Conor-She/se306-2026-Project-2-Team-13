@@ -173,6 +173,20 @@ class LoanDetailsControllerTest {
         });
     }
 
+    @Test void repaymentTermIsRecoveredWhenMainframeDoesNotReturnIt() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            gateway.createLoan(new Loan("LN-RELOADED", "67670442", Loan.Status.NEW, 12000, 5,
+                    Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2029, 4, 1),
+                    1000, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null));
+            controller.setLoan(loan("LN-RELOADED", "Sarah Johnson", "New", "$12,000", "Table Loan"));
+            return null;
+        });
+        JavaFxTestSupport.run(() -> {
+            assertEquals("3 years 3 months", text("repaymentTermValue"));
+            return null;
+        });
+    }
+
     @Test void loanWithoutARepaymentScheduleShowsAnHonestEmptyState() throws Exception {
         JavaFxTestSupport.run(() -> {
             gateway.createLoan(new Loan("LN-EMPTY", "67670442", Loan.Status.NEW, 12000, 5,

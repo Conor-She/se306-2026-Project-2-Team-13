@@ -423,7 +423,7 @@ public class LoanDetailsController {
         repaymentTotalValue.setText(formatAmount(details.getSummary().getTotalRepayable()));
         repaymentPrincipalValue.setText(formatAmount(details.getLoan().getPrincipal()));
         repaymentInterestValue.setText(formatAmount(details.getSummary().getTotalInterest()));
-        repaymentTermValue.setText(formatTerm(details.getLoan().getTermMonths()));
+        repaymentTermValue.setText(formatTerm(termFor(details.getLoan())));
 
         List<Repayment> schedule = details.getSchedule();
         for (int index = 0; index < schedule.size(); index++) {

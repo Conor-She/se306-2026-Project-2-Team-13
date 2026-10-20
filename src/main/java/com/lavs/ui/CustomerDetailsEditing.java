@@ -781,9 +781,7 @@ final class CustomerDetailsEditing {
                 HBox name = new HBox(16, icon("M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9", colour), label(record.get("fileName")));
                 name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 24, 0, 24)); name.setMinWidth(0);
                 table.add(name, 0, row); table.add(label(record.get("type")), 1, row);
-                table.add(label(record.get("date").isBlank() ? "Not provided"
-                        : CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(record.get("date")))), 2, row);
-                table.add(actions(kind, record, "Actions for " + record.get("fileName")), 3, row);
+                table.add(actions(kind, record, "Actions for " + record.get("fileName")), 2, row);
             } else {
                 HBox name = new HBox(12, avatar(), label(fullName(record)));
                 name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 20, 0, 20)); name.setMinWidth(0);
