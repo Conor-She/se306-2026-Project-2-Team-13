@@ -1,11 +1,13 @@
 #addCoborrowerChoice,
-#existingCoborrowerPicker {
+#existingCoborrowerPicker,
+#paymentEditor {
     -fx-background-color: white;
     -fx-font-family: "System";
 }
 
 #addCoborrowerChoice > .header-panel,
-#existingCoborrowerPicker > .header-panel {
+#existingCoborrowerPicker > .header-panel,
+#paymentEditor > .header-panel {
     -fx-background-color: #f8faff;
     -fx-border-color: transparent transparent #dce2ff transparent;
     -fx-border-width: 0 0 1 0;
@@ -13,25 +15,29 @@
 }
 
 #addCoborrowerChoice > .header-panel .label,
-#existingCoborrowerPicker > .header-panel .label {
+#existingCoborrowerPicker > .header-panel .label,
+#paymentEditor > .header-panel .label {
     -fx-text-fill: #22245f;
     -fx-font-size: 17px;
     -fx-font-weight: bold;
 }
 
 #addCoborrowerChoice > .content,
-#existingCoborrowerPicker > .content {
+#existingCoborrowerPicker > .content,
+#paymentEditor > .content {
     -fx-padding: 18 20 12 20;
 }
 
 #addCoborrowerChoice > .button-bar > .container,
-#existingCoborrowerPicker > .button-bar > .container {
+#existingCoborrowerPicker > .button-bar > .container,
+#paymentEditor > .button-bar > .container {
     -fx-background-color: white;
     -fx-padding: 8 20 18 20;
 }
 
 #addCoborrowerChoice .button-bar .button,
-#existingCoborrowerPicker .button-bar .button {
+#existingCoborrowerPicker .button-bar .button,
+#paymentEditor .button-bar .button {
     -fx-background-color: white;
     -fx-border-color: #9693ca;
     -fx-border-radius: 6;
@@ -47,6 +53,70 @@
     -fx-border-color: #b6b309;
     -fx-text-fill: #111111;
     -fx-font-weight: bold;
+}
+
+#paymentEditor .button-bar .button:default {
+    -fx-background-color: #f8f40c;
+    -fx-border-color: #b6b309;
+    -fx-text-fill: #111111;
+    -fx-font-weight: bold;
+}
+
+#paymentEditor .button-bar .button:default:disabled {
+    -fx-opacity: 0.48;
+}
+
+#paymentForm {
+    -fx-pref-width: 520px;
+    -fx-padding: 2 0 4 0;
+}
+
+#paymentContext {
+    -fx-text-fill: #747ba6;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 4 0;
+}
+
+#paymentForm .payment-field-label {
+    -fx-text-fill: #393a7b;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+#paymentAmount,
+#paymentDate {
+    -fx-background-color: white;
+    -fx-border-color: #b9b7cd;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 13px;
+    -fx-text-fill: #20205e;
+    -fx-prompt-text-fill: #8b8db1;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-pref-height: 42px;
+}
+
+#paymentAmount {
+    -fx-padding: 10 12;
+}
+
+#paymentDate > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 10 12;
+}
+
+#paymentDate > .arrow-button {
+    -fx-background-color: #f8faff;
+    -fx-border-color: transparent transparent transparent #dce2ff;
+    -fx-background-radius: 0 6 6 0;
+}
+
+#paymentAmount:focused,
+#paymentDate:focused {
+    -fx-border-color: #4947a5;
+    -fx-border-width: 1.5;
 }
 
 #existingCoborrowerPicker .button-bar .button:default:disabled {
