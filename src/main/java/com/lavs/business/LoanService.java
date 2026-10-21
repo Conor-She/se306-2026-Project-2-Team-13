@@ -2,6 +2,7 @@ package com.lavs.business;
 
 import com.lavs.data.MainframeException;
 import com.lavs.data.MainframeGateway;
+import com.lavs.data.PartialLoanCreationException;
 import com.lavs.model.Employer;
 import com.lavs.model.Guarantor;
 import com.lavs.model.Loan;
@@ -69,7 +70,12 @@ public class LoanService {
         // find that out now rather than after the loan exists
         calculatorFor(loan).calculateSchedule(withLoanId(loan, DRY_RUN_LOAN_ID));
 
-        Loan created = gateway.createLoan(loan);
+        Loan created;
+        try {
+            created = gateway.createLoan(loan);
+        } catch (PartialLoanCreationException failure) {
+            throw new LoanSubmissionException(failure.getMessage(), failure);
+        }
         List<Repayment> schedule = calculatorFor(created).calculateSchedule(created);
         gateway.saveRepaymentSchedule(created.getLoanId(), schedule);
 
