@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.lavs.data.FakeMainframeGateway;
 import com.lavs.data.MainframeException;
+import com.lavs.data.PartialLoanCreationException;
 import com.lavs.model.Address;
 import com.lavs.model.Customer;
 import com.lavs.model.Employer;
@@ -222,6 +223,29 @@ class LoanServiceTest {
                 () -> service.create(newLoan()));
 
         assertEquals(MainframeException.Type.UNAVAILABLE, exception.getType());
+    }
+
+    @Test
+    void reportsAPartiallyCreatedLoanWithoutClaimingNothingWasSaved() {
+        FakeMainframeGateway failing = new FakeMainframeGateway() {
+            @Override
+            public Loan createLoan(Loan loan) {
+                throw new PartialLoanCreationException(
+                        "L123", false, new IllegalStateException("metadata failed"), null);
+            }
+        };
+        failing.addAddress(new Address(
+                1L, "C001", "5 Queen St", "CBD", "Auckland", "1010", "NZ", true));
+        failing.addPhone(new Phone(1L, "C001", "0211234567", true, true));
+        failing.addEmployer(new Employer(
+                1L, "C001", "Acme Ltd", "Engineer", 90000, "Full-time"));
+
+        LoanSubmissionException exception = assertThrows(LoanSubmissionException.class,
+                () -> new LoanService(failing).create(newLoan()));
+
+        assertTrue(exception.getMessage().contains("Loan L123 was created"));
+        assertTrue(exception.getMessage().contains("before retrying"));
+        assertTrue(exception.getCause() instanceof PartialLoanCreationException);
     }
 
     // A loan with zero or a negative amount must not be created
