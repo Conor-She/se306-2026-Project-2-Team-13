@@ -7,7 +7,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
@@ -77,6 +76,7 @@ public class LoanDetailsController {
     private LoansController.LoanSummary loan;
     private boolean recordsUnavailable;
     private LoanBrowsingService loanBrowsingService;
+    private com.lavs.business.PaymentService paymentService;
     private Executor requestExecutor = ForkJoinPool.commonPool();
     private Runnable onBack;
 
@@ -210,6 +210,10 @@ public class LoanDetailsController {
         configureCoborrowers();
     }
 
+    public void setPaymentService(com.lavs.business.PaymentService service) {
+        paymentService = service;
+    }
+
     public void setRegistrationServiceFactory(
             java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
         registrationServiceFactory = factory;
@@ -322,21 +326,58 @@ public class LoanDetailsController {
         dialog.setResultConverter(button -> {
             if (button != saveType) return null;
             double amountPaid = parseAmount(amount.getText()).doubleValue();
-            String paymentId = existingPayment == null
-                    ? "PAY-" + UUID.randomUUID() : existingPayment.getPaymentId();
+            // A new payment has no ID yet: the mainframe assigns one when it is saved
+            String paymentId = existingPayment == null ? null : existingPayment.getPaymentId();
             String repaymentId = existingPayment == null ? null : existingPayment.getRepaymentId();
             return new Payment(paymentId, loan.loanId(), repaymentId, paymentDate.getValue(), amountPaid);
         });
 
         dialog.showAndWait().ifPresent(updatedPayment -> {
             if (existingPayment == null) {
-                payments.add(updatedPayment);
+                changePayments("Could not add payment", () -> paymentService.addPayment(updatedPayment));
             } else {
-                int index = payments.indexOf(existingPayment);
-                if (index >= 0) payments.set(index, updatedPayment);
+                changePayments("Could not edit payment", () -> paymentService.updatePayment(updatedPayment));
             }
-            refreshPayments();
         });
+    }
+
+    // Runs a payment change on the mainframe off the screen thread, then reloads the loan's
+    // records so the table shows exactly what the mainframe now holds (including real IDs).
+    private void changePayments(String errorHeader, Runnable change) {
+        if (paymentService == null) {
+            showPaymentError(errorHeader, new IllegalStateException("Payments are not available right now."));
+            return;
+        }
+        String loanId = loan.loanId();
+        requestExecutor.execute(() -> {
+            try {
+                change.run();
+                javafx.application.Platform.runLater(() -> {
+                    if (loan != null && loanId.equals(loan.loanId())) loadLoanRecords(loanId);
+                });
+            } catch (RuntimeException failure) {
+                javafx.application.Platform.runLater(() -> showPaymentError(errorHeader, failure));
+            }
+        });
+    }
+
+    private void showPaymentError(String header, RuntimeException failure) {
+        Alert alert = new Alert(Alert.AlertType.ERROR,
+                failure.getMessage() == null ? "The mainframe could not save the payment." : failure.getMessage());
+        alert.setHeaderText(header);
+        wrapAlertText(alert);
+        if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
+        alert.showAndWait();
+    }
+
+    // A long mainframe message is cut off with "..." by default; showing it in a wrapping label
+    // lets the dialog grow tall enough to read all of it.
+    private static void wrapAlertText(Alert alert) {
+        Label message = new Label(alert.getContentText());
+        message.setWrapText(true);
+        message.setPrefWidth(420);
+        message.setMinHeight(Region.USE_PREF_SIZE);
+        alert.getDialogPane().setContent(message);
     }
 
     private void deletePayment(Payment payment) {
@@ -346,8 +387,8 @@ public class LoanDetailsController {
         confirmation.setTitle("Delete payment");
         confirmation.setHeaderText("Delete payment");
         confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(button -> {
-            payments.remove(payment);
-            refreshPayments();
+            changePayments("Could not delete payment",
+                    () -> paymentService.deletePayment(payment.getLoanId(), payment.getPaymentId()));
         });
     }
 
@@ -361,10 +402,9 @@ public class LoanDetailsController {
         for (Payment payment : sorted) {
             Region background = new Region();
             background.setStyle(paymentRowStyle);
-            paymentRows.add(background, 0, row, 5, 1);
-            String repaymentId = payment.getRepaymentId() == null ? "Unlinked" : payment.getRepaymentId();
+            paymentRows.add(background, 0, row, 4, 1);
             String[] values = { payment.getPaymentDate().format(PAYMENT_DATE_FORMAT),
-                    formatAmount(payment.getAmountPaid()), repaymentId, payment.getPaymentId() };
+                    formatAmount(payment.getAmountPaid()), payment.getPaymentId() };
             javafx.scene.control.MenuItem edit = new javafx.scene.control.MenuItem("Edit payment");
             edit.setOnAction(event -> editPayment(payment));
             javafx.scene.control.MenuItem delete = new javafx.scene.control.MenuItem("Delete payment");
@@ -385,7 +425,7 @@ public class LoanDetailsController {
             HBox buttons = new HBox(4, editButton, deleteButton);
             buttons.setAlignment(Pos.CENTER);
             buttons.setMinWidth(Region.USE_PREF_SIZE);
-            paymentRows.add(buttons, 4, row);
+            paymentRows.add(buttons, 3, row);
             row++;
         }
         if (sorted.isEmpty()) {
@@ -393,7 +433,7 @@ public class LoanDetailsController {
                     ? "Payments could not be loaded."
                     : "No payments recorded for this loan.");
             empty.setStyle(paymentCellStyle);
-            paymentRows.add(empty, 0, 1, 5, 1);
+            paymentRows.add(empty, 0, 1, 4, 1);
         }
         paymentsCount.setText(sorted.isEmpty() ? "Showing 0 of 0"
                 : "Showing 1-" + sorted.size() + " of " + sorted.size());

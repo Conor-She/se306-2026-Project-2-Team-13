@@ -92,6 +92,10 @@ public class LoansController {
         detailsViewController.setCoBorrowerService(service);
     }
 
+    public void setPaymentService(com.lavs.business.PaymentService service) {
+        detailsViewController.setPaymentService(service);
+    }
+
     public void setRegistrationServiceFactory(
             java.util.function.Supplier<com.lavs.business.CustomerRegistrationService> factory) {
         detailsViewController.setRegistrationServiceFactory(factory);

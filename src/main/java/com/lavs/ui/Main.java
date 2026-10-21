@@ -94,6 +94,8 @@ public class Main extends Application {
                         new com.lavs.business.LoanSubmissionService(gateway));
                 dashboardController.setCoBorrowerService(
                         new com.lavs.business.CoBorrowerService(gateway));
+                dashboardController.setPaymentService(
+                        new com.lavs.business.PaymentService(gateway));
                 dashboardController.setRegistrationServiceFactory(
                         () -> new com.lavs.business.MainframeCustomerRegistrationService(gateway));
                 dashboardController.configure(loginName[0], () -> {

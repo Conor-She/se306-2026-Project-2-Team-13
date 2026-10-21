@@ -938,16 +938,31 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 payment.getPaymentDate(), payment.getAmountPaid());
     }
 
-    // The mainframe has no update message, so an edit adds the new version and
-    // then deletes the old one, and the new payment gets a new ID. Adding first
-    // means a failure can't lose a payment; the cost is that a failed delete
-    // leaves the old payment alongside the new one.
+    // The mainframe has no update message, so an edit deletes the old payment and adds the new
+    // version, which gets a new ID. Deleting first means that if the mainframe refuses the
+    // delete (for example because the payment is locked) nothing has changed, instead of the
+    // old payment being left beside a copy. If the add then fails, the old payment is put back.
     @Override
     public Payment updatePayment(Payment payment) {
-        Payment replacement = addPayment(new Payment(null, payment.getLoanId(), null,
-                payment.getPaymentDate(), payment.getAmountPaid()));
+        Payment original = getPayments(payment.getLoanId()).stream()
+                .filter(existing -> payment.getPaymentId().equals(existing.getPaymentId()))
+                .findFirst().orElse(null);
+
         deletePayment(payment.getLoanId(), payment.getPaymentId());
-        return replacement;
+        try {
+            return addPayment(new Payment(null, payment.getLoanId(), null,
+                    payment.getPaymentDate(), payment.getAmountPaid()));
+        } catch (RuntimeException failure) {
+            if (original != null) {
+                try {
+                    addPayment(new Payment(null, original.getLoanId(), null,
+                            original.getPaymentDate(), original.getAmountPaid()));
+                } catch (RuntimeException restoreFailure) {
+                    failure.addSuppressed(restoreFailure);
+                }
+            }
+            throw failure;
+        }
     }
 
     @Override
