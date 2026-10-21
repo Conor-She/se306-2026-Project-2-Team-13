@@ -677,26 +677,41 @@ public class MainframeGatewayImpl implements MainframeGateway {
 
         sendOrThrow(message);
 
-        // The mainframe only builds a loan's repayment schedule when the loan is
-        // updated, not when it is created, so a new loan would show no schedule
-        // until it was first edited. Resending the same terms as an update makes
-        // the schedule available straight away.
-        sendOrThrow(new mainframe.client.messages.loan.Update(
-                loan.getCustomerId(), message.getLoanNumber(), loan.getPaymentAmount(),
-                toMainframePaymentFrequency(loan.getPaymentFrequency()), loan.getPrincipal(),
-                loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
-                toMainframeRateType(loan), loan.getRenewDate().toString(),
-                loan.getStartDate().toString()));
+        String loanId = message.getLoanNumber();
+        try {
+            // The mainframe only builds a loan's repayment schedule when the loan is
+            // updated, not when it is created. Resending the same terms makes the
+            // schedule available straight away.
+            sendOrThrow(new mainframe.client.messages.loan.Update(
+                    loan.getCustomerId(), loanId, loan.getPaymentAmount(),
+                    toMainframePaymentFrequency(loan.getPaymentFrequency()), loan.getPrincipal(),
+                    loan.getInterestRate(), toMainframeRateFrequency(loan.getRateFrequency()),
+                    toMainframeRateType(loan), loan.getRenewDate().toString(),
+                    loan.getStartDate().toString()));
 
-        addLoanType(message.getLoanNumber(), loan.getType());
+            addLoanType(loanId, loan.getType());
+        } catch (RuntimeException failure) {
+            throw cancelIncompleteLoan(loanId, failure);
+        }
 
         // The mainframe doesn't store Type or TermMonths, so carry them over
         // from the loan the MMM just entered
-        return toLoan(message.getLoanNumber(), message.getCustomerNumber(), message.getStatus(),
+        return toLoan(loanId, message.getCustomerNumber(), message.getStatus(),
                 message.getPrincipal(), message.getRateAmount(), message.getRateType(),
                 message.getStartDate(), message.getRenewalDate(), message.getPaymentAmount(),
                 message.getPaymentFrequency(), message.getRateFrequency(), loan.getType(),
                 loan.getTermMonths());
+    }
+
+    private PartialLoanCreationException cancelIncompleteLoan(
+            String loanId, RuntimeException failure) {
+        try {
+            sendOrThrow(new UpdateStatus(loanId, UpdateStatus.STATUS_CANCELLED));
+            return new PartialLoanCreationException(loanId, true, failure, null);
+        } catch (RuntimeException cancellationFailure) {
+            return new PartialLoanCreationException(
+                    loanId, false, failure, cancellationFailure);
+        }
     }
 
     @Override

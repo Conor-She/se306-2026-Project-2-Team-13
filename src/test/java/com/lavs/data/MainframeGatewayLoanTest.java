@@ -3,6 +3,7 @@ package com.lavs.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -197,6 +198,68 @@ class MainframeGatewayLoanTest {
         assertEquals("TABLE_LOAN", metadata.getValue("lines"));
     }
 
+    @Test
+    void cancelsALoanWhenTypeMetadataCannotBeSaved() {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(
+                createdLoanReply(),
+                response("loanNumber", "L002", "rateAmount", "12.0",
+                        "paymentAmount", "1066.19", "principal", "12000.0"),
+                failure(3, "Metadata rejected"),
+                response("loanNumber", "L002", "status", "Cancelled"));
+        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
+
+        PartialLoanCreationException exception = assertThrows(
+                PartialLoanCreationException.class,
+                () -> gateway.createLoan(newLoan()));
+
+        assertEquals("L002", exception.getLoanId());
+        assertTrue(exception.wasCancelled(), exception.getSuppressed().length == 0
+                ? "No cancellation failure recorded"
+                : exception.getSuppressed()[0].toString());
+        assertTrue(exception.getMessage().contains("safely try again"));
+        ArgumentCaptor<MessageRequest> requests = ArgumentCaptor.forClass(MessageRequest.class);
+        verify(connection, times(4)).send(requests.capture());
+        MessageRequest cancellation = requests.getAllValues().get(3);
+        assertEquals("loan.updateStatus", cancellation.getRequestType());
+        assertEquals("L002", cancellation.getValue("loanNumber"));
+        assertEquals("Cancelled", cancellation.getValue("status"));
+    }
+
+    @Test
+    void warnsWhenAPartiallyCreatedLoanCannotBeCancelled() {
+        Connection connection = mock(Connection.class);
+        when(connection.send(any(MessageRequest.class))).thenReturn(
+                createdLoanReply(),
+                failure(3, "Schedule update rejected"),
+                failure(10, "Mainframe unavailable"));
+        MainframeGateway gateway = new MainframeGatewayImpl(connection, 13);
+
+        PartialLoanCreationException exception = assertThrows(
+                PartialLoanCreationException.class,
+                () -> gateway.createLoan(newLoan()));
+
+        assertEquals("L002", exception.getLoanId());
+        assertFalse(exception.wasCancelled());
+        assertTrue(exception.getMessage().contains("before retrying"));
+        assertEquals(1, exception.getSuppressed().length);
+    }
+
+    private static Loan newLoan() {
+        return new Loan(null, "C001", Loan.Status.NEW, 12000, 12.0,
+                Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1),
+                LocalDate.of(2028, 1, 1), 1066.19, Loan.PaymentFrequency.MONTHLY,
+                Loan.RateFrequency.MONTHLY, 24);
+    }
+
+    private static MessageResponse createdLoanReply() {
+        return response("customerNumber", "C001", "loanNumber", "L002", "status", "New",
+                "rateType", mainframe.client.messages.loan.Create.RATETYPE_FIXED,
+                "rateAmount", "12.0", "rateFrequency", "Monthly", "paymentAmount", "1066.19",
+                "paymentFrequency", "Monthly", "principal", "12000.0",
+                "startDate", "2026-01-01", "renewalDate", "2028-01-01");
+    }
+
     private static MessageResponse noLoanTypeNote() {
         return response("items", "0", "total", "0");
     }
@@ -212,5 +275,9 @@ class MainframeGatewayLoanTest {
             values.put(entries[index], entries[index + 1]);
         }
         return new MessageResponse(new Status(1), values);
+    }
+
+    private static MessageResponse failure(int code, String message) {
+        return new MessageResponse(new Status(code, message, 1), new HashMap<>());
     }
 }
