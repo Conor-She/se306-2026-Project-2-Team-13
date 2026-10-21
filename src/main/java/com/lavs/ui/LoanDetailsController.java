@@ -365,8 +365,19 @@ public class LoanDetailsController {
         Alert alert = new Alert(Alert.AlertType.ERROR,
                 failure.getMessage() == null ? "The mainframe could not save the payment." : failure.getMessage());
         alert.setHeaderText(header);
+        wrapAlertText(alert);
         if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
         alert.showAndWait();
+    }
+
+    // A long mainframe message is cut off with "..." by default; showing it in a wrapping label
+    // lets the dialog grow tall enough to read all of it.
+    private static void wrapAlertText(Alert alert) {
+        Label message = new Label(alert.getContentText());
+        message.setWrapText(true);
+        message.setPrefWidth(420);
+        message.setMinHeight(Region.USE_PREF_SIZE);
+        alert.getDialogPane().setContent(message);
     }
 
     private void deletePayment(Payment payment) {
