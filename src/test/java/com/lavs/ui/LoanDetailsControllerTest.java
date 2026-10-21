@@ -52,6 +52,7 @@ class LoanDetailsControllerTest {
                     new Repayment("R1", "LN-1", LocalDate.of(2025, 2, 1), 3000, 1000, 2000, 449000),
                     new Repayment("R3", "LN-1", LocalDate.of(2025, 4, 1), 3500, 1500, 2000, 447254.33)));
             controller.setLoanBrowsingService(new LoanBrowsingService(gateway));
+            controller.setPaymentService(new com.lavs.business.PaymentService(gateway));
             controller.setRequestExecutor(Runnable::run);
             controller.setLoan(loan("LN-1", "Sarah Johnson", "Active", "$450,000", "Home Loan"));
             return null;
@@ -74,6 +75,11 @@ class LoanDetailsControllerTest {
         return root.lookupAll(".button").stream().filter(Button.class::isInstance).map(Button.class::cast)
                 .filter(b -> accessibleText.equals(b.getAccessibleText())).findFirst().orElseThrow();
     }
+    // Runs an empty task so any screen updates already queued (like a table reload) finish first
+    private void flushScreenThread() throws Exception {
+        JavaFxTestSupport.run(() -> null);
+    }
+
     private String paymentCell(int row, int column) {
         return node("paymentRows", GridPane.class).getChildren().stream().filter(Label.class::isInstance)
                 .filter(n -> Integer.valueOf(row).equals(GridPane.getRowIndex(n))
@@ -227,8 +233,7 @@ class LoanDetailsControllerTest {
             assertEquals("15/08/2025", paymentCell(2, 0));
             assertEquals("01/08/2025", paymentCell(3, 0));
             assertEquals("$3,245.67", paymentCell(1, 1));
-            assertEquals("R2", paymentCell(1, 2));
-            assertEquals("P3", paymentCell(1, 3));
+            assertEquals("P3", paymentCell(1, 2));
             assertNotNull(button("Edit payment P3"));
             assertNotNull(button("Delete payment P3"));
             return null;
@@ -256,10 +261,17 @@ class LoanDetailsControllerTest {
                 assertFalse(save.isDisabled());
                 save.fire();
             });
+            return null;
+        });
+        // The table reloads from the mainframe after the save; let that reload finish first
+        flushScreenThread();
+        JavaFxTestSupport.run(() -> {
+            assertEquals(4, gateway.getPayments("LN-1").size());
             assertEquals("Showing 1-4 of 4", text("paymentsCount"));
             assertEquals("15/01/2026", paymentCell(1, 0));
             assertEquals("$1,250.50", paymentCell(1, 1));
-            assertTrue(paymentCell(1, 3).startsWith("PAY-"));
+            // The ID comes from the mainframe, not from the screen
+            assertTrue(paymentCell(1, 2).startsWith("FAKE-PAYMENT"));
             return null;
         });
     }
@@ -283,8 +295,14 @@ class LoanDetailsControllerTest {
                 ((DatePicker) pane.lookup(".date-picker")).setValue(LocalDate.of(2025, 7, 1));
                 click(pane, "Save changes");
             });
+            return null;
+        });
+        flushScreenThread();
+        JavaFxTestSupport.run(() -> {
+            assertEquals(600, gateway.getPayments("LN-1").stream()
+                    .filter(p -> "P3".equals(p.getPaymentId())).findFirst().orElseThrow().getAmountPaid());
             assertEquals("Showing 1-3 of 3", text("paymentsCount"));
-            assertEquals("P3", paymentCell(3, 3));
+            assertEquals("P3", paymentCell(3, 2));
             assertEquals("$600.00", paymentCell(3, 1));
             assertEquals("01/07/2025", paymentCell(3, 0));
             return null;
@@ -300,9 +318,17 @@ class LoanDetailsControllerTest {
                 click(pane, "Cancel");
             });
             assertEquals("Showing 1-3 of 3", text("paymentsCount"));
-            for (String id : List.of("P3", "P2", "P1")) {
+            return null;
+        });
+        for (String id : List.of("P3", "P2", "P1")) {
+            JavaFxTestSupport.run(() -> {
                 modal(button("Delete payment " + id), pane -> click(pane, "OK"));
-            }
+                return null;
+            });
+        }
+        flushScreenThread();
+        JavaFxTestSupport.run(() -> {
+            assertTrue(gateway.getPayments("LN-1").isEmpty());
             assertEquals("Showing 0 of 0", text("paymentsCount"));
             assertEquals("No payments recorded for this loan.", paymentCell(1, 0));
             return null;
