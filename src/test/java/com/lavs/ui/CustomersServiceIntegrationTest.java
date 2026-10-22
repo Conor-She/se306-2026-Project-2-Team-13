@@ -44,6 +44,8 @@ class CustomersServiceIntegrationTest {
             new Scene(root, 1100, 800);
             controller = loader.getController();
             controller.setCustomerService(service);
+            ((CustomerDetailsController) loader.getNamespace().get("detailsViewController"))
+                    .setRequestExecutor(Runnable::run);
             search = (TextField) loader.getNamespace().get("searchField");
             table = (TableView<CustomersController.CustomerSummary>) loader.getNamespace().get("customerTable");
             controller.onShown();

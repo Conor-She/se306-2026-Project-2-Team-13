@@ -246,10 +246,16 @@ public class LoanDetailsController {
 
     @FXML private void editLoan() {
         if (loan == null || customerService == null) return;
-        com.lavs.model.Loan existing;
-        try {
-            existing = customerService.getLoan(loan.customerId(), loan.loanId());
-        } catch (RuntimeException failure) { showEditError(failure); return; }
+        var selected = loan;
+        var service = customerService;
+        BackgroundRequest.run(loanHeading.getScene().getWindow(), "Loading loan…", requestExecutor,
+                () -> service.getLoan(selected.customerId(), selected.loanId()), existing -> {
+                    if (loan != selected) return;
+                    showLoanEditor(existing, selected);
+                }, this::showEditError);
+    }
+
+    private void showLoanEditor(com.lavs.model.Loan existing, LoansController.LoanSummary selected) {
         var original = new java.util.LinkedHashMap<String, String>();
         original.put("id", existing.getLoanId());
         original.put("status", loan.status());
@@ -260,16 +266,19 @@ public class LoanDetailsController {
         original.put("paymentAmount", Double.toString(existing.getPaymentAmount()));
         CustomerRecordEditor.create(loanHeading.getScene().getWindow(), CustomerRecordEditor.Kind.SAVED_LOAN,
                 original, false, saved -> {
-            try {
-                customerService.updateLoan(new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
+            var updated = new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
                         existing.getStatus(), Double.parseDouble(saved.get("amount")),
                         Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
                         existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
                         Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
-                        existing.getRateFrequency(), termFor(existing)));
-                setLoan(LoansController.summaryFor(
-                        customerService.getLoan(loan.customerId(), loan.loanId()), loan.customerName()));
-            } catch (RuntimeException failure) { showEditError(failure); }
+                        existing.getRateFrequency(), termFor(existing));
+            var service = customerService;
+            BackgroundRequest.run(loanHeading.getScene().getWindow(), "Saving loan…", requestExecutor, () -> {
+                service.updateLoan(updated);
+                return service.getLoan(selected.customerId(), selected.loanId());
+            }, refreshed -> {
+                if (loan == selected) setLoan(LoansController.summaryFor(refreshed, selected.customerName()));
+            }, this::showEditError);
         }).show();
     }
 

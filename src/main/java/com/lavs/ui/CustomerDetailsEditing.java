@@ -33,6 +33,12 @@ final class CustomerDetailsEditing {
     private final Map<String, State> sessions = new HashMap<>();
     private State state;
     private boolean readOnly;
+    private java.util.concurrent.Executor requestExecutor = java.util.concurrent.ForkJoinPool.commonPool();
+    private boolean saving;
+
+    void setRequestExecutor(java.util.concurrent.Executor executor) {
+        requestExecutor = Objects.requireNonNull(executor);
+    }
     private com.lavs.business.CustomerService customerService;
 
     private static final class State {
@@ -469,7 +475,7 @@ final class CustomerDetailsEditing {
     }
 
     private void save(State target, Consumer<State> change, Runnable afterSave) {
-        if (state != target) return;
+        if (state != target || saving) return;
         State draft = new State(target);
         change.accept(draft);
         updateSummary(draft, false);
@@ -485,23 +491,27 @@ final class CustomerDetailsEditing {
             showSaveError(new IllegalStateException("Customer editing is not connected"));
             return;
         }
-        try {
-            com.lavs.model.CustomerDetails requested = toCustomerDetails(draft);
-            customerService.update(requested.customer(), requested.addresses(), requested.phones(),
+        com.lavs.model.CustomerDetails requested = toCustomerDetails(draft);
+        var service = customerService;
+        saving = true;
+        boolean[] saved = {false};
+        BackgroundRequest.run(window(), "Saving customer…", requestExecutor, () -> {
+            service.update(requested.customer(), requested.addresses(), requested.phones(),
                     requested.emails(), requested.employers());
-        } catch (RuntimeException failure) {
-            showSaveError(failure);
-            return;
-        }
-        try {
-            CustomersController.CustomerSummary updated = select(customerService.getById(
-                    new com.lavs.model.CustomerId(draft.summary.customerId())));
-            onChange.accept(updated);
+            saved[0] = true;
+            return service.getById(new com.lavs.model.CustomerId(draft.summary.customerId()));
+        }, details -> {
+            saving = false;
+            if (state != target) return;
+            onChange.accept(select(details));
             afterSave.run();
-        } catch (RuntimeException failure) {
-            showError("Refresh failed", "Changes were saved, but customer details could not be reloaded",
+        }, failure -> {
+            saving = false;
+            if (state != target) return;
+            if (saved[0]) showError("Refresh failed", "Changes were saved, but customer details could not be reloaded",
                     "Reopen the customer to check the saved records before retrying.", failure);
-        }
+            else showSaveError(failure);
+        });
     }
 
     private void showSaveError(RuntimeException failure) {
