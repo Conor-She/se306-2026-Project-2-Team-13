@@ -7,6 +7,7 @@ import java.util.List;
 import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 
+// AI-assisted: Helped implement the reducing-balance repayment schedule.
 /**
  * Generates a reducing-balance schedule with a fixed principal component and
  * decreasing interest. The floating flag remains independent of the loan type

@@ -16,6 +16,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
+// AI-assisted: Helped implement customer-detail rendering and editing interactions.
 /** Renders retrieved details and keeps local editor state for standalone previews. */
 final class CustomerDetailsEditing {
     private static final String CELL = "-fx-font-size: 12px; -fx-text-fill: #55558d;";

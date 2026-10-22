@@ -38,6 +38,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
+// AI-assisted: Helped design and implement the co-borrower selection and persistence workflow.
 /** Displays co-borrowers and persists additions and removals through the mainframe. */
 final class LoanCoborrowersEditing {
     private static final DateTimeFormatter DATE_FORMAT =

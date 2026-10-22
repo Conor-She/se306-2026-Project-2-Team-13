@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
+// AI-assisted: Helped implement the staged customer registration and mainframe persistence flow.
 /** Registers customers through the signed-in gateway. Documents store metadata only. */
 public class MainframeCustomerRegistrationService implements CustomerRegistrationService {
     private final MainframeGateway gateway;

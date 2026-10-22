@@ -7,6 +7,7 @@ import java.util.List;
 import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 
+// AI-assisted: Helped implement the interest-only repayment schedule and final principal payment.
 /**
  * Generates an interest-only schedule. Each regular payment contains interest
  * only, and the final payment also clears the principal. The floating flag
