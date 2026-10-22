@@ -49,6 +49,7 @@ public class AddLoanController {
     private java.util.function.Consumer<String> prerequisiteValidator;
     @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
+    private final com.lavs.business.LoanDetailsValidator loanValidator = new com.lavs.business.LoanDetailsValidator();
     @FXML private TableView<Repayment> repaymentTable;
     @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn, interestColumn, balanceColumn;
     @FXML private Label repaymentCount, totalRepayable, totalInterest;
@@ -563,26 +564,19 @@ public class AddLoanController {
         coborrowerSearch.setDisable(draft.coborrowers.size() >= 3);
     }
 
+    // The rules live in LoanDetailsValidator; this only gathers what the screen holds and
+    // returns the message to show.
     String validateDetails() {
-        if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
+        String borrowerError = loanValidator.borrowerError(draft);
+        if (borrowerError != null) return borrowerError;
         String prerequisiteError = prerequisiteError();
         if (prerequisiteError != null) return prerequisiteError;
-        if (draft.details.getOrDefault("loanType", "").isBlank()) return "Select a loan type.";
-        if (!validNumber(draft.details.getOrDefault("principal", ""), false)) return "Enter a principal greater than zero.";
-        if (!validNumber(draft.details.getOrDefault("interestRate", ""), true)) return "Enter an interest rate of zero or greater.";
-        if (draft.details.getOrDefault("paymentFrequency", "").isBlank()) return "Select a payment frequency.";
-        if (draft.details.getOrDefault("rateFrequency", "").isBlank()) return "Select a rate frequency.";
-        try {
-            if (Integer.parseInt(draft.details.getOrDefault("term", "").strip()) <= 0) return "Enter a term greater than zero in months.";
-        } catch (NumberFormatException exception) { return "Enter the term as a whole number of months."; }
+        boolean datesReadable = true;
         try {
             startDate.commitValue();
             renewDate.commitValue();
-        } catch (RuntimeException exception) { return "Enter valid start and renewal dates."; }
-        if (draft.startDate == null || draft.renewDate == null) return "Choose start and renewal dates.";
-        if (!draft.renewDate.isAfter(draft.startDate)) return "Renewal date must be after the start date.";
-        if (draft.details.getOrDefault("status", "").isBlank()) return "Select a status.";
-        return null;
+        } catch (RuntimeException exception) { datesReadable = false; }
+        return loanValidator.detailsError(draft, datesReadable);
     }
 
     private String prerequisiteError() {
@@ -618,12 +612,5 @@ public class AddLoanController {
         prerequisiteNotice.setText(error == null ? "" : error);
         prerequisiteNotice.setVisible(error != null);
         prerequisiteNotice.setManaged(error != null);
-    }
-
-    private static boolean validNumber(String text, boolean allowZero) {
-        try {
-            int sign = new BigDecimal(text.strip()).signum();
-            return allowZero ? sign >= 0 : sign > 0;
-        } catch (NumberFormatException exception) { return false; }
     }
 }

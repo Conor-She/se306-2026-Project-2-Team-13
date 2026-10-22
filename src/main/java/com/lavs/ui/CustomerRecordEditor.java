@@ -1,6 +1,5 @@
 package com.lavs.ui;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
@@ -34,7 +33,7 @@ final class CustomerRecordEditor {
                 field("amount", "Amount (NZD)"), field("rate", "Interest rate (%)"),
                 field("status", "Status", "Active", "Pending", "Closed"))),
         SAVED_LOAN("loan", List.of(
-                field("type", "Loan type", "TABLE_LOAN", "REDUCING_BALANCE", "INTEREST_ONLY"),
+                field("type", "Loan type", "Table Loan", "Reducing Balance", "Interest Only"),
                 field("amount", "Amount (NZD)"), field("rate", "Interest rate (%)"),
                 field("paymentAmount", "Payment amount (NZD)"))),
         SAVED_GUARANTOR("guarantor", List.of(field("customerId", "Guarantor customer ID"),
@@ -256,55 +255,14 @@ final class CustomerRecordEditor {
         return label;
     }
 
+    private static final com.lavs.business.CustomerRecordValidator VALIDATOR =
+            new com.lavs.business.CustomerRecordValidator();
+
+    // The rules live in CustomerRecordValidator; this only says which fields the form has
     static Map<String, String> validate(Kind kind, Map<String, String> values, boolean adding) {
-        Map<String, String> errors = new LinkedHashMap<>();
-        for (Field field : kind.fields) {
-            String value = values.getOrDefault(field.key, "");
-            if (value.isBlank()) {
-                errors.put(field.key, "This field is required.");
-            } else if (field.key.equals("email") && !value.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
-                errors.put(field.key, "Enter a valid email address.");
-            } else if (field.key.equals("phone") && !value.matches("\\+?[0-9 ()-]{7,20}")) {
-                errors.put(field.key, "Enter a valid phone number.");
-            } else if (field.key.equals("termMonths")) {
-                try {
-                    if (Integer.parseInt(value) <= 0) errors.put(field.key, "Enter a positive number of months.");
-                } catch (NumberFormatException invalid) { errors.put(field.key, "Enter a positive whole number."); }
-            } else if (List.of("income", "amount", "rate", "paymentAmount").contains(field.key)) {
-                try {
-                    BigDecimal number = new BigDecimal(value);
-                    if (!value.matches("[0-9]+(\\.[0-9]{1,2})?") || number.signum() < 0
-                            || (field.key.equals("rate") && number.compareTo(new BigDecimal("100")) > 0))
-                        errors.put(field.key, field.key.equals("rate") ? "Enter a rate from 0 to 100." : "Enter a non-negative amount with up to two decimal places.");
-                } catch (NumberFormatException invalid) { errors.put(field.key, "Enter a valid number."); }
-            } else if (field.key.equals("birthDate")) {
-                try {
-                    if (!LocalDate.parse(value, BIRTH_DATE).isBefore(LocalDate.now()))
-                        errors.put(field.key, "Enter a date before today.");
-                } catch (java.time.DateTimeException invalid) { errors.put(field.key, "Use a valid date in dd-MM-yyyy format."); }
-            } else if (field.key.equals("date")) {
-                try {
-                    LocalDate.parse(value);
-                } catch (java.time.DateTimeException invalid) {
-                    errors.put("date", "Choose a valid upload date.");
-                }
-            } else if (!field.options.isEmpty() && !field.options.contains(value)) {
-                errors.put(field.key, "Select a value from the list.");
-            }
-        }
-        if (kind == Kind.CONTACT_RECORD) {
-            String value = values.getOrDefault("value", "");
-            String type = values.getOrDefault("contactType", "");
-            if (!value.isBlank() && type.equals("Email") && !value.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
-                errors.put("value", "Enter a valid email address.");
-            if (!value.isBlank() && type.equals("Phone") && !value.matches("\\+?[0-9 ()-]{7,20}"))
-                errors.put("value", "Enter a valid phone number.");
-            if (type.equals("Address")) {
-                errors.remove("value");
-                for (String key : List.of("street", "city", "country"))
-                    if (values.getOrDefault(key, "").isBlank()) errors.put(key, "This field is required.");
-            }
-        }
-        return errors;
+        List<com.lavs.business.CustomerRecordValidator.FieldSpec> fields = kind.fields.stream()
+                .map(field -> new com.lavs.business.CustomerRecordValidator.FieldSpec(field.key(), field.options()))
+                .toList();
+        return VALIDATOR.validate(fields, values);
     }
 }

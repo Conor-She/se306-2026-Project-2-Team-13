@@ -1,6 +1,7 @@
 package com.lavs.business;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,6 +12,7 @@ import com.lavs.data.MainframeException;
 import com.lavs.model.Loan;
 import com.lavs.model.Payment;
 import com.lavs.model.Repayment;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -446,5 +448,13 @@ class PaymentServiceTest {
     void statusesForRejectsMissingArguments() {
         assertThrows(IllegalArgumentException.class, () -> service.statusesFor(null, DUE));
         assertThrows(IllegalArgumentException.class, () -> service.statusesFor(loanId, null));
+    }
+
+    @Test
+    void anAmountMustBeGreaterThanZeroToBePaid() {
+        assertFalse(PaymentService.isValidAmount(null));
+        assertFalse(PaymentService.isValidAmount(BigDecimal.ZERO));
+        assertFalse(PaymentService.isValidAmount(new BigDecimal("-5")));
+        assertTrue(PaymentService.isValidAmount(new BigDecimal("0.01")));
     }
 }
