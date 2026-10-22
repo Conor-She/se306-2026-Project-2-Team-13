@@ -346,19 +346,28 @@ public class LoansController {
     }
 
     void openDetails(LoanSummary loan) {
+        openDetails(loan, this::showListAndFocusSearch);
+    }
+
+    private void openDetails(LoanSummary loan, Runnable onBack) {
+        detailsViewController.setOnBack(onBack);
         detailsViewController.setLoan(loan);
         showList(false);
     }
 
     /** Opens a loan's details page by ID, e.g. from a customer's Loans tab. */
     public void openLoan(String loanId, Runnable onNotFound) {
+        openLoan(loanId, this::showListAndFocusSearch, onNotFound);
+    }
+
+    public void openLoan(String loanId, Runnable onBack, Runnable onNotFound) {
         if (loanBrowsingService == null) { onNotFound.run(); return; }
         requestExecutor.execute(() -> {
             try {
                 var match = loanBrowsingService.search(loanId).loans().stream()
                         .filter(listing -> loanId.equals(listing.loan().getLoanId())).findFirst();
                 Platform.runLater(() -> {
-                    if (match.isPresent()) openDetails(summaryOf(match.get()));
+                    if (match.isPresent()) openDetails(summaryOf(match.get()), onBack);
                     else onNotFound.run();
                 });
             } catch (RuntimeException failure) {
