@@ -239,6 +239,42 @@ class AddLoanControllerTest {
         });
     }
 
+    @Test void editCustomerOpensTheSelectedCustomerWithoutClearingTheLoanDraft() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            var gateway = new FakeMainframeGateway();
+            gateway.createCustomer(new Customer("C001", "Ms", "Amelia", "Adams", null, "NZ"));
+
+            var loader = new FXMLLoader(Main.class.getResource("fxml/addLoan.fxml"));
+            javafx.scene.Parent root = loader.load();
+            var loanStage = new javafx.stage.Stage();
+            loanStage.setScene(new javafx.scene.Scene(root, 1008, 662));
+            loanStage.show();
+
+            AddLoanController controller = loader.getController();
+            controller.configure(List.of(), () -> {});
+            controller.setCustomerSearchService(
+                    new com.lavs.business.CustomerService(gateway), Runnable::run);
+            controller.setPrerequisiteValidator(customerId -> {});
+            controller.setPrimaryBorrower(
+                    new CustomersController.CustomerSummary("C001", "Amelia Adams", "", ""));
+
+            Button edit = (Button) loader.getNamespace().get("editCustomer");
+            assertEquals("Edit customer", edit.getText());
+            edit.fire();
+
+            javafx.stage.Stage customerEditor = javafx.stage.Window.getWindows().stream()
+                    .filter(javafx.stage.Stage.class::isInstance)
+                    .map(javafx.stage.Stage.class::cast)
+                    .filter(window -> "Edit customer".equals(window.getTitle()))
+                    .findFirst().orElseThrow();
+            assertEquals("C001", controller.getDraft().primaryBorrower.customerId());
+
+            customerEditor.close();
+            loanStage.close();
+            return null;
+        });
+    }
+
     // Clicking a result clears the search, which used to empty the list mid-click. JavaFX
     // reports that IndexOutOfBoundsException to the FX thread's handler, so capture it there.
     @Test void clickingASearchResultDoesNotThrow() throws Exception {
