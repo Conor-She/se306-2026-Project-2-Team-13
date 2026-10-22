@@ -266,6 +266,7 @@ public class LoanDetailsController {
         }
         var selected = loan;
         var service = customerService;
+        // AI-assisted: Moved loan-editor loading off the UI thread with progress feedback.
         BackgroundRequest.run(loanHeading.getScene().getWindow(), "Loading loan…", requestExecutor,
                 () -> service.getLoan(selected.customerId(), selected.loanId()), existing -> {
                     if (loan != selected) {
@@ -298,6 +299,7 @@ public class LoanDetailsController {
                                 existing.getPaymentFrequency(),
                         existing.getRateFrequency(), termFor(existing));
             var service = customerService;
+            // AI-assisted: Implemented background saving and guarded the subsequent UI refresh.
             BackgroundRequest.run(loanHeading.getScene().getWindow(), "Saving loan…",
                     requestExecutor, () -> {
                 service.updateLoan(updated);
