@@ -50,7 +50,7 @@ public class CustomerTests {
                 "retrieve");
         Assertions.assertAll(
                 () -> Assertions.assertEquals("Doe", retrieveMessage.getFamilyName(), "familyName does not match"),
-                () -> Assertions.assertEquals("Mr", createMessage.getTitle(), "title does not match"),
+                () -> Assertions.assertEquals("Mr", retrieveMessage.getTitle(), "title does not match"),
                 () -> Assertions.assertEquals(name, retrieveMessage.getFirstName(), "firstName does not match"),
                 () -> Assertions.assertEquals("Active", retrieveMessage.getStatus(), "status does not match"),
                 () -> Assertions.assertEquals("New Zealand", retrieveMessage.getNationality(), "nationality does not match"),
@@ -65,7 +65,7 @@ public class CustomerTests {
                 "update");
         Assertions.assertAll(
                 () -> Assertions.assertEquals("Smith", updateMessage.getFamilyName(), "familyName does not match"),
-                () -> Assertions.assertEquals("Dr", createMessage.getTitle(), "title does not match"),
+                () -> Assertions.assertEquals("Dr", updateMessage.getTitle(), "title does not match"),
                 () -> Assertions.assertEquals(newName, updateMessage.getFirstName(), "firstName does not match"),
                 () -> Assertions.assertEquals("Active", updateMessage.getStatus(), "status does not match"),
                 () -> Assertions.assertEquals("Australia", updateMessage.getNationality(), "nationality does not match"),
