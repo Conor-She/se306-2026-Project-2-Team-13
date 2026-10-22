@@ -11,7 +11,10 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Registration validation until the real registration service is available. */
+/**
+ * In-memory registration service. Its validation rules are the ones the real
+ * {@link MainframeCustomerRegistrationService} uses; its in-memory saving is only used by tests.
+ */
 public class StubCustomerRegistrationService implements CustomerRegistrationService {
     private static final DateTimeFormatter DATE_OF_BIRTH_FORMAT =
             DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
