@@ -107,7 +107,8 @@ public class Main extends Application {
                 scene.setRoot(dashboard);
             } catch (IOException exception) {
                 gateway.logout();
-                exception.printStackTrace();
+                java.util.logging.Logger.getLogger(Main.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not open the dashboard", exception);
                 controller.showError("Unable to open the dashboard. Please try again.");
             }
         });
@@ -126,7 +127,8 @@ public class Main extends Application {
             try {
                 connection.close();
             } catch (IOException exception) {
-                exception.printStackTrace();
+                java.util.logging.Logger.getLogger(Main.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not close the connection", exception);
             }
         }
     }
