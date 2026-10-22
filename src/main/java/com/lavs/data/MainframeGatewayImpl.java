@@ -51,7 +51,7 @@ import mainframe.client.messages.loan.DeleteCoborrower;
 import mainframe.client.messages.loan.DeletePayment;
 import mainframe.client.messages.loan.UpdateStatus;
 
-
+// AI-assisted: Helped implement mainframe message mapping, persistence and error handling.
 // Real MainframeGateway implementation, wrapping a Connection (e.g.
 // HttpConnection). Translates between domain objects and the mainframe's
 // Message classes.

@@ -22,6 +22,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+// AI-assisted: Helped implement customer searching, retrieval, creation and editing logic.
 // Business logic for searching, retrieving, creating and editing customers.
 public class CustomerService {
 
