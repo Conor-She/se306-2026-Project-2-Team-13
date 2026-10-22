@@ -19,7 +19,7 @@ import javafx.stage.Window;
 final class CustomerRecordEditor {
     enum Kind {
         PERSONAL("personal information", List.of(
-                field("title", "Title", "Mr", "Mrs", "Ms", "Miss", "Mx"),
+                field("title", "Title", "Mr", "Mrs", "Ms", "Miss"),
                 field("firstName", "First name"), field("lastName", "Last name"), field("birthDate", "Date of birth (dd-MM-yyyy)"),
                 field("nationality", "Nationality"))),
         CONTACT("contact information", List.of(field("email", "Primary email"),

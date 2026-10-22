@@ -90,6 +90,15 @@ class CustomerEditingTest {
         });
     }
 
+    @Test void personalDetailsUseTheSameTitlesAsCustomerCreation() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            openEditor("details", "Edit personal information");
+            ComboBox<?> titles = (ComboBox<?>) editor().lookup("#edit_title");
+            assertEquals(List.of("Mr", "Mrs", "Ms", "Miss"), titles.getItems());
+            return null;
+        });
+    }
+
     @Test void invalidEmailKeepsEditorOpenAndLeavesOriginalContactUnchanged() throws Exception {
         JavaFxTestSupport.run(() -> {
             openEditor("details", "Edit email");
@@ -161,7 +170,10 @@ class CustomerEditingTest {
             assertNull(findEditor());
             assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
                     .anyMatch(label -> label.getText().equals("insurance.pdf")));
+            // The documents tab no longer shows the upload date, but it still shows the type
             assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .anyMatch(label -> label.getText().equals("Other")));
+            assertFalse(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
                     .anyMatch(label -> label.getText().equals("14 Oct 2026")));
             return null;
         });
@@ -176,7 +188,10 @@ class CustomerEditingTest {
             dialogButton(pane, "Save").fire();
 
             assertNull(findEditor());
+            // The documents tab no longer shows the upload date, but it still shows the type
             assertTrue(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .anyMatch(label -> label.getText().equals("Other")));
+            assertFalse(nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
                     .anyMatch(label -> label.getText().equals("1 Sep 2026")));
             return null;
         });

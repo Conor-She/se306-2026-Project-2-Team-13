@@ -1,7 +1,6 @@
 package mainframe.client.messages;
 
 import mainframe.client.*;
-import mainframe.client.messages.customer.Search;
 import mainframe.client.messages.loan.Create;
 import mainframe.client.messages.loan.List;
 import mainframe.client.messages.loan.Retrieve;
@@ -20,17 +19,15 @@ public class LoanTests {
         Connection connection = new HttpConnection(TestConstants.BASE_URL);
         connection.Login("test", "test");
 
-        // search for a customer
-        Search searchMessage = sendMessage(
+        // create a fresh customer so the new loan is always on the first page of results
+        String name = "test_" + Instant.now().toEpochMilli();
+        mainframe.client.messages.customer.Create customerMessage = sendMessage(
                 connection,
-                new Search(1, "Smith", 25),
-                "search");
-        Search.Item[] customers = searchMessage.getItems();
-        Assertions.assertNotNull(customers.length > 0, "No customers returned");
-        String customerNumber = customers[0].getNumber();
+                new mainframe.client.messages.customer.Create("2001-02-03", "Smith", name, "New Zealand", 1, "Mr"),
+                "createCustomer");
+        String customerNumber = customerMessage.getNumber();
 
         // create a new loan
-        String name = "test_" + Instant.now().toEpochMilli();
         Create createMessage = sendMessage(
                 connection,
                 new Create(customerNumber, 100.00, Create.PAYMENTFREQUENCY_WEEKLY, 1234.56, 2.34, Create.RATEFREQUENCY_WEEKLY, Create.RATETYPE_FIXED, "2030-01-02", "2025-01-02"),
