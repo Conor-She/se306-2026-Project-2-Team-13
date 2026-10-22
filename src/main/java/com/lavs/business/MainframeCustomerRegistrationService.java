@@ -16,6 +16,7 @@ import java.util.Objects;
 /** Registers customers through the signed-in gateway. Documents store metadata only. */
 public class MainframeCustomerRegistrationService implements CustomerRegistrationService {
     private final MainframeGateway gateway;
+    // Reuses the validation rules of the in-memory service; saving goes through the gateway
     private final CustomerRegistrationService validator = new StubCustomerRegistrationService();
     private CustomerDraft pending;
     private String customerId;

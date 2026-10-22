@@ -3,7 +3,7 @@ package com.lavs.business;
 import com.lavs.model.CustomerDraft;
 import java.util.List;
 
-/** UI boundary; replace the stub without changing the wizard. Field paths identify list indexes. */
+/** UI boundary for the customer wizard, so its screens do not depend on how a customer is saved. Field paths identify list indexes. */
 public interface CustomerRegistrationService {
     record ValidationError(int step, String field, String message) {}
     List<ValidationError> validate(CustomerDraft draft);

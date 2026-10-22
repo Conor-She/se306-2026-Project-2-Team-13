@@ -114,7 +114,7 @@ class DashboardControllerTest {
             @SuppressWarnings("unchecked")
             TableView<CustomersController.CustomerSummary> table =
                     (TableView<CustomersController.CustomerSummary>) root.lookup("#customerTable");
-            assertEquals("Search customers", search.getPromptText());
+            assertEquals("Search customer ID or name", search.getPromptText());
             assertTrue(table.getItems().isEmpty(), "An unconnected screen must not display sample customers");
             assertEquals("Enter a customer name or ID to search", ((Label) table.getPlaceholder()).getText());
             assertNull(root.lookup(".list-view"));

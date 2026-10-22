@@ -91,15 +91,15 @@
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="0">
                               <Label text="Interest Rate" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="interestRateValue" text="6.25%" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label fx:id="interestRateValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
                               <Label text="Payment Frequency" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="paymentFrequencyValue" text="Fortnightly" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label fx:id="paymentFrequencyValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
                               <Label text="Rate Frequency" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="rateFrequencyValue" text="Monthly" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label fx:id="rateFrequencyValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="1">
                               <Label text="Payment Amount" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
@@ -107,11 +107,11 @@
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
                               <Label text="Start Date" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="startDateValue" text="01/02/2025" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label fx:id="startDateValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="2">
                               <Label text="Renew Date" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
-                              <Label fx:id="renewDateValue" text="01/02/2030" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
+                              <Label fx:id="renewDateValue" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #20205e;" />
                         </VBox>
                         <VBox spacing="8" GridPane.columnIndex="2" GridPane.rowIndex="2">
                               <Label text="Status" style="-fx-font-size: 12; -fx-text-fill: #747ba6;" />
