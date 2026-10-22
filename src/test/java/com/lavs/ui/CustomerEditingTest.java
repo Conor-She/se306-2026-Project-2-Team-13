@@ -90,6 +90,15 @@ class CustomerEditingTest {
         });
     }
 
+    @Test void personalDetailsUseTheSameTitlesAsCustomerCreation() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            openEditor("details", "Edit personal information");
+            ComboBox<?> titles = (ComboBox<?>) editor().lookup("#edit_title");
+            assertEquals(List.of("Mr", "Mrs", "Ms", "Miss"), titles.getItems());
+            return null;
+        });
+    }
+
     @Test void invalidEmailKeepsEditorOpenAndLeavesOriginalContactUnchanged() throws Exception {
         JavaFxTestSupport.run(() -> {
             openEditor("details", "Edit email");
