@@ -23,6 +23,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 /** Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the mainframe. */
@@ -234,6 +237,58 @@ public class AddLoanController {
         message.setVisible(false);
         message.setManaged(false);
         customerSearch.requestFocus();
+    }
+
+    @FXML private void editPrimaryCustomer() {
+        if (draft.primaryBorrower == null) return;
+        if (customerService == null) {
+            showCustomerEditFailure("Customer editing is not connected. Sign in again.");
+            return;
+        }
+        String customerId = draft.primaryBorrower.customerId();
+        customerSearchExecutor.execute(() -> {
+            try {
+                var details = customerService.getById(new com.lavs.model.CustomerId(customerId));
+                runOnFxThread(() -> openCustomerEditor(details));
+            } catch (RuntimeException failure) {
+                runOnFxThread(() -> showCustomerEditFailure(failure.getMessage()));
+            }
+        });
+    }
+
+    private void openCustomerEditor(com.lavs.model.CustomerDetails details) {
+        try {
+            var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/customerDetails.fxml"));
+            javafx.scene.Parent root = loader.load();
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerService(customerService);
+
+            Stage editor = new Stage();
+            if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null) {
+                editor.initOwner(selectedBorrower.getScene().getWindow());
+                editor.initModality(Modality.WINDOW_MODAL);
+            }
+            editor.setTitle("Edit customer");
+            editor.setScene(new Scene(root, 1080, 760));
+            controller.setOnBack(editor::close);
+            controller.setCustomerDetails(details);
+            editor.setOnHidden(event -> refreshPrerequisiteNotice());
+            editor.show();
+        } catch (java.io.IOException failure) {
+            showCustomerEditFailure("The customer editor could not be opened.");
+        }
+    }
+
+    private void showCustomerEditFailure(String detail) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
+        if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null)
+            alert.initOwner(selectedBorrower.getScene().getWindow());
+        alert.setTitle("Customer could not be edited");
+        alert.setHeaderText("Customer details could not be opened");
+        String error = detail == null || detail.isBlank()
+                ? "Check the mainframe connection and try again." : detail;
+        alert.setContentText(error);
+        alert.show();
     }
 
     @FXML private void cancel() {
