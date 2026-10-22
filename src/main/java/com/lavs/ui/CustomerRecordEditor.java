@@ -19,14 +19,17 @@ final class CustomerRecordEditor {
     enum Kind {
         PERSONAL("personal information", List.of(
                 field("title", "Title", "Mr", "Mrs", "Ms", "Miss"),
-                field("firstName", "First name"), field("lastName", "Last name"), field("birthDate", "Date of birth (dd-MM-yyyy)"),
+                field("firstName", "First name"), field("lastName", "Last name"),
+                        field("birthDate", "Date of birth (dd-MM-yyyy)"),
                 field("nationality", "Nationality"))),
         CONTACT("contact information", List.of(field("email", "Primary email"),
                 field("phone", "Primary phone"), field("address", "Mailing address"))),
-        CONTACT_RECORD("contact", List.of(field("contactType", "Contact type", "Email", "Phone", "Address"),
+        CONTACT_RECORD("contact", List.of(field("contactType", "Contact type", "Email", "Phone",
+                "Address"),
                 field("value", "Contact details"))),
         EMPLOYMENT("employment", List.of(field("employer", "Company name"),
-                field("role", "Job title"), field("employmentType", "Employment type", "Full-time", "Part-time", "Contract", "Casual"),
+                field("role", "Job title"), field("employmentType", "Employment type", "Full-time",
+                        "Part-time", "Contract", "Casual"),
                 field("income", "Annual income (NZD)"))),
         LOAN("loan", List.of(field("id", "Loan ID"),
                 field("type", "Loan type", "Home Loan", "Personal Loan", "Car Loan", "Other"),
@@ -38,37 +41,49 @@ final class CustomerRecordEditor {
                 field("paymentAmount", "Payment amount (NZD)"))),
         SAVED_GUARANTOR("guarantor", List.of(field("customerId", "Guarantor customer ID"),
                 field("relationship", "Relationship"))),
-        NOTE("note", List.of(field("title", "Title"), field("text", "Note"), field("author", "Author"))),
+        NOTE("note", List.of(field("title", "Title"), field("text", "Note"),
+                field("author", "Author"))),
         DOCUMENT("document", List.of(field("fileName", "Document name"),
-                field("type", "Document type", "Identity", "Address", "Income", "Bank Statement", "Other"),
+                field("type", "Document type", "Identity", "Address", "Income", "Bank Statement",
+                        "Other"),
                 field("date", "Upload date"))),
         SAVED_DOCUMENT("document", List.of(field("fileName", "Document name"),
                 field("type", "Document type"),
                 field("date", "Upload date"))),
-        GUARANTOR("guarantor", List.of(field("firstName", "First name"), field("lastName", "Last name"), field("relationship", "Relationship"),
-                field("phone", "Phone"), field("email", "Email"), field("status", "Status", "Active", "Inactive")));
+        GUARANTOR("guarantor", List.of(field("firstName", "First name"),
+                field("lastName", "Last name"), field("relationship", "Relationship"),
+                field("phone", "Phone"), field("email", "Email"), field("status", "Status",
+                        "Active", "Inactive")));
 
         final String title;
         final List<Field> fields;
-        Kind(String title, List<Field> fields) { this.title = title; this.fields = fields; }
+        Kind(String title, List<Field> fields) {
+            this.title = title;
+            this.fields = fields;
+        }
     }
 
     record Field(String key, String label, List<String> options) {}
     private static Field field(String key, String label, String... options) {
         return new Field(key, label, List.of(options));
     }
+
     static final DateTimeFormatter BIRTH_DATE = DateTimeFormatter.ofPattern("dd-MM-uuuu")
             .withResolverStyle(ResolverStyle.STRICT);
-    static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d MMM uuuu", java.util.Locale.ENGLISH);
-    private static final String INPUT_STYLE = "-fx-background-color: white; -fx-border-color: #b9b7cd; "
+    static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d MMM uuuu",
+            java.util.Locale.ENGLISH);
+    private static final String INPUT_STYLE =
+            "-fx-background-color: white; -fx-border-color: #b9b7cd; "
             + "-fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 9;";
-    private static final List<String> ADDRESS_KEYS = List.of("street", "suburb", "city", "postCode", "country");
+    private static final List<String> ADDRESS_KEYS = List.of("street", "suburb", "city", "postCode",
+            "country");
 
     /** One-line form of an address, used for display. */
     static String addressText(Map<String, String> values) {
         return ADDRESS_KEYS.stream().map(key -> values.getOrDefault(key, "").strip())
                 .filter(part -> !part.isBlank()).collect(java.util.stream.Collectors.joining(", "));
     }
+
     private CustomerRecordEditor() {}
 
     static Dialog<Map<String, String>> create(Window owner, Kind kind, Map<String, String> original,
@@ -80,7 +95,9 @@ final class CustomerRecordEditor {
             boolean adding, Consumer<Map<String, String>> onSave,
             java.util.function.Function<Map<String, String>, Map<String, String>> extraValidation) {
         Dialog<Map<String, String>> dialog = new Dialog<>();
-        if (owner != null) dialog.initOwner(owner);
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
         dialog.setTitle((adding ? "Add " : "Edit ") + kind.title);
         dialog.setHeaderText((adding ? "Add " : "Edit ") + kind.title);
         DialogPane pane = dialog.getDialogPane();
@@ -134,19 +151,28 @@ final class CustomerRecordEditor {
             inputs.put(field.key, input);
             errors.put(field.key, error);
             form.getChildren().addAll(label, input, error);
-            if (field.key.equals("value")) { valueNodes.add(label); valueNodes.add(input); }
+            if (field.key.equals("value")) {
+                valueNodes.add(label);
+                valueNodes.add(input);
+            }
         }
         if (kind == Kind.CONTACT_RECORD) {
-            String[][] addressFields = {{"street", "Street address", "true"}, {"suburb", "Suburb", "false"},
-                    {"city", "City", "true"}, {"postCode", "Post code", "false"}, {"country", "Country", "true"}};
+            String[][] addressFields = {{"street", "Street address", "true"}, {"suburb", "Suburb",
+                    "false"},
+                    {"city", "City", "true"}, {"postCode", "Post code", "false"}, {"country",
+                            "Country", "true"}};
             for (String[] f : addressFields) {
                 boolean required = f[2].equals("true");
                 Label label = required ? requiredLabel(f[1]) : new Label(f[1]);
-                if (!required) label.setStyle("-fx-text-fill: #393a7b; -fx-font-weight: bold;");
+                if (!required) {
+                    label.setStyle("-fx-text-fill: #393a7b; -fx-font-weight: bold;");
+                }
                 String initial = original.getOrDefault(f[0], "");
-                // An address with no separate parts yet starts with its whole text in the street box
-                if (f[0].equals("street") && !original.containsKey("street"))
+                // An address with no separate parts yet starts with its whole text in the
+                // street box
+                if (f[0].equals("street") && !original.containsKey("street")) {
                     initial = original.getOrDefault("value", "");
+                }
                 TextField input = new TextField(initial);
                 input.setId("edit_" + f[0]);
                 input.setAccessibleText(f[1]);
@@ -175,12 +201,20 @@ final class CustomerRecordEditor {
         if (kind == Kind.CONTACT_RECORD) {
             ComboBox<?> type = (ComboBox<?>) inputs.get("contactType");
             Runnable updatePreferences = () -> {
-                primary.setText("Primary " + String.valueOf(type.getValue()).toLowerCase(java.util.Locale.ROOT));
+                primary.setText("Primary " + String.valueOf(type.getValue())
+                        .toLowerCase(java.util.Locale.ROOT));
                 boolean phone = "Phone".equals(type.getValue());
-                texts.setVisible(phone); texts.setManaged(phone);
+                texts.setVisible(phone);
+                texts.setManaged(phone);
                 boolean address = "Address".equals(type.getValue());
-                valueNodes.forEach(n -> { n.setVisible(!address); n.setManaged(!address); });
-                addressNodes.forEach(n -> { n.setVisible(address); n.setManaged(address); });
+                valueNodes.forEach(n -> {
+                    n.setVisible(!address);
+                    n.setManaged(!address);
+                });
+                addressNodes.forEach(n -> {
+                    n.setVisible(address);
+                    n.setManaged(address);
+                });
             };
             type.valueProperty().addListener((observable, old, value) -> updatePreferences.run());
             updatePreferences.run();
@@ -193,24 +227,35 @@ final class CustomerRecordEditor {
         scroll.setStyle("-fx-background: white; -fx-background-color: white;");
         pane.setContent(scroll);
         Node saveButton = pane.lookupButton(save);
-        saveButton.setStyle("-fx-background-color: #5b56b5; -fx-text-fill: white; -fx-background-radius: 6;");
+        saveButton.setStyle("-fx-background-color: #5b56b5; -fx-text-fill: white; "
+                + "-fx-background-radius: 6;");
         saveButton.addEventFilter(ActionEvent.ACTION, event -> {
             Map<String, String> values = new LinkedHashMap<>(draft);
             inputs.forEach((key, input) -> {
                 String value;
-                if (input instanceof TextInputControl text) value = text.getText().strip();
-                else if (input instanceof ComboBox<?> choices) value = String.valueOf(choices.getValue());
-                else if (input instanceof DatePicker date) value = date.getValue() == null
+                if (input instanceof TextInputControl text) {
+                    value = text.getText().strip();
+                } else if (input instanceof ComboBox<?> choices) {
+                    value = String.valueOf(choices.getValue());
+                } else if (input instanceof DatePicker date) {
+                    value = date.getValue() == null
                         ? "" : date.getValue().toString();
-                else throw new IllegalStateException("Unsupported editor control: " + input.getClass());
+                } else {
+                    throw new IllegalStateException(
+                            "Unsupported editor control: " + input.getClass());
+                }
                 values.put(key, value);
             });
             if (kind == Kind.CONTACT_RECORD) {
                 values.put("primary", Boolean.toString(primary.isSelected()));
-                values.put("texts", Boolean.toString("Phone".equals(values.get("contactType")) && texts.isSelected()));
+                values.put("texts", Boolean.toString("Phone".equals(values.get("contactType"))
+                        && texts.isSelected()));
             }
-            if ("Address".equals(values.get("contactType"))) values.put("value", addressText(values));
-            else ADDRESS_KEYS.forEach(values::remove);
+            if ("Address".equals(values.get("contactType"))) {
+                values.put("value", addressText(values));
+            } else {
+                ADDRESS_KEYS.forEach(values::remove);
+            }
             Map<String, String> invalid = validate(kind, values, adding);
             invalid.putAll(extraValidation.apply(values));
             errors.forEach((key, error) -> {
@@ -231,14 +276,17 @@ final class CustomerRecordEditor {
         });
         dialog.setResultConverter(button -> button == save ? new LinkedHashMap<>(draft) : null);
         dialog.setOnHidden(event -> {
-            if (dialog.getResult() != null) onSave.accept(dialog.getResult());
+            if (dialog.getResult() != null) {
+                onSave.accept(dialog.getResult());
+            }
         });
         dialog.setOnShown(event -> {
             pane.applyCss();
             ButtonBar buttons = (ButtonBar) pane.lookup(".button-bar");
             // The expanding gap keeps Cancel on the left and Save on the right.
             buttons.setButtonOrder("C+O");
-            inputs.values().stream().filter(input -> !input.isDisabled()).findFirst().ifPresent(Control::requestFocus);
+            inputs.values().stream().filter(input -> !input.isDisabled()).findFirst()
+                    .ifPresent(Control::requestFocus);
         });
         return dialog;
     }
@@ -261,7 +309,8 @@ final class CustomerRecordEditor {
     // The rules live in CustomerRecordValidator; this only says which fields the form has
     static Map<String, String> validate(Kind kind, Map<String, String> values, boolean adding) {
         List<com.lavs.business.CustomerRecordValidator.FieldSpec> fields = kind.fields.stream()
-                .map(field -> new com.lavs.business.CustomerRecordValidator.FieldSpec(field.key(), field.options()))
+                .map(field -> new com.lavs.business.CustomerRecordValidator.FieldSpec(field.key(),
+                field.options()))
                 .toList();
         return VALIDATOR.validate(fields, values);
     }
