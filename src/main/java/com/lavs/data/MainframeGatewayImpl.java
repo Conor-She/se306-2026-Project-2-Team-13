@@ -938,6 +938,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 payment.getPaymentDate(), payment.getAmountPaid());
     }
 
+    // AI-assisted: Claude wrote this delete-then-add edit that restores the payment on failure.
     // The mainframe has no update message, so an edit deletes the old payment and adds the new
     // version, which gets a new ID. Deleting first means that if the mainframe refuses the
     // delete (for example because the payment is locked) nothing has changed, instead of the
