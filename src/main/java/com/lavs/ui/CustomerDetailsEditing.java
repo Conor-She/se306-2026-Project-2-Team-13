@@ -19,8 +19,10 @@ import static com.lavs.ui.CustomerRecordEditor.Kind;
 /** Renders retrieved details and keeps local editor state for standalone previews. */
 final class CustomerDetailsEditing {
     private static final String CELL = "-fx-font-size: 12px; -fx-text-fill: #55558d;";
-    private static final String ACTION = "-fx-background-color: transparent; -fx-text-fill: #747ba6; "
-            + "-fx-font-size: 19px; -fx-padding: 4 10; -fx-min-width: 36; -fx-min-height: 36; -fx-cursor: hand;";
+    private static final String ACTION =
+            "-fx-background-color: transparent; -fx-text-fill: #747ba6; "
+            + "-fx-font-size: 19px; -fx-padding: 4 10; -fx-min-width: 36; "
+            + "-fx-min-height: 36; -fx-cursor: hand;";
     private static final String BADGE = "-fx-background-color: #d9f3ec; -fx-background-radius: 12; "
             + "-fx-text-fill: #329e8a; -fx-font-size: 11px; -fx-padding: 2 16;";
     private final Node owner;
@@ -33,12 +35,14 @@ final class CustomerDetailsEditing {
     private final Map<String, State> sessions = new HashMap<>();
     private State state;
     private boolean readOnly;
-    private java.util.concurrent.Executor requestExecutor = java.util.concurrent.ForkJoinPool.commonPool();
+    private java.util.concurrent.Executor requestExecutor =
+            java.util.concurrent.ForkJoinPool.commonPool();
     private boolean saving;
 
     void setRequestExecutor(java.util.concurrent.Executor executor) {
         requestExecutor = Objects.requireNonNull(executor);
     }
+
     private com.lavs.business.CustomerService customerService;
 
     private static final class State {
@@ -50,15 +54,19 @@ final class CustomerDetailsEditing {
             summary = customer;
             details.put(Kind.PERSONAL, values("title", "", "firstName", firstName(customer.name()),
                     "lastName", lastName(customer.name()), "birthDate", "", "nationality", ""));
-            details.put(Kind.CONTACT, values("email", customer.email(), "phone", customer.phone(), "address", ""));
+            details.put(Kind.CONTACT, values("email", customer.email(), "phone", customer.phone(),
+                    "address", ""));
             for (Kind kind : List.of(Kind.CONTACT_RECORD, Kind.EMPLOYMENT, Kind.LOAN, Kind.NOTE,
-                    Kind.DOCUMENT, Kind.GUARANTOR)) records.put(kind, new ArrayList<>());
+                    Kind.DOCUMENT, Kind.GUARANTOR)) {
+                        records.put(kind, new ArrayList<>());
+                    }
 
         }
         State(State source) {
             summary = source.summary;
             persisted = source.persisted;
-            source.details.forEach((kind, values) -> details.put(kind, new LinkedHashMap<>(values)));
+            source.details.forEach((kind, values) -> details.put(kind,
+                    new LinkedHashMap<>(values)));
             source.records.forEach((kind, values) -> records.put(kind, values.stream()
                     .map(value -> (Map<String, String>) new LinkedHashMap<>(value))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new))));
@@ -66,7 +74,9 @@ final class CustomerDetailsEditing {
     }
 
     CustomerDetailsEditing(Node owner, Map<String, Label> labels, Map<Kind, GridPane> tables,
-            VBox notes, VBox additionalContacts, VBox additionalEmployers, HBox primaryEmployerRow, Map<String, Button> contactLinks, Consumer<CustomersController.CustomerSummary> onChange) {
+            VBox notes, VBox additionalContacts, VBox additionalEmployers, HBox primaryEmployerRow,
+                    Map<String, Button> contactLinks,
+                            Consumer<CustomersController.CustomerSummary> onChange) {
         this.owner = owner;
         this.labels = labels;
         this.tables = tables;
@@ -92,26 +102,39 @@ final class CustomerDetailsEditing {
     CustomersController.CustomerSummary select(com.lavs.model.CustomerDetails details) {
         var customer = details.customer();
         State loaded = new State(new CustomersController.CustomerSummary(customer.getCustomerId(),
-                (text(customer.getFirstName()) + " " + text(customer.getLastName())).strip(), "", ""));
+                (text(customer.getFirstName()) + " " + text(customer.getLastName())).strip(), "",
+                        ""));
         loaded.details.put(Kind.PERSONAL, values("title", text(customer.getTitle()),
-                "firstName", text(customer.getFirstName()), "lastName", text(customer.getLastName()),
-                "birthDate", customer.getDateOfBirth() == null ? "" : CustomerRecordEditor.BIRTH_DATE.format(customer.getDateOfBirth()),
+                "firstName", text(customer.getFirstName()), "lastName",
+                        text(customer.getLastName()),
+                "birthDate", customer.getDateOfBirth() == null ? ""
+                        : CustomerRecordEditor.BIRTH_DATE.format(customer.getDateOfBirth()),
                 "nationality", text(customer.getNationality())));
         var contacts = loaded.records.get(Kind.CONTACT_RECORD);
-        details.emails().forEach(email -> contacts.add(values("id", id(email.getEmailId()), "contactType", "Email",
-                "value", text(email.getEmailAddress()), "primary", Boolean.toString(email.isPrimary()))));
-        details.phones().forEach(phone -> contacts.add(values("id", id(phone.getPhoneId()), "contactType", "Phone",
+        details.emails().forEach(email -> contacts.add(values("id", id(email.getEmailId()),
+                "contactType", "Email",
+                "value", text(email.getEmailAddress()), "primary",
+                        Boolean.toString(email.isPrimary()))));
+        details.phones().forEach(phone -> contacts.add(values("id", id(phone.getPhoneId()),
+                "contactType", "Phone",
                 "value", text(phone.getNumber()), "primary", Boolean.toString(phone.isPrimary()),
                 "texts", Boolean.toString(phone.isSendTXT()))));
-        details.addresses().forEach(address -> contacts.add(values("contactType", "Address", "value",
-                java.util.stream.Stream.of(address.getStreet(), address.getSuburb(), address.getCity(), address.getPostCode(), address.getCountry())
-                        .filter(value -> value != null && !value.isBlank()).collect(java.util.stream.Collectors.joining(", ")),
-                "id", id(address.getAddressId()), "street", text(address.getStreet()), "suburb", text(address.getSuburb()),
-                "city", text(address.getCity()), "postCode", text(address.getPostCode()), "country", text(address.getCountry()),
+        details.addresses().forEach(address -> contacts.add(values("contactType", "Address",
+                "value",
+                java.util.stream.Stream.of(address.getStreet(), address.getSuburb(),
+                        address.getCity(), address.getPostCode(), address.getCountry())
+                        .filter(value -> value != null && !value.isBlank())
+                        .collect(java.util.stream.Collectors.joining(", ")),
+                "id", id(address.getAddressId()), "street", text(address.getStreet()), "suburb",
+                        text(address.getSuburb()),
+                "city", text(address.getCity()), "postCode", text(address.getPostCode()), "country",
+                        text(address.getCountry()),
                 "primary", Boolean.toString(address.isMailing()))));
         for (String type : List.of("Email", "Phone", "Address")) {
-            var entries = contacts.stream().filter(record -> type.equals(record.get("contactType"))).toList();
-            var primary = entries.stream().filter(record -> Boolean.parseBoolean(record.get("primary")))
+            var entries = contacts.stream().filter(record -> type.equals(record.get("contactType")))
+                    .toList();
+            var primary = entries.stream()
+                    .filter(record -> Boolean.parseBoolean(record.get("primary")))
                     .findFirst().orElse(entries.isEmpty() ? null : entries.get(0));
             if (primary != null) {
                 writePrimaryContact(loaded, type, primary);
@@ -119,13 +142,19 @@ final class CustomerDetailsEditing {
             }
         }
         details.employers().forEach(employer -> {
-            var record = values("id", id(employer.getEmployerId()), "employer", text(employer.getCompanyName()), "role", text(employer.getJobTitle()),
-                    "employmentType", text(employer.getEmploymentType()), "income", Double.toString(employer.getIncome()));
-            if (!loaded.details.containsKey(Kind.EMPLOYMENT)) loaded.details.put(Kind.EMPLOYMENT, record);
-            else loaded.records.get(Kind.EMPLOYMENT).add(record);
+            var record = values("id", id(employer.getEmployerId()), "employer",
+                    text(employer.getCompanyName()), "role", text(employer.getJobTitle()),
+                    "employmentType", text(employer.getEmploymentType()), "income",
+                            Double.toString(employer.getIncome()));
+            if (!loaded.details.containsKey(Kind.EMPLOYMENT)) {
+                loaded.details.put(Kind.EMPLOYMENT, record);
+            } else {
+                loaded.records.get(Kind.EMPLOYMENT).add(record);
+            }
         });
         var contact = loaded.details.get(Kind.CONTACT);
-        loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(), loaded.summary.name(),
+        loaded.summary = new CustomersController.CustomerSummary(customer.getCustomerId(),
+                loaded.summary.name(),
                 contact.get("phone"), contact.get("email"));
         // The mainframe's loans come first. Loans added this session are kept only if the
         // mainframe's list doesn't already have them, so a loan saved just now isn't shown twice.
@@ -138,7 +167,8 @@ final class CustomerDetailsEditing {
         details.guarantors().forEach(guarantor -> loaded.records.get(Kind.GUARANTOR).add(values(
                 "id", guarantor.getGuarantorId(),
                 "customerId", guarantor.getGuarantorCustomerId(),
-                "firstName", details.guarantorNames().getOrDefault(guarantor.getGuarantorCustomerId(),
+                "firstName", details.guarantorNames()
+                        .getOrDefault(guarantor.getGuarantorCustomerId(),
                         "Name unavailable"), "lastName", "",
                 "relationship", guarantor.getRelationshipType(),
                 "phone", "Not provided", "email", "Not provided", "status", "Not provided")));
@@ -158,8 +188,13 @@ final class CustomerDetailsEditing {
         return loaded.summary;
     }
 
-    private static String text(String value) { return value == null ? "" : value; }
-    private static String id(Long value) { return value == null ? "" : value.toString(); }
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String id(Long value) {
+        return value == null ? "" : value.toString();
+    }
 
     // Fixed/floating describes the interest rate, not the loan's repayment type.
     private static Map<String, String> loanRecord(com.lavs.model.Loan loan) {
@@ -177,12 +212,17 @@ final class CustomerDetailsEditing {
                 "status", name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT));
     }
 
-    void addSessionLoan(CustomersController.CustomerSummary customer, com.lavs.business.LoanSubmissionService.SavedLoan loan) {
+    void addSessionLoan(CustomersController.CustomerSummary customer,
+            com.lavs.business.LoanSubmissionService.SavedLoan loan) {
         State target = sessions.computeIfAbsent(customer.customerId(), id -> new State(customer));
         var draft = loan.draft();
-        target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type", draft.details.get("loanType"),
-                "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"), "status", draft.details.get("status")));
-        if (state == target) render();
+        target.records.get(Kind.LOAN).add(values("id", loan.loanId(), "type",
+                draft.details.get("loanType"),
+                "amount", draft.details.get("principal"), "rate", draft.details.get("interestRate"),
+                        "status", draft.details.get("status")));
+        if (state == target) {
+            render();
+        }
     }
 
     void editDetails(Kind kind) {
@@ -193,35 +233,52 @@ final class CustomerDetailsEditing {
     }
 
     private static String contactKey(String type) {
-        return switch (type) { case "Email" -> "email"; case "Phone" -> "phone"; case "Address" -> "address"; default -> throw new IllegalArgumentException(type); };
+        return switch (type) {
+            case "Email" -> "email";
+            case "Phone" -> "phone";
+            case "Address" -> "address";
+            default -> throw new IllegalArgumentException(type);
+        };
     }
 
-    void editContact(String type) { editContact(type, null, () -> {}); }
+    void editContact(String type) {
+        editContact(type, null, () -> {});
+    }
 
     private void editContact(String type, Map<String, String> record, Runnable afterSave) {
         State target = state;
         Map<String, String> original = record == null
                 ? primaryContact(target, type)
                 : new LinkedHashMap<>(record);
-        if (record != null) original.put("primary", "false");
-        Dialog<Map<String, String>> dialog = CustomerRecordEditor.create(window(), Kind.CONTACT_RECORD, original, false, saved -> {
+        if (record != null) {
+            original.put("primary", "false");
+        }
+        Dialog<Map<String, String>> dialog = CustomerRecordEditor.create(window(),
+                Kind.CONTACT_RECORD, original, false, saved -> {
             normaliseAddress(saved, original);
-            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD)
+                    .indexOf(record);
             save(target, draft -> {
-                if (recordIndex < 0) writePrimaryContact(draft, type, saved);
-                else {
-                    Map<String, String> changed = draft.records.get(Kind.CONTACT_RECORD).get(recordIndex);
+                if (recordIndex < 0) {
+                    writePrimaryContact(draft, type, saved);
+                } else {
+                    Map<String, String> changed = draft.records.get(Kind.CONTACT_RECORD)
+                            .get(recordIndex);
                     changed.clear();
                     changed.putAll(saved);
-                    if (Boolean.parseBoolean(saved.get("primary"))) promoteContact(draft, type, changed);
+                    if (Boolean.parseBoolean(saved.get("primary"))) {
+                        promoteContact(draft, type, changed);
+                    }
                 }
             }, afterSave);
         });
         VBox form = (VBox) ((ScrollPane) dialog.getDialogPane().getContent()).getContent();
         Button delete = deleteButton("Delete contact", () -> confirmDelete("contact", () -> {
-            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+            int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD)
+                    .indexOf(record);
             save(target, draft -> deleteContact(draft, type,
-                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)), afterSave);
+                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD)
+                            .get(recordIndex)), afterSave);
             dialog.close();
         }));
         form.getChildren().add(delete);
@@ -232,8 +289,11 @@ final class CustomerDetailsEditing {
     private void updateSummary(State target, boolean notify) {
         Map<String, String> contact = target.details.get(Kind.CONTACT);
         target.summary = new CustomersController.CustomerSummary(target.summary.customerId(),
-                fullName(target.details.get(Kind.PERSONAL)), contact.get("phone"), contact.get("email"));
-        if (notify && state == target) onChange.accept(target.summary);
+                fullName(target.details.get(Kind.PERSONAL)), contact.get("phone"),
+                        contact.get("email"));
+        if (notify && state == target) {
+            onChange.accept(target.summary);
+        }
     }
 
     private void promoteContact(State target, String type, Map<String, String> record) {
@@ -241,8 +301,7 @@ final class CustomerDetailsEditing {
         writePrimaryContact(target, type, record);
         if (previous.getOrDefault("value", "").isBlank()) {
             target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
-        }
-        else {
+        } else {
             record.clear();
             record.putAll(previous);
             record.put("primary", "false");
@@ -250,11 +309,13 @@ final class CustomerDetailsEditing {
     }
 
     private void deleteContact(State target, String type, Map<String, String> record) {
-        if (record != null) target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
-        else {
+        if (record != null) {
+            target.records.get(Kind.CONTACT_RECORD).removeIf(entry -> entry == record);
+        } else {
             writePrimaryContact(target, type, values("contactType", type, "value", "",
                     "primary", "true", "texts", "false"));
-            target.records.get(Kind.CONTACT_RECORD).stream().filter(entry -> type.equals(entry.get("contactType")))
+            target.records.get(Kind.CONTACT_RECORD).stream()
+                    .filter(entry -> type.equals(entry.get("contactType")))
                     .findFirst().ifPresent(entry -> promoteContact(target, type, entry));
         }
         updateSummary(target, false);
@@ -262,20 +323,30 @@ final class CustomerDetailsEditing {
 
     private Button deleteButton(String accessibleText, Runnable action) {
         Button button = new Button(accessibleText.equals("Delete contact") ? "Delete contact" : "");
-        button.setGraphic(icon("M 1 4 H 15 M 5 4 V 1 H 11 V 4 M 3 4 L 4 18 H 12 L 13 4 M 6 7 V 15 M 10 7 V 15", "#b42318"));
+        button.setGraphic(icon(
+                "M 1 4 H 15 M 5 4 V 1 H 11 V 4 M 3 4 L 4 18 H 12 L 13 4 M 6 7 V 15 M 10 7 V 15",
+                "#b42318"));
         button.setMinSize(28, 28);
         button.setTooltip(new Tooltip(accessibleText));
         button.setAccessibleText(accessibleText);
-        button.setStyle("-fx-background-color: transparent; -fx-text-fill: #b42318; -fx-padding: 5; -fx-cursor: hand;");
+        button.setStyle("-fx-background-color: transparent; -fx-text-fill: #b42318; "
+                + "-fx-padding: 5; -fx-cursor: hand;");
         button.setOnAction(event -> action.run());
         return button;
     }
 
     private void confirmDelete(String kind, Runnable action) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete this " + kind + "?", ButtonType.CANCEL, ButtonType.OK);
-        if (window() != null) alert.initOwner(window());
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete this " + kind + "?",
+                ButtonType.CANCEL, ButtonType.OK);
+        if (window() != null) {
+            alert.initOwner(window());
+        }
         alert.setHeaderText("Delete " + kind);
-        alert.setOnHidden(event -> { if (alert.getResult() == ButtonType.OK) action.run(); });
+        alert.setOnHidden(event -> {
+            if (alert.getResult() == ButtonType.OK) {
+                action.run();
+            }
+        });
         alert.show();
     }
 
@@ -283,25 +354,33 @@ final class CustomerDetailsEditing {
         State target = state;
         confirmDelete("employer", () -> {
             save(target, draft -> {
-                if (draft.records.get(Kind.EMPLOYMENT).isEmpty()) draft.details.remove(Kind.EMPLOYMENT);
-                else draft.details.put(Kind.EMPLOYMENT, draft.records.get(Kind.EMPLOYMENT).remove(0));
+                if (draft.records.get(Kind.EMPLOYMENT).isEmpty()) {
+                    draft.details.remove(Kind.EMPLOYMENT);
+                } else {
+                    draft.details.put(Kind.EMPLOYMENT, draft.records.get(Kind.EMPLOYMENT)
+                            .remove(0));
+                }
             }, () -> {});
         });
     }
 
     void viewContacts(String type) {
         Dialog<Void> dialog = new Dialog<>();
-        if (window() != null) dialog.initOwner(window());
+        if (window() != null) {
+            dialog.initOwner(window());
+        }
         dialog.setTitle("All " + type.toLowerCase(Locale.ROOT) + " entries");
         dialog.setHeaderText("Customer " + type.toLowerCase(Locale.ROOT) + " entries");
         dialog.getDialogPane().setId("customerContactList");
         dialog.getDialogPane().setPrefWidth(520);
-        dialog.getDialogPane().setStyle("-fx-font-family: 'Segoe UI'; -fx-background-color: white;");
+        dialog.getDialogPane()
+                .setStyle("-fx-font-family: 'Segoe UI'; -fx-background-color: white;");
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         VBox list = new VBox(8);
         list.setPadding(new Insets(12));
         ScrollPane scroll = new ScrollPane(list);
-        scroll.setFitToWidth(true); scroll.setPrefViewportHeight(280);
+        scroll.setFitToWidth(true);
+        scroll.setPrefViewportHeight(280);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setStyle("-fx-background: white; -fx-background-color: white;");
         dialog.getDialogPane().setContent(scroll);
@@ -312,22 +391,33 @@ final class CustomerDetailsEditing {
     private void populateContacts(String type, VBox list) {
         list.getChildren().clear();
         String primary = state.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "");
-        if (!primary.isBlank()) list.getChildren().add(contactRow(type, primary, null, list));
-        state.records.get(Kind.CONTACT_RECORD).stream().filter(record -> type.equals(record.get("contactType")))
-                .forEach(record -> list.getChildren().add(contactRow(type, record.get("value"), record, list)));
-        if (list.getChildren().isEmpty()) list.getChildren().add(label("No entries added."));
+        if (!primary.isBlank()) {
+            list.getChildren().add(contactRow(type, primary, null, list));
+        }
+        state.records.get(Kind.CONTACT_RECORD).stream()
+                .filter(record -> type.equals(record.get("contactType")))
+                .forEach(record -> list.getChildren().add(contactRow(type, record.get("value"),
+                record, list)));
+        if (list.getChildren().isEmpty()) {
+            list.getChildren().add(label("No entries added."));
+        }
     }
 
     private HBox contactRow(String type, String value, Map<String, String> record, VBox list) {
         Label contactValue = label(value);
         contactValue.setWrapText(true);
         VBox text = new VBox(5, contactValue);
-        if (record == null) text.getChildren().add(label(type.equals("Address") ? "Mailing address" : "Primary"));
-        text.setMinWidth(0); HBox.setHgrow(text, Priority.ALWAYS);
-        Button edit = new Button(); edit.setStyle(ACTION);
+        if (record == null) {
+            text.getChildren().add(label(type.equals("Address") ? "Mailing address" : "Primary"));
+        }
+        text.setMinWidth(0);
+        HBox.setHgrow(text, Priority.ALWAYS);
+        Button edit = new Button();
+        edit.setStyle(ACTION);
         edit.setAccessibleText("Edit " + value);
         edit.setTooltip(new Tooltip("Edit " + value));
-        edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6", "#55558d"));
+        edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6",
+                "#55558d"));
         edit.setOnAction(event -> editContact(type, record, () -> populateContacts(type, list)));
         HBox actions = new HBox(8, edit);
         actions.setAlignment(Pos.CENTER_RIGHT);
@@ -350,62 +440,85 @@ final class CustomerDetailsEditing {
         if (type.equals("Phone")) {
             CheckBox texts = new CheckBox("Send TXT messages");
             texts.setAccessibleText("Send TXT messages to " + value);
-            texts.setSelected(Boolean.parseBoolean(record == null ? state.details.get(Kind.CONTACT).getOrDefault("texts", "false") : record.getOrDefault("texts", "false")));
+            texts.setSelected(Boolean.parseBoolean(record == null ? state.details.get(Kind.CONTACT)
+                    .getOrDefault("texts", "false") : record.getOrDefault("texts", "false")));
             texts.setOnAction(event -> {
                 State target = state;
-                int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
+                int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD)
+                        .indexOf(record);
                 save(target, draft -> {
-                    if (recordIndex < 0) draft.details.get(Kind.CONTACT).put("texts", Boolean.toString(texts.isSelected()));
-                    else draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)
+                    if (recordIndex < 0) {
+                        draft.details.get(Kind.CONTACT).put("texts",
+                                Boolean.toString(texts.isSelected()));
+                    } else {
+                        draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)
                             .put("texts", Boolean.toString(texts.isSelected()));
+                    }
                 }, () -> populateContacts(type, list));
             });
             texts.setDisable(readOnly);
             text.getChildren().add(texts);
         }
         State target = state;
-        int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD).indexOf(record);
-        actions.getChildren().add(deleteButton("Delete " + value, () -> confirmDelete("contact", () -> {
+        int recordIndex = record == null ? -1 : target.records.get(Kind.CONTACT_RECORD)
+                .indexOf(record);
+        actions.getChildren().add(deleteButton("Delete " + value, () -> confirmDelete("contact",
+                () -> {
             save(target, draft -> deleteContact(draft, type,
-                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)),
+                    recordIndex < 0 ? null : draft.records.get(Kind.CONTACT_RECORD)
+                            .get(recordIndex)),
                     () -> populateContacts(type, list));
         })));
         HBox row = new HBox(12, text, actions);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setStyle("-fx-padding: 12 14; -fx-background-color: #f5f6ff; -fx-background-radius: 8; -fx-border-color: #dce2ff; -fx-border-radius: 8;");
+        row.setStyle("-fx-padding: 12 14; -fx-background-color: #f5f6ff; "
+                + "-fx-background-radius: 8; -fx-border-color: #dce2ff; -fx-border-radius: 8;");
         return row;
     }
 
-    void add(Kind kind) { editRecord(kind, null); }
+    void add(Kind kind) {
+        editRecord(kind, null);
+    }
 
     private void editRecord(Kind kind, Map<String, String> record) {
-        if (state.persisted && (kind == Kind.DOCUMENT || kind == Kind.GUARANTOR || kind == Kind.LOAN)) {
+        if (state.persisted && (kind == Kind.DOCUMENT || kind == Kind.GUARANTOR
+                || kind == Kind.LOAN)) {
             editPersistedRecord(kind, record);
             return;
         }
         State target = state;
         Map<String, String> editorDraft = record == null ? new LinkedHashMap<>() : record;
-        if (record == null && (kind == Kind.NOTE || kind == Kind.DOCUMENT)) editorDraft.put("date", LocalDate.now().toString());
+        if (record == null && (kind == Kind.NOTE || kind == Kind.DOCUMENT)) {
+            editorDraft.put("date", LocalDate.now().toString());
+        }
         int recordIndex = record == null ? -1 : target.records.get(kind).indexOf(record);
         CustomerRecordEditor.create(window(), kind, editorDraft, record == null, saved -> {
             save(target, draft -> {
-                if (recordIndex < 0 && kind == Kind.EMPLOYMENT && !draft.details.containsKey(kind)) draft.details.put(kind, saved);
-                else if (recordIndex < 0) draft.records.get(kind).add(saved);
-                else {
+                if (recordIndex < 0 && kind == Kind.EMPLOYMENT
+                        && !draft.details.containsKey(kind)) {
+                    draft.details.put(kind, saved);
+                } else if (recordIndex < 0) {
+                    draft.records.get(kind).add(saved);
+                } else {
                     Map<String, String> changed = draft.records.get(kind).get(recordIndex);
                     changed.clear();
                     changed.putAll(saved);
                 }
                 if (kind == Kind.CONTACT_RECORD) {
                     String type = saved.get("contactType");
-                    Map<String, String> changed = recordIndex < 0 ? saved : draft.records.get(kind).get(recordIndex);
+                    Map<String, String> changed = recordIndex < 0 ? saved
+                            : draft.records.get(kind).get(recordIndex);
                     normaliseAddress(changed, editorDraft);
-                    if (Boolean.parseBoolean(saved.get("primary")) || draft.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "").isBlank())
+                    if (Boolean.parseBoolean(saved.get("primary"))
+                            || draft.details.get(Kind.CONTACT).getOrDefault(contactKey(type),
+                            "").isBlank()) {
                         promoteContact(draft, type, changed);
+                    }
                 }
             }, () -> {});
         }, saved -> kind == Kind.LOAN && target.records.get(kind).stream()
-                .anyMatch(other -> other != record && other.get("id").equalsIgnoreCase(saved.get("id")))
+                .anyMatch(other -> other != record
+                && other.get("id").equalsIgnoreCase(saved.get("id")))
                 ? Map.of("id", "This loan ID already exists for the customer.") : Map.of()).show();
     }
 
@@ -416,36 +529,49 @@ final class CustomerDetailsEditing {
             return;
         }
         String customerId = target.summary.customerId();
-        Map<String, String> original = record == null ? new LinkedHashMap<>() : new LinkedHashMap<>(record);
+        Map<String, String> original = record == null ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(record);
         Kind editorKind = kind == Kind.GUARANTOR ? Kind.SAVED_GUARANTOR
                 : kind == Kind.DOCUMENT ? Kind.SAVED_DOCUMENT : kind;
         com.lavs.model.Loan existingLoan;
         try {
             existingLoan = kind == Kind.LOAN
                     ? customerService.getLoan(customerId, original.get("id")) : null;
-        } catch (RuntimeException failure) { showSaveError(failure); return; }
+        } catch (RuntimeException failure) {
+            showSaveError(failure);
+            return;
+        }
         if (existingLoan != null) {
             editorKind = Kind.SAVED_LOAN;
-            original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().displayName());
+            original.put("type", existingLoan.getType() == null ? ""
+                    : existingLoan.getType().displayName());
             original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
         }
-        if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
-        var dialog = CustomerRecordEditor.create(window(), editorKind, original, record == null, saved -> {
+        if (record == null && kind == Kind.DOCUMENT) {
+            original.put("date", LocalDate.now().toString());
+        }
+        var dialog = CustomerRecordEditor.create(window(), editorKind, original, record == null,
+                saved -> {
             persistRelated(target, () -> {
                 if (kind == Kind.DOCUMENT) {
                     customerService.saveDocument(new com.lavs.model.CustomerDocument(
-                            record == null ? null : record.get("id"), customerId, saved.get("fileName"),
+                            record == null ? null : record.get("id"), customerId,
+                                    saved.get("fileName"),
                             saved.get("type"), LocalDate.parse(saved.get("date"))));
                 } else if (kind == Kind.GUARANTOR) {
                     customerService.saveGuarantor(new com.lavs.model.Guarantor(
                             record == null ? null : record.get("id"), customerId,
                             saved.get("customerId"), saved.get("relationship")));
                 } else {
-                    customerService.updateLoan(new com.lavs.model.Loan(existingLoan.getLoanId(), customerId,
+                    customerService.updateLoan(new com.lavs.model.Loan(existingLoan.getLoanId(),
+                            customerId,
                             existingLoan.getStatus(), Double.parseDouble(saved.get("amount")),
-                            Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
-                            existingLoan.isFloating(), existingLoan.getStartDate(), existingLoan.getRenewDate(),
-                            Double.parseDouble(saved.get("paymentAmount")), existingLoan.getPaymentFrequency(),
+                            Double.parseDouble(saved.get("rate")),
+                                    com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
+                            existingLoan.isFloating(), existingLoan.getStartDate(),
+                                    existingLoan.getRenewDate(),
+                            Double.parseDouble(saved.get("paymentAmount")),
+                                    existingLoan.getPaymentFrequency(),
                             existingLoan.getRateFrequency(), existingLoan.getTermMonths()));
                 }
             });
@@ -462,16 +588,22 @@ final class CustomerDetailsEditing {
     }
 
     private void persistRelated(State target, Runnable mutation) {
-        if (state != target) return;
+        if (state != target) {
+            return;
+        }
         try {
             mutation.run();
             onChange.accept(select(customerService.getById(
                     new com.lavs.model.CustomerId(target.summary.customerId()))));
-        } catch (RuntimeException failure) { showSaveError(failure); }
+        } catch (RuntimeException failure) {
+            showSaveError(failure);
+        }
     }
 
     private void save(State target, Consumer<State> change, Runnable afterSave) {
-        if (state != target || saving) return;
+        if (state != target || saving) {
+            return;
+        }
         State draft = new State(target);
         change.accept(draft);
         updateSummary(draft, false);
@@ -498,32 +630,45 @@ final class CustomerDetailsEditing {
             return service.getById(new com.lavs.model.CustomerId(draft.summary.customerId()));
         }, details -> {
             saving = false;
-            if (state != target) return;
+            if (state != target) {
+                return;
+            }
             onChange.accept(select(details));
             afterSave.run();
         }, failure -> {
             saving = false;
-            if (state != target) return;
-            if (saved[0]) showError("Refresh failed", "Changes were saved, but customer details could not be reloaded",
+            if (state != target) {
+                return;
+            }
+            if (saved[0]) {
+                showError("Refresh failed",
+                        "Changes were saved, but customer details could not be reloaded",
                     "Reopen the customer to check the saved records before retrying.", failure);
-            else showSaveError(failure);
+            } else {
+                showSaveError(failure);
+            }
         });
     }
 
     private void showSaveError(RuntimeException failure) {
         showError("Save failed", "Customer changes could not be saved",
-                "Saving could not be confirmed. Check the customer's saved records before retrying.", failure);
+                "Saving could not be confirmed. "
+                        + "Check the customer's saved records before retrying.", failure);
     }
 
     private void showError(String title, String heading, String message, RuntimeException failure) {
         java.util.logging.Logger.getLogger(CustomerDetailsEditing.class.getName()).log(
                 java.util.logging.Level.WARNING, heading, failure);
-        if (failure instanceof com.lavs.data.MainframeException || failure instanceof IllegalArgumentException) {
-            if (failure.getMessage() != null && !failure.getMessage().isBlank())
+        if (failure instanceof com.lavs.data.MainframeException || failure
+                instanceof IllegalArgumentException) {
+            if (failure.getMessage() != null && !failure.getMessage().isBlank()) {
                 message += "\n\n" + failure.getMessage();
+            }
         }
         Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
-        if (window() != null) alert.initOwner(window());
+        if (window() != null) {
+            alert.initOwner(window());
+        }
         alert.setHeaderText(heading);
         alert.setTitle(title);
         alert.getDialogPane().setId("customerSaveError");
@@ -541,12 +686,15 @@ final class CustomerDetailsEditing {
         com.lavs.model.Customer customer = new com.lavs.model.Customer(customerId,
                 personal.get("title"), personal.get("firstName"), personal.get("lastName"),
                 personal.get("birthDate").isBlank() ? null
-                        : LocalDate.parse(personal.get("birthDate"), CustomerRecordEditor.BIRTH_DATE),
+                        : LocalDate.parse(personal.get("birthDate"),
+                        CustomerRecordEditor.BIRTH_DATE),
                 personal.get("nationality"));
         List<Map<String, String>> contacts = new ArrayList<>();
         for (String type : List.of("Email", "Phone", "Address")) {
             Map<String, String> primary = primaryContact(source, type);
-            if (!primary.getOrDefault("value", "").isBlank()) contacts.add(primary);
+            if (!primary.getOrDefault("value", "").isBlank()) {
+                contacts.add(primary);
+            }
         }
         contacts.addAll(source.records.get(Kind.CONTACT_RECORD));
         List<com.lavs.model.Address> addresses = contacts.stream()
@@ -562,11 +710,14 @@ final class CustomerDetailsEditing {
                 .map(record -> new com.lavs.model.Email(longId(record.get("id")), customerId,
                         record.get("value"), Boolean.parseBoolean(record.get("primary")))).toList();
         List<Map<String, String>> employment = new ArrayList<>();
-        if (source.details.containsKey(Kind.EMPLOYMENT)) employment.add(source.details.get(Kind.EMPLOYMENT));
+        if (source.details.containsKey(Kind.EMPLOYMENT)) {
+            employment.add(source.details.get(Kind.EMPLOYMENT));
+        }
         employment.addAll(source.records.get(Kind.EMPLOYMENT));
         List<com.lavs.model.Employer> employers = employment.stream()
                 .map(record -> new com.lavs.model.Employer(longId(record.get("id")), customerId,
-                        record.get("employer"), record.get("role"), Double.parseDouble(record.get("income")),
+                        record.get("employer"), record.get("role"),
+                                Double.parseDouble(record.get("income")),
                         record.get("employmentType"))).toList();
         return new com.lavs.model.CustomerDetails(customer, addresses, phones, emails, employers);
     }
@@ -594,10 +745,14 @@ final class CustomerDetailsEditing {
     }
 
     private static void normaliseAddress(Map<String, String> saved, Map<String, String> original) {
-        if (!"Address".equals(saved.get("contactType")) || saved.containsKey("street")) return;
+        if (!"Address".equals(saved.get("contactType")) || saved.containsKey("street")) {
+            return;
+        }
         if (!Objects.equals(saved.get("value"), original.get("value"))) {
             saved.put("street", saved.get("value"));
-            for (String key : List.of("suburb", "city", "postCode", "country")) saved.put(key, "");
+            for (String key : List.of("suburb", "city", "postCode", "country")) {
+                saved.put(key, "");
+            }
         }
     }
 
@@ -606,17 +761,21 @@ final class CustomerDetailsEditing {
         Map<String, String> result = values("contactType", type,
                 "value", contact.getOrDefault(contactKey(type), ""), "primary", "true",
                 "texts", type.equals("Phone") ? contact.getOrDefault("texts", "false") : "false");
-        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country"))
+        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country")) {
             result.put(key, contact.getOrDefault(primaryKey(type, key), ""));
+        }
         return result;
     }
 
     private static void writePrimaryContact(State target, String type, Map<String, String> record) {
         Map<String, String> contact = target.details.get(Kind.CONTACT);
         contact.put(contactKey(type), record.getOrDefault("value", ""));
-        if (type.equals("Phone")) contact.put("texts", record.getOrDefault("texts", "false"));
-        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country"))
+        if (type.equals("Phone")) {
+            contact.put("texts", record.getOrDefault("texts", "false"));
+        }
+        for (String key : List.of("id", "street", "suburb", "city", "postCode", "country")) {
             contact.put(primaryKey(type, key), record.getOrDefault(key, ""));
+        }
     }
 
     private static String primaryKey(String type, String key) {
@@ -639,21 +798,27 @@ final class CustomerDetailsEditing {
         set("titleValue", personal.get("title"));
         String birthDate = personal.get("birthDate");
         set("birthDateValue", birthDate == null || birthDate.isBlank() ? "Not provided"
-                : CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(birthDate, CustomerRecordEditor.BIRTH_DATE)));
+                : CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(birthDate,
+                CustomerRecordEditor.BIRTH_DATE)));
         set("nationalityValue", personal.get("nationality"));
         set("emailValue", contactDisplay(contact.get("email"), "No email address"));
         set("phoneValue", contactDisplay(contact.get("phone"), "No phone number"));
         set("addressValue", contactDisplay(contact.get("address"), "No mailing address"));
         set("employerNameValue", employment == null ? "" : employment.get("employer"));
-        set("employmentSummaryValue", employment == null ? "" : employment.get("role") + "  \u2022  " + employment.get("employmentType") + "  \u2022  " + money(employment.get("income")) + " / year");
+        set("employmentSummaryValue", employment == null ? ""
+                : employment.get("role") + "  \u2022  " + employment.get("employmentType")
+                        + "  \u2022  " + money(employment.get("income")) + " / year");
         tables.forEach(this::renderTable);
         renderNotes();
         additionalContacts.getChildren().clear();
         additionalContacts.setVisible(false);
         additionalContacts.setManaged(false);
         contactLinks.forEach((type, button) -> {
-            long count = state.records.get(Kind.CONTACT_RECORD).stream().filter(record -> type.equals(record.get("contactType"))).count();
-            if (!state.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "").isBlank()) count++;
+            long count = state.records.get(Kind.CONTACT_RECORD).stream()
+                    .filter(record -> type.equals(record.get("contactType"))).count();
+            if (!state.details.get(Kind.CONTACT).getOrDefault(contactKey(type), "").isBlank()) {
+                count++;
+            }
             button.setVisible(count > 1);
             button.setManaged(count > 1);
         });
@@ -668,31 +833,40 @@ final class CustomerDetailsEditing {
         String[] parts = name.strip().split("\\s+", 2);
         return parts[0];
     }
+
     private static String lastName(String name) {
         String[] parts = name.strip().split("\\s+", 2);
         return parts.length == 2 ? parts[1] : "";
     }
+
     private static String fullName(Map<String, String> record) {
-        return (record.getOrDefault("firstName", "") + " " + record.getOrDefault("lastName", "")).strip();
+        return (record.getOrDefault("firstName", "") + " " + record.getOrDefault("lastName", ""))
+                .strip();
     }
+
     private void renderAdditional(Kind kind, VBox container) {
         container.getChildren().clear();
         for (Map<String, String> record : state.records.get(kind)) {
-            String title = kind == Kind.CONTACT_RECORD ? record.get("contactType") : record.get("employer");
+            String title = kind == Kind.CONTACT_RECORD ? record.get("contactType")
+                    : record.get("employer");
             String description = kind == Kind.CONTACT_RECORD ? record.get("value")
-                    : record.get("role") + "  \u2022  " + record.get("employmentType") + "  \u2022  " + money(record.get("income")) + " / year";
+                    : record.get("role") + "  \u2022  " + record.get("employmentType")
+                            + "  \u2022  " + money(record.get("income")) + " / year";
             Label heading = label(title);
             Label summary = label(description);
             if (kind == Kind.EMPLOYMENT) {
-                heading.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #20205e;");
+                heading.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; "
+                        + "-fx-text-fill: #20205e;");
                 summary.setStyle("-fx-font-size: 12px; -fx-text-fill: #626499;");
             }
             VBox text = new VBox(6, heading, summary);
-            text.setMinWidth(0); HBox.setHgrow(text, Priority.ALWAYS);
+            text.setMinWidth(0);
+            HBox.setHgrow(text, Priority.ALWAYS);
             Button edit = new Button();
             edit.setAccessibleText("Edit " + title);
             edit.setStyle(((Button) primaryEmployerRow.getChildren().get(1)).getStyle());
-            edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6", "#55558d"));
+            edit.setGraphic(icon("M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6",
+                    "#55558d"));
             ((SVGPath) edit.getGraphic()).setStrokeWidth(1.3);
             edit.setOnAction(event -> editRecord(kind, record));
             State target = state;
@@ -702,30 +876,41 @@ final class CustomerDetailsEditing {
             }));
             delete.setStyle(((Button) primaryEmployerRow.getChildren().get(2)).getStyle());
             ((SVGPath) delete.getGraphic()).setStrokeWidth(1.5);
-            edit.setVisible(!readOnly); edit.setManaged(!readOnly);
-            delete.setVisible(!readOnly); delete.setManaged(!readOnly);
+            edit.setVisible(!readOnly);
+            edit.setManaged(!readOnly);
+            delete.setVisible(!readOnly);
+            delete.setManaged(!readOnly);
             HBox row = new HBox(primaryEmployerRow.getSpacing(), text, edit, delete);
             row.setAlignment(primaryEmployerRow.getAlignment());
             row.setStyle(primaryEmployerRow.getStyle());
             container.getChildren().add(row);
         }
-        if (kind == Kind.EMPLOYMENT && state.details.get(kind) == null && container.getChildren().isEmpty())
+        if (kind == Kind.EMPLOYMENT && state.details.get(kind) == null
+                && container.getChildren().isEmpty()) {
             container.getChildren().add(label("No employers added."));
+        }
         container.setManaged(!container.getChildren().isEmpty());
         container.setVisible(!container.getChildren().isEmpty());
     }
 
-    private void set(String id, String value) { labels.get(id).setText(value); }
+    private void set(String id, String value) {
+        labels.get(id).setText(value);
+    }
+
     private static Map<String, String> values(String... pairs) {
         Map<String, String> result = new LinkedHashMap<>();
-        for (int i = 0; i < pairs.length; i += 2) result.put(pairs[i], pairs[i + 1]);
+        for (int i = 0; i < pairs.length; i += 2) {
+            result.put(pairs[i], pairs[i + 1]);
+        }
         return result;
     }
+
     private static String money(String value) {
         NumberFormat format = NumberFormat.getNumberInstance(Locale.ENGLISH);
         format.setMaximumFractionDigits(2);
         return "$" + format.format(new java.math.BigDecimal(value));
     }
+
     private static Label label(String text) {
         Label label = new Label(text);
         label.setWrapText(true);
@@ -733,6 +918,7 @@ final class CustomerDetailsEditing {
         label.setStyle(CELL);
         return label;
     }
+
     private static SVGPath icon(String path, String colour) {
         SVGPath icon = new SVGPath();
         icon.setContent(path);
@@ -741,9 +927,12 @@ final class CustomerDetailsEditing {
         icon.setStrokeWidth(1.7);
         return icon;
     }
+
     private static Pane avatar() {
         Pane avatar = new Pane();
-        avatar.setMinSize(36, 36); avatar.setPrefSize(36, 36); avatar.setMaxSize(36, 36);
+        avatar.setMinSize(36, 36);
+        avatar.setPrefSize(36, 36);
+        avatar.setMaxSize(36, 36);
         Circle background = new Circle(18, 18, 18, javafx.scene.paint.Color.web("#efedff"));
         Circle head = new Circle(18, 13, 6, javafx.scene.paint.Color.web("#393a7b"));
         SVGPath body = new SVGPath();
@@ -752,9 +941,13 @@ final class CustomerDetailsEditing {
         avatar.getChildren().addAll(background, head, body);
         return avatar;
     }
+
     private void renderTable(Kind kind, GridPane table) {
-        table.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
-        if (table.getRowConstraints().size() > 1) table.getRowConstraints().subList(1, table.getRowConstraints().size()).clear();
+        table.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
+                && GridPane.getRowIndex(node) > 0);
+        if (table.getRowConstraints().size() > 1) {
+            table.getRowConstraints().subList(1, table.getRowConstraints().size()).clear();
+        }
         List<Map<String, String>> records = state.records.get(kind);
         int columns = table.getColumnConstraints().size();
         for (int index = 0; index < records.size(); index++) {
@@ -763,66 +956,104 @@ final class CustomerDetailsEditing {
             table.getRowConstraints().add(new RowConstraints(kind == Kind.GUARANTOR ? 60 : 52));
             Region divider = new Region();
             divider.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            divider.setStyle("-fx-border-color: transparent transparent #edf0ff transparent; -fx-border-width: 0 0 1 0;");
+            divider.setStyle("-fx-border-color: transparent transparent #edf0ff transparent; "
+                    + "-fx-border-width: 0 0 1 0;");
             GridPane.setMargin(divider, new Insets(0, 16, 0, 16));
             table.add(divider, 0, row, columns, 1);
             if (kind == Kind.LOAN) {
-                Label id = label(record.get("id")); id.setPadding(new Insets(0, 0, 0, 16));
-                table.add(id, 0, row); table.add(label(record.get("type")), 1, row);
+                Label id = label(record.get("id"));
+                id.setPadding(new Insets(0, 0, 0, 16));
+                table.add(id, 0, row);
+                table.add(label(record.get("type")), 1, row);
                 table.add(label(money(record.get("amount"))), 2, row);
                 table.add(label(record.get("rate") + "%"), 3, row);
                 table.add(status(record.get("status")), 4, row);
                 Button review = new Button("Review Loan");
-                review.setStyle("-fx-background-color: #5b55b5; -fx-text-fill: white; -fx-font-size: 12px;"
-                        + " -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6; -fx-cursor: hand;");
+                review.setStyle("-fx-background-color: #5b55b5; -fx-text-fill: white; "
+                        + "-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 5 12; "
+                        + "-fx-background-radius: 6; -fx-cursor: hand;");
                 review.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
                 review.setAccessibleText("Review loan " + record.get("id"));
                 review.setOnAction(event -> onReviewLoan.accept(record.get("id")));
                 table.add(review, 5, row);
             } else if (kind == Kind.DOCUMENT) {
-                String colour = switch (record.get("type")) { case "Identity" -> "#7666db"; case "Address" -> "#42bda6"; default -> "#ed4d94"; };
-                HBox name = new HBox(16, icon("M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 M 5 15 H 9", colour), label(record.get("fileName")));
-                name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 24, 0, 24)); name.setMinWidth(0);
-                table.add(name, 0, row); table.add(label(record.get("type")), 1, row);
+                String colour = switch (record.get("type")) {
+                    case "Identity" -> "#7666db";
+                    case "Address" -> "#42bda6";
+                    default -> "#ed4d94";
+                };
+                HBox name = new HBox(16,
+                        icon("M 1 0 H 10 L 15 5 V 20 H 1 Z M 10 0 V 5 H 15 M 5 9 H 11 M 5 12 H 11 "
+                                + "M 5 15 H 9", colour),
+                        label(record.get("fileName")));
+                name.setAlignment(Pos.CENTER_LEFT);
+                name.setPadding(new Insets(0, 24, 0, 24));
+                name.setMinWidth(0);
+                table.add(name, 0, row);
+                table.add(label(record.get("type")), 1, row);
                 table.add(actions(kind, record, "Actions for " + record.get("fileName")), 2, row);
             } else {
                 HBox name = new HBox(12, avatar(), label(fullName(record)));
-                name.setAlignment(Pos.CENTER_LEFT); name.setPadding(new Insets(0, 20, 0, 20)); name.setMinWidth(0);
-                table.add(name, 0, row); table.add(label(record.get("relationship")), 1, row);
-                table.add(label(record.get("phone")), 2, row); table.add(label(record.get("email")), 3, row);
+                name.setAlignment(Pos.CENTER_LEFT);
+                name.setPadding(new Insets(0, 20, 0, 20));
+                name.setMinWidth(0);
+                table.add(name, 0, row);
+                table.add(label(record.get("relationship")), 1, row);
+                table.add(label(record.get("phone")), 2, row);
+                table.add(label(record.get("email")), 3, row);
                 table.add(status(record.get("status")), 4, row);
-                table.add(actions(kind, record, "Actions for guarantor " + fullName(record)), 5, row);
+                table.add(actions(kind, record, "Actions for guarantor " + fullName(record)), 5,
+                        row);
             }
         }
         if (records.isEmpty()) {
-            Label empty = label("No " + (kind == Kind.LOAN ? "loans" : kind == Kind.DOCUMENT ? "documents" : "guarantors") + (readOnly ? " loaded." : " added."));
-            empty.setPadding(new Insets(20)); table.add(empty, 0, 1, columns, 1);
+            Label empty = label("No " + (kind == Kind.LOAN ? "loans" : kind == Kind.DOCUMENT
+                    ? "documents" : "guarantors") + (readOnly ? " loaded." : " added."));
+            empty.setPadding(new Insets(20));
+            table.add(empty, 0, 1, columns, 1);
         }
     }
+
     private static Label status(String text) {
         Label label = label(text);
-        label.setStyle(text.equals("Active") ? BADGE : BADGE.replace("#d9f3ec", "#efedff").replace("#329e8a", "#6255cc"));
+        label.setStyle(text.equals("Active") ? BADGE : BADGE.replace("#d9f3ec", "#efedff")
+                .replace("#329e8a", "#6255cc"));
         return label;
     }
+
     private Button actions(Kind kind, Map<String, String> record, String accessibleText) {
-        Button button = new Button("\u22EE"); button.setStyle(ACTION); button.setAccessibleText(accessibleText);
+        Button button = new Button("\u22EE");
+        button.setStyle(ACTION);
+        button.setAccessibleText(accessibleText);
         ContextMenu menu = new ContextMenu();
         MenuItem edit = new MenuItem("Edit " + kind.title);
         edit.setOnAction(action -> editRecord(kind, record));
         MenuItem remove = new MenuItem("Remove " + kind.title);
         remove.setDisable(state.persisted && kind == Kind.LOAN);
         remove.setOnAction(action -> {
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Remove this " + kind.title + " from the customer?", ButtonType.CANCEL, ButtonType.OK);
-            if (window() != null) confirmation.initOwner(window());
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Remove this " + kind.title + " from the customer?", ButtonType.CANCEL,
+                            ButtonType.OK);
+            if (window() != null) {
+                confirmation.initOwner(window());
+            }
             confirmation.setHeaderText("Remove " + kind.title);
             State target = state;
             confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
                 if (target.persisted) {
                     persistRelated(target, () -> {
-                        if (kind == Kind.DOCUMENT) customerService.deleteDocument(target.summary.customerId(), record.get("id"));
-                        else if (kind == Kind.GUARANTOR) customerService.deleteGuarantor(target.summary.customerId(), record.get("id"));
+                        if (kind == Kind.DOCUMENT) {
+                            customerService.deleteDocument(target.summary.customerId(),
+                                    record.get("id"));
+                        } else if (kind == Kind.GUARANTOR) {
+                            customerService.deleteGuarantor(target.summary.customerId(),
+                                    record.get("id"));
+                        }
                     });
-                } else { state.records.get(kind).remove(record); render(); }
+                } else {
+                    state.records.get(kind).remove(record);
+                    render();
+                }
             });
         });
         menu.getItems().addAll(edit, remove);
@@ -830,23 +1061,44 @@ final class CustomerDetailsEditing {
         button.setOnAction(event -> menu.show(button, javafx.geometry.Side.BOTTOM, 0, 0));
         return button;
     }
+
     private void renderNotes() {
-        if (notes.getChildren().size() > 1) notes.getChildren().subList(1, notes.getChildren().size()).clear();
+        if (notes.getChildren().size() > 1) {
+            notes.getChildren().subList(1, notes.getChildren().size()).clear();
+        }
         for (Map<String, String> record : state.records.get(Kind.NOTE)) {
-            StackPane icon = new StackPane(icon("M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8", "#6255cc"));
-            icon.setMinSize(36, 36); icon.setPrefSize(36, 36); icon.setMaxSize(36, 36);
+            StackPane icon = new StackPane(icon(
+                    "M 1 0 H 9 L 13 4 V 16 H 1 Z M 9 0 V 4 H 13 M 4 7 H 10 M 4 10 H 10 M 4 13 H 8",
+                    "#6255cc"));
+            icon.setMinSize(36, 36);
+            icon.setPrefSize(36, 36);
+            icon.setMaxSize(36, 36);
             icon.setStyle("-fx-background-color: #efedff; -fx-background-radius: 18;");
-            Label title = label(record.get("title")); title.setStyle(CELL + "-fx-font-weight: bold;");
-            VBox text = new VBox(5, title, label(record.get("text"))); text.setMinWidth(0); HBox.setHgrow(text, Priority.ALWAYS);
-            VBox meta = new VBox(5, label(CustomerRecordEditor.DISPLAY_DATE.format(LocalDate.parse(record.get("date")))), label("By " + record.get("author")));
-            meta.setMinWidth(145); meta.setPrefWidth(145);
-            HBox row = new HBox(16, icon, text, meta, actions(Kind.NOTE, record, "Actions for " + record.get("title") + " note"));
-            row.setAlignment(Pos.CENTER_LEFT); row.setMinHeight(74);
-            row.setStyle("-fx-background-color: white; -fx-border-color: #e2e9fc; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 14 18;");
+            Label title = label(record.get("title"));
+            title.setStyle(CELL + "-fx-font-weight: bold;");
+            VBox text = new VBox(5, title, label(record.get("text")));
+            text.setMinWidth(0);
+            HBox.setHgrow(text, Priority.ALWAYS);
+            VBox meta = new VBox(5,
+                    label(CustomerRecordEditor.DISPLAY_DATE
+                            .format(LocalDate.parse(record.get("date")))),
+                    label("By " + record.get("author")));
+            meta.setMinWidth(145);
+            meta.setPrefWidth(145);
+            HBox row = new HBox(16, icon, text, meta, actions(Kind.NOTE, record,
+                    "Actions for " + record.get("title") + " note"));
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setMinHeight(74);
+            row.setStyle("-fx-background-color: white; -fx-border-color: #e2e9fc; "
+                    + "-fx-border-radius: 8; "
+                    + "-fx-background-radius: 8; -fx-padding: 14 18;");
             notes.getChildren().add(row);
         }
-        if (state.records.get(Kind.NOTE).isEmpty()) notes.getChildren().add(label("No notes added."));
+        if (state.records.get(Kind.NOTE).isEmpty()) {
+            notes.getChildren().add(label("No notes added."));
+        }
     }
+
     private java.util.function.Consumer<String> onReviewLoan = loanId -> {};
     public void setOnReviewLoan(java.util.function.Consumer<String> onReviewLoan) {
         this.onReviewLoan = onReviewLoan;
