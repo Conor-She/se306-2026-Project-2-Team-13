@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+// AI-assisted: Helped write the customer date of birth tests.
 class CustomerServiceTest {
 
     @Test

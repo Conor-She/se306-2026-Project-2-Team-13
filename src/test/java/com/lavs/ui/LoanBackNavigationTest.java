@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LoanBackNavigationTest {
+    // AI-assisted: Covered returning to customer loans and restoring search-origin navigation.
     @Test void backReturnsToCustomerLoansAndResetsForSearchOrigin() throws Exception {
         JavaFxTestSupport.startToolkit();
         FXMLLoader loader = new FXMLLoader(Main.class.getResource("fxml/dashboard.fxml"));

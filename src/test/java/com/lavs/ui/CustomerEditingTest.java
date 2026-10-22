@@ -21,6 +21,7 @@ import com.lavs.ui.CustomerRecordEditor.Kind;
 import static org.junit.jupiter.api.Assertions.*;
 import static com.lavs.ui.CustomerRecordEditor.Kind;
 
+// AI-assisted: Helped write the customer document editing tests.
 class CustomerEditingTest {
     private FXMLLoader loader;
     private Parent root;
@@ -322,6 +323,7 @@ class CustomerEditingTest {
         ((Button) confirmation.lookupButton(ButtonType.OK)).fire();
     }
 
+    // AI-assisted: Updated the primary-address test to target its checkbox control.
     @Test void choosingPrimaryAddressPreservesOtherAddressAndAllowsDeletingIt() throws Exception {
         JavaFxTestSupport.run(() -> {
             openEditor("details", "Add contact information");

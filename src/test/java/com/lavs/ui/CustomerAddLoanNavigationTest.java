@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+// AI-assisted: Helped write the customer to add-loan navigation tests.
 class CustomerAddLoanNavigationTest {
     @Test void customerLoanPrefillsBorrowerAndCancelReturnsToLoansTab() throws Exception {
         JavaFxTestSupport.startToolkit();

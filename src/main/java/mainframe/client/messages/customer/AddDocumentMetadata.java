@@ -7,6 +7,7 @@ import mainframe.client.MessageRequest;
 import mainframe.client.MessageResponse;
 import mainframe.client.Status;
 
+// AI-assisted: Helped implement this metadata-only add document message.
 /** Adds a document record without sending or storing file contents. */
 public final class AddDocumentMetadata implements Message {
     private final String customer;

@@ -14,6 +14,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
+// AI-assisted: Helped refine document metadata editing for customer records.
 /** Shared session-only editor for the records displayed on a customer page. */
 final class CustomerRecordEditor {
     enum Kind {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.Instant;
 
+// AI-assisted: Helped fix the loan payment message tests.
 public class LoanPaymentTests {
     @Test
     void sendsToServer() throws IOException, InterruptedException {

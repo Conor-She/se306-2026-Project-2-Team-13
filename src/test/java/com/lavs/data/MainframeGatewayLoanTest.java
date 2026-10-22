@@ -21,6 +21,7 @@ import mainframe.client.Status;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+// AI-assisted: Helped write the loan gateway tests.
 class MainframeGatewayLoanTest {
 
     // A loan.retrieve reply, with the status and rate type given

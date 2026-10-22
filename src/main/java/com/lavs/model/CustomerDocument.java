@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// AI-assisted: Helped add the document metadata fields (type and upload date).
 public class CustomerDocument {
 
     private final String documentId;

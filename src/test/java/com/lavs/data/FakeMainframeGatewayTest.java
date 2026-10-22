@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+// AI-assisted: Helped write the in-memory document metadata tests.
 class FakeMainframeGatewayTest {
 
     private final FakeMainframeGateway gateway = new FakeMainframeGateway();

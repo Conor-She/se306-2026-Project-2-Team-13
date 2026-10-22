@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// AI-assisted: Helped write the loan prerequisite and guarantor tests.
 class LoanSubmissionServiceTest {
 
     private FakeMainframeGateway gateway;
