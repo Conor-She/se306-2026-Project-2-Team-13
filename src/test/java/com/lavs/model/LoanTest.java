@@ -70,4 +70,16 @@ class LoanTest {
                         false, LocalDate.now(), LocalDate.now(), 2500,
                         Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 0));
     }
+
+    @Test
+    void loanTypesHaveReadableNamesThatMapBackToTheType() {
+        assertEquals("Table Loan", Loan.Type.TABLE_LOAN.displayName());
+        assertEquals("Reducing Balance", Loan.Type.REDUCING_BALANCE.displayName());
+        assertEquals("Interest Only", Loan.Type.INTEREST_ONLY.displayName());
+        for (Loan.Type type : Loan.Type.values()) {
+            assertEquals(type, Loan.Type.fromDisplayName(type.displayName()));
+        }
+        assertThrows(IllegalArgumentException.class, () -> Loan.Type.fromDisplayName("REDUCING_BALANCE"));
+        assertThrows(IllegalArgumentException.class, () -> Loan.Type.fromDisplayName(null));
+    }
 }

@@ -380,4 +380,24 @@ class LoanDetailsControllerTest {
             return null;
         });
     }
+
+    @Test @SuppressWarnings("unchecked")
+    void theEditLoanDialogShowsReadableLoanTypesAndSavesTheChosenOne() throws Exception {
+        JavaFxTestSupport.run(() -> {
+            gateway.createLoan(new Loan("LN-3", "67670442", Loan.Status.NEW, 12000, 5,
+                    Loan.Type.TABLE_LOAN, false, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1),
+                    1066.19, Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, null));
+            controller.setCustomerService(new com.lavs.business.CustomerService(gateway));
+            controller.setLoan(loan("LN-3", "Sarah Johnson", "New", "$12,000", "Table Loan"));
+            button("Edit loan").fire();
+            DialogPane pane = editorDialog();
+            ComboBox<String> type = (ComboBox<String>) pane.lookup("#edit_type");
+            assertEquals(List.of("Table Loan", "Reducing Balance", "Interest Only"), type.getItems());
+            assertEquals("Table Loan", type.getValue());
+            type.setValue("Interest Only");
+            click(pane, "Save");
+            assertEquals(Loan.Type.INTEREST_ONLY, gateway.getLoan("LN-3").getType());
+            return null;
+        });
+    }
 }

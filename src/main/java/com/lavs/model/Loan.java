@@ -13,9 +13,30 @@ public class Loan {
     }
 
     public enum Type {
-        TABLE_LOAN,
-        REDUCING_BALANCE,
-        INTEREST_ONLY
+        TABLE_LOAN("Table Loan"),
+        REDUCING_BALANCE("Reducing Balance"),
+        INTEREST_ONLY("Interest Only");
+
+        private final String displayName;
+
+        Type(String displayName) {
+            this.displayName = displayName;
+        }
+
+        /** The name shown to users, for example "Reducing Balance". */
+        public String displayName() {
+            return displayName;
+        }
+
+        /** The type with this display name, or an IllegalArgumentException if there is none. */
+        public static Type fromDisplayName(String displayName) {
+            for (Type type : values()) {
+                if (type.displayName.equals(displayName)) {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException("Unknown loan type: " + displayName);
+        }
     }
 
     // How often interest is calculated (matches the mainframe's options)
