@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Stores one phone number linked to a customer.
 public class Phone {
     private Long phoneId;
     private String customerId;

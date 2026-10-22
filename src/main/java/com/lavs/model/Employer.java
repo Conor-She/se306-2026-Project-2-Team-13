@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Stores a customer's employment details.
 public class Employer {
     private Long employerId;
     private String customerId;

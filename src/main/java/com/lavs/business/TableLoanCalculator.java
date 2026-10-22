@@ -19,6 +19,7 @@ public class TableLoanCalculator extends BaseRepaymentCalculator {
     public List<Repayment> calculateSchedule(Loan loan) {
         validate(loan, Loan.Type.TABLE_LOAN);
 
+        // Prepare the payment count and interest rate used by the formula.
         int paymentsPerYear = periodsPerYear(loan.getPaymentFrequency());
         int ratePeriodsPerYear = periodsPerYear(loan.getRateFrequency());
         int paymentCount = paymentCount(loan.getTermMonths(), paymentsPerYear);
@@ -29,12 +30,14 @@ public class TableLoanCalculator extends BaseRepaymentCalculator {
         BigDecimal regularPayment = regularPayment(balance, paymentPeriodRate, paymentCount);
         List<Repayment> schedule = new ArrayList<>(paymentCount);
 
+        // Split each payment between interest and principal.
         for (int paymentNumber = 1; paymentNumber <= paymentCount; paymentNumber++) {
             BigDecimal interest = money(
                     balance.multiply(BigDecimal.valueOf(paymentPeriodRate)));
             BigDecimal principalComponent;
             BigDecimal amountDue;
 
+            // The final payment clears any balance left by cent rounding.
             if (paymentNumber == paymentCount) {
                 principalComponent = balance;
                 amountDue = principalComponent.add(interest);
@@ -67,6 +70,7 @@ public class TableLoanCalculator extends BaseRepaymentCalculator {
             BigDecimal principal,
             double paymentPeriodRate,
             int paymentCount) {
+        // A zero-interest loan simply divides the principal evenly.
         if (paymentPeriodRate == 0) {
             return money(principal.divide(
                     BigDecimal.valueOf(paymentCount),
@@ -74,6 +78,7 @@ public class TableLoanCalculator extends BaseRepaymentCalculator {
                     MONEY_ROUNDING));
         }
 
+        // Use the standard amortised-loan payment formula.
         double compoundFactor = Math.pow(1.0 + paymentPeriodRate, paymentCount);
         double payment = principal.doubleValue()
                 * paymentPeriodRate

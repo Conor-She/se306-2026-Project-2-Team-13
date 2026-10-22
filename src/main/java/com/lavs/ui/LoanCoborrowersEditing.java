@@ -75,6 +75,7 @@ final class LoanCoborrowersEditing {
         this.onRecordsChanged = onRecordsChanged == null ? () -> {} : onRecordsChanged;
     }
 
+    // Select the loan whose co-borrowers are being displayed.
     void select(String loanId, String primaryCustomerId) {
         this.loanId = loanId;
         this.primaryCustomerId = primaryCustomerId;
@@ -97,6 +98,7 @@ final class LoanCoborrowersEditing {
                 .findFirst().ifPresent(label -> label.setText("Co-borrowers could not be loaded."));
     }
 
+    // Open the choice between an existing customer and a new customer.
     void add() {
         if (customerService == null || coBorrowerService == null) {
             showError("Co-borrower management is not connected. Sign in again.");
@@ -129,6 +131,7 @@ final class LoanCoborrowersEditing {
         dialog.show();
     }
 
+    // Search registered customers and let the user choose one.
     private void showExistingCustomerPicker() {
         ButtonType addType = new ButtonType("Add selected", ButtonBar.ButtonData.OK_DONE);
         Dialog<String> dialog = new Dialog<>();
@@ -162,6 +165,7 @@ final class LoanCoborrowersEditing {
 
         Button add = (Button) pane.lookupButton(addType);
         add.disableProperty().bind(results.getSelectionModel().selectedItemProperty().isNull());
+        // Wait briefly while the user types to avoid unnecessary searches.
         PauseTransition delay = new PauseTransition(Duration.millis(300));
         Runnable runSearch = () -> searchCustomers(search.getText(), results, status);
         delay.setOnFinished(event -> runSearch.run());
@@ -200,6 +204,7 @@ final class LoanCoborrowersEditing {
         status.setText("Searching customers...");
         requestExecutor.execute(() -> {
             try {
+                // Exclude the primary borrower and customers already attached to the loan.
                 List<CustomerPreview> matches = customerService.search(query).stream()
                         .filter(customer -> eligible(customer.customerId().value()))
                         .toList();
@@ -224,6 +229,7 @@ final class LoanCoborrowersEditing {
                 && records.stream().noneMatch(record -> customerId.equals(record.customerId()));
     }
 
+    // Open the normal customer registration flow in a separate window.
     private void showNewCustomerEditor() {
         if (registrationServiceFactory == null) {
             showError("Customer registration is not connected. Sign in again.");
@@ -263,6 +269,7 @@ final class LoanCoborrowersEditing {
         }
     }
 
+    // Save the selected customer as a co-borrower, then reload the table.
     private void persistAdd(String customerId) {
         table.setDisable(true);
         requestExecutor.execute(() -> {
@@ -281,6 +288,7 @@ final class LoanCoborrowersEditing {
         });
     }
 
+    // Confirm before removing a co-borrower from the loan.
     private void delete(CoBorrowerDetails record) {
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
                 "Remove " + name(record) + " from this loan?", ButtonType.CANCEL, ButtonType.OK);
@@ -308,6 +316,7 @@ final class LoanCoborrowersEditing {
         confirmation.show();
     }
 
+    // Rebuild the visible table from the latest mainframe records.
     private void render() {
         table.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
                 && GridPane.getRowIndex(node) > 0);

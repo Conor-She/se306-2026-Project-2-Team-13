@@ -19,6 +19,7 @@ public class ReducingBalanceCalculator extends BaseRepaymentCalculator {
     public List<Repayment> calculateSchedule(Loan loan) {
         validate(loan, Loan.Type.REDUCING_BALANCE);
 
+        // Prepare the payment count and interest rate for the schedule.
         int paymentsPerYear = periodsPerYear(loan.getPaymentFrequency());
         int ratePeriodsPerYear = periodsPerYear(loan.getRateFrequency());
         int paymentCount = paymentCount(loan.getTermMonths(), paymentsPerYear);
@@ -32,9 +33,11 @@ public class ReducingBalanceCalculator extends BaseRepaymentCalculator {
                 MONEY_ROUNDING));
         List<Repayment> schedule = new ArrayList<>(paymentCount);
 
+        // Pay equal principal amounts while interest falls with the balance.
         for (int paymentNumber = 1; paymentNumber <= paymentCount; paymentNumber++) {
             BigDecimal interest = money(
                     balance.multiply(BigDecimal.valueOf(paymentPeriodRate)));
+            // The final payment clears any balance left by cent rounding.
             BigDecimal principalComponent = paymentNumber == paymentCount
                     ? balance
                     : regularPrincipal;

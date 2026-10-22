@@ -24,6 +24,7 @@ final class GuarantorCustomerPicker {
     private boolean choosing;
     private boolean closed;
 
+    // Attach customer search behaviour to a guarantor editor dialog.
     static void install(Dialog<?> dialog, CustomerService service, Set<String> excluded, String existingId) {
         new GuarantorCustomerPicker(dialog, service, excluded, existingId);
     }
@@ -53,6 +54,7 @@ final class GuarantorCustomerPicker {
         int position = form.getChildren().indexOf(input);
         form.getChildren().addAll(position + 1, java.util.List.of(results, selected));
         showResults(false);
+        // Reset the selection and delay the search whenever the query changes.
         input.textProperty().addListener((observable, old, value) -> {
             if (choosing) return;
             selectedId = null;
@@ -66,6 +68,7 @@ final class GuarantorCustomerPicker {
         });
         delay.setOnFinished(event -> search());
         input.setOnAction(event -> { delay.stop(); search(); });
+        // Copy the chosen customer's ID into the form.
         results.getSelectionModel().selectedItemProperty().addListener((observable, old, customer) -> {
             if (customer == null) return;
             choosing = true;
@@ -89,6 +92,7 @@ final class GuarantorCustomerPicker {
         dialog.addEventHandler(DialogEvent.DIALOG_HIDDEN, event -> { closed = true; ++version; delay.stop(); });
     }
 
+    // Run the search away from the UI thread and ignore outdated results.
     private void search() {
         String query = input.getText().strip();
         if (query.isEmpty() || closed) return;

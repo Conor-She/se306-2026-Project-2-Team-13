@@ -20,6 +20,7 @@ final class DialogView {
     @SuppressWarnings("unchecked")
     <T> T get(String id) { return (T) content.getNamespace().get(id); }
 
+    // Apply shared button, field and date-picker styles after JavaFX creates them.
     void apply(DialogPane pane) {
         pane.applyCss();
         Node container = pane.lookup(".button-bar > .container");
@@ -49,6 +50,7 @@ final class DialogView {
 
     private String style(String id) { return (String) theme.getNamespace().get(id); }
 
+    // Load the shared appearance for customer search results.
     static void styleCustomerCell(ListCell<?> cell) {
         FXMLLoader loader = new FXMLLoader(DialogView.class.getResource("fxml/coborrowerCustomerCell.fxml"));
         loader.setRoot(cell);
@@ -67,6 +69,7 @@ final class DialogView {
         refresh.run();
     }
 
+    // Load one reusable dialog layout from the FXML resources.
     private static FXMLLoader load(String file) {
         FXMLLoader loader = new FXMLLoader(DialogView.class.getResource("fxml/" + file));
         try {

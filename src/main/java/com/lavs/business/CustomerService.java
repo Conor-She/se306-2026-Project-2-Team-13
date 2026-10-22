@@ -32,6 +32,7 @@ public class CustomerService {
         this.gateway = Objects.requireNonNull(gateway, "gateway must not be null");
     }
 
+    // Note operations use the dedicated note service.
     public List<com.lavs.model.CustomerNote> getNotes(String customerId) {
         return new CustomerNoteService(gateway).getNotes(customerId);
     }
@@ -68,6 +69,7 @@ public class CustomerService {
         }
         List<Guarantor> guarantors = gateway.getGuarantors(customerId);
         Map<String, String> guarantorNames = new HashMap<>();
+        // Replace guarantor customer IDs with names for display in the UI.
         for (Guarantor guarantor : guarantors) {
             String linkedId = guarantor.getGuarantorCustomerId();
             if (guarantorNames.containsKey(linkedId)) continue;
@@ -86,6 +88,7 @@ public class CustomerService {
 
     public Customer create(Customer customer, List<Address> addresses, List<Phone> phones,
             List<Email> emails, List<Employer> employers) {
+        // Save the customer first because related records need the assigned ID.
         validateCustomer(customer, false);
         requireLists(addresses, phones, emails, employers);
 
@@ -146,6 +149,7 @@ public class CustomerService {
 
     public Customer update(Customer customer, List<Address> addresses, List<Phone> phones,
             List<Email> emails, List<Employer> employers) {
+        // Compare the requested state with the current mainframe records.
         validateCustomer(customer, true);
         requireLists(addresses, phones, emails, employers);
 
@@ -221,6 +225,7 @@ public class CustomerService {
 
     private <T> void validateIds(List<T> existing, List<T> requested, Function<T, Long> id,
             String itemName) {
+        // Reject IDs that belong to another customer or appear more than once.
         Set<Long> existingIds = new HashSet<>();
         for (T item : existing) {
             existingIds.add(id.apply(item));
@@ -248,6 +253,7 @@ public class CustomerService {
     private <T> void sync(List<T> existing, List<T> requested, Function<T, Long> id,
             BiPredicate<T, T> same, Consumer<T> add, Consumer<T> update,
             Consumer<Long> delete) {
+        // Add new records, update changed records and remove missing records.
         Map<Long, T> existingById = new HashMap<>();
         for (T item : existing) {
             existingById.put(id.apply(item), item);

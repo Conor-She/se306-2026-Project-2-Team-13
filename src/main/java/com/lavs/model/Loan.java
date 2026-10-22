@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores the terms, dates and status of one loan.
 public class Loan {
 
     public enum Status {

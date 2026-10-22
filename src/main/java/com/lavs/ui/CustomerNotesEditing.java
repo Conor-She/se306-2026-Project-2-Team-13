@@ -22,11 +22,13 @@ final class CustomerNotesEditing {
         this.service = service;
     }
 
+    // Switch the editor to another customer and load their notes.
     void select(String customerId) {
         this.customerId = customerId;
         refresh();
     }
 
+    // Reload notes in the background so the screen stays responsive.
     void refresh() {
         if (customerId == null) return;
         long request = ++version;
@@ -50,6 +52,7 @@ final class CustomerNotesEditing {
         list.getChildren().addAll(rows);
     }
 
+    // Build one visible row for each stored note.
     private void render(List<CustomerNote> notes) {
         replaceRows();
         if (notes.isEmpty()) list.getChildren().add(new Label("No notes added."));
@@ -87,6 +90,7 @@ final class CustomerNotesEditing {
         }
     }
 
+    // Use the same dialog to add a note or edit an existing one.
     void edit(CustomerNote note) {
         if (customerId == null) return;
         String selectedCustomer = customerId;
@@ -130,6 +134,7 @@ final class CustomerNotesEditing {
         }));
     }
 
+    // Save a note change in the background and refresh after success.
     private void change(Runnable mutation) {
         long request = ++version;
         list.setDisable(true);

@@ -3,6 +3,7 @@ package com.lavs.business;
 import com.lavs.model.CustomerDraft;
 import java.util.List;
 
+// Separates the customer wizard from the system used to validate and save customers.
 /** UI boundary for the customer wizard, so its screens do not depend on how a customer is saved. Field paths identify list indexes. */
 public interface CustomerRegistrationService {
     record ValidationError(int step, String field, String message) {}

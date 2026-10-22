@@ -30,6 +30,7 @@ public class LoginController {
 
     @FXML
     private void initialize() {
+        // Keep the branded panel responsive and clear errors when the form changes.
         colourPanel.prefWidthProperty().bind(root.widthProperty().multiply(0.477));
         colourPanel.visibleProperty().bind(root.widthProperty().greaterThanOrEqualTo(700));
         colourPanel.managedProperty().bind(colourPanel.visibleProperty());
@@ -42,6 +43,7 @@ public class LoginController {
 
     @FXML
     private void togglePassword() {
+        // Swap between the hidden and visible password fields without losing text.
         boolean show = !visiblePassword.isVisible();
         visiblePassword.setVisible(show);
         visiblePassword.setManaged(show);
@@ -59,6 +61,7 @@ public class LoginController {
 
     @FXML
     private void login() {
+        // Validate the form before sending credentials to the login handler.
         clearError();
         if (username.getText().isBlank() && password.getText().isEmpty()) {
             showError("Please enter your username and password.");

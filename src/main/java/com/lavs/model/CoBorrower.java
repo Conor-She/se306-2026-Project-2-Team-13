@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Links an existing customer to a loan as a co-borrower.
 public class CoBorrower {
 
     private final String coBorrowerId;

@@ -8,6 +8,7 @@ import java.util.Locale;
 
 /** Calculates an unsaved draft's schedule without creating a loan or calling a gateway. */
 public class LoanSchedulePreviewService {
+    // Select the calculator that matches the draft's loan type.
     public List<Repayment> generate(LoanDraft draft) {
         Loan loan = toLoan(draft, "PREVIEW", 0);
         RepaymentCalculator calculator = switch (loan.getType()) {
@@ -36,6 +37,7 @@ public class LoanSchedulePreviewService {
     }
 
     private static String option(LoanDraft draft, String key) {
+        // Convert user-facing option text into the matching enum name.
         return draft.details.getOrDefault(key, "").strip().toUpperCase(Locale.ROOT).replace(' ', '_');
     }
 }

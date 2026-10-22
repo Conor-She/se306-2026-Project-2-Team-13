@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores a dated note attached to a customer.
 public class CustomerNote {
     private final String noteId;
     private final String customerId;

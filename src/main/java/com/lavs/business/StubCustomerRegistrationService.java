@@ -21,6 +21,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
     private final AtomicInteger sequence = new AtomicInteger(11);
     private final Map<String, CustomerDraft> saved = new LinkedHashMap<>();
 
+    // Validate the personal details and every related record in the draft.
     @Override public List<ValidationError> validate(CustomerDraft draft) {
         List<ValidationError> errors = new ArrayList<>();
         for (String key : List.of("title", "firstName", "lastName", "dateOfBirth", "nationality")) {
@@ -50,6 +51,8 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         }
         return List.copyOf(errors);
     }
+
+    // Add each entry's errors with its list position included in the field path.
     private void validateEntries(String kind, List<Map<String, String>> entries, List<ValidationError> errors) {
         for (int i = 0; i < entries.size(); i++) {
             for (ValidationError error : validateEntry(kind, entries.get(i)))
@@ -57,6 +60,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         }
     }
 
+    // Apply the rules that belong to one address, contact or supporting record.
     private List<ValidationError> validateEntry(String kind, Map<String, String> entry) {
         List<ValidationError> errors = new ArrayList<>();
         int step = kind.equals("documents") ? 4 : kind.equals("notes") ? 3 : kind.equals("employers") ? 2 : 1;
@@ -96,6 +100,7 @@ public class StubCustomerRegistrationService implements CustomerRegistrationServ
         return List.copyOf(errors);
     }
 
+    // Store a copy only after every validation rule passes.
     @Override public synchronized String save(CustomerDraft draft) throws RegistrationException {
         List<ValidationError> errors = validate(draft);
         if (!errors.isEmpty()) throw new RegistrationException(errors);

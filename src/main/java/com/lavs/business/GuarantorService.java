@@ -15,6 +15,7 @@ public class GuarantorService {
         this.gateway = gateway;
     }
 
+    // Validate and create a relationship with another customer.
     public Guarantor addGuarantor(
             String customerId,
             String guarantorCustomerId,
@@ -24,6 +25,7 @@ public class GuarantorService {
                 new Guarantor(null, customerId, guarantorCustomerId, relationshipType));
     }
 
+    // Validate and save changes to an existing guarantor relationship.
     public Guarantor updateGuarantor(
             String guarantorId,
             String customerId,
@@ -39,6 +41,7 @@ public class GuarantorService {
                         relationshipType));
     }
 
+    // Remove the selected guarantor relationship.
     public void deleteGuarantor(String customerId, String guarantorId) {
         requireNotBlank(customerId, "customerId");
         requireNotBlank(guarantorId, "guarantorId");
@@ -53,11 +56,13 @@ public class GuarantorService {
         requireNotBlank(guarantorCustomerId, "guarantorCustomerId");
         requireNotBlank(relationshipType, "relationshipType");
 
+        // A customer cannot act as their own guarantor.
         if (customerId.equals(guarantorCustomerId)) {
             throw new IllegalArgumentException(
                     "customerId and guarantorCustomerId must differ");
         }
 
+        // Both sides must already exist on the mainframe.
         requireExistingCustomer(customerId);
         requireExistingCustomer(guarantorCustomerId);
     }

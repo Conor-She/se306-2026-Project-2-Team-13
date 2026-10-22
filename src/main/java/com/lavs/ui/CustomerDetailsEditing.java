@@ -89,6 +89,7 @@ final class CustomerDetailsEditing {
         this.onChange = onChange;
     }
 
+    // Load the selected customer's complete record from the service.
     void setCustomerService(com.lavs.business.CustomerService customerService) {
         this.customerService = Objects.requireNonNull(customerService);
     }
@@ -226,6 +227,7 @@ final class CustomerDetailsEditing {
         }
     }
 
+    // Open the editor for a main customer detail section.
     void editDetails(Kind kind) {
         State target = state;
         CustomerRecordEditor.create(window(), kind, target.details.get(kind), false, saved -> {
@@ -242,6 +244,7 @@ final class CustomerDetailsEditing {
         };
     }
 
+    // Edit the primary address, phone number or email.
     void editContact(String type) {
         editContact(type, null, () -> {});
     }
@@ -365,6 +368,7 @@ final class CustomerDetailsEditing {
         });
     }
 
+    // Show all saved contacts of one type in a dialog.
     void viewContacts(String type) {
         Dialog<Void> dialog = new Dialog<>();
         if (window() != null) {
@@ -477,6 +481,7 @@ final class CustomerDetailsEditing {
         return row;
     }
 
+    // Add a new related record such as a note, document or employer.
     void add(Kind kind) {
         editRecord(kind, null);
     }
@@ -523,6 +528,7 @@ final class CustomerDetailsEditing {
                 ? Map.of("id", "This loan ID already exists for the customer.") : Map.of()).show();
     }
 
+    // Save changes through the correct business service for this record type.
     private void editPersistedRecord(Kind kind, Map<String, String> record) {
         State target = state;
         if (customerService == null) {
@@ -601,6 +607,7 @@ final class CustomerDetailsEditing {
         }
     }
 
+    // Apply edits to a copy, persist it, then update the visible state.
     private void save(State target, Consumer<State> change, Runnable afterSave) {
         if (state != target || saving) {
             return;
@@ -681,6 +688,7 @@ final class CustomerDetailsEditing {
         alert.show();
     }
 
+    // Convert the editor's display maps back into domain objects for saving.
     private com.lavs.model.CustomerDetails toCustomerDetails(State source) {
         String customerId = source.summary.customerId();
         Map<String, String> personal = source.details.get(Kind.PERSONAL);
@@ -787,6 +795,7 @@ final class CustomerDetailsEditing {
         return owner.getScene() == null ? null : owner.getScene().getWindow();
     }
 
+    // Refresh the customer summary and each visible section.
     private void render() {
         Map<String, String> personal = state.details.get(Kind.PERSONAL);
         Map<String, String> contact = state.details.get(Kind.CONTACT);
@@ -943,6 +952,7 @@ final class CustomerDetailsEditing {
         return avatar;
     }
 
+    // Build rows for loans, documents, employers and guarantors.
     private void renderTable(Kind kind, GridPane table) {
         table.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
                 && GridPane.getRowIndex(node) > 0);
@@ -1063,6 +1073,7 @@ final class CustomerDetailsEditing {
         return button;
     }
 
+    // Render notes in newest-first order with their available actions.
     private void renderNotes() {
         if (notes.getChildren().size() > 1) {
             notes.getChildren().subList(1, notes.getChildren().size()).clear();

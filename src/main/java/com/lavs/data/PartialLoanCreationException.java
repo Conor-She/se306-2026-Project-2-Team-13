@@ -1,5 +1,6 @@
 package com.lavs.data;
 
+// Carries the assigned loan ID when creation only partly succeeds.
 /** A loan received an ID before a later creation step failed. */
 public class PartialLoanCreationException extends RuntimeException {
     private final String loanId;

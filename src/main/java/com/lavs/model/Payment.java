@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores a payment recorded against a loan.
 public class Payment {
 
     private final String paymentId;

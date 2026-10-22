@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores one expected repayment row in a loan schedule.
 public class Repayment {
 
     private final String repaymentId;

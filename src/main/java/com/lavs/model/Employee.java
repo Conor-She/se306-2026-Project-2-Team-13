@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Stores the credentials and display name of a bank employee.
 public class Employee {
 
     private final String employeeId;

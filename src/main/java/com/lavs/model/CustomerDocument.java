@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores metadata for a document attached to a customer.
 public class CustomerDocument {
 
     private final String documentId;
