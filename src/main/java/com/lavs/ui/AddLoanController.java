@@ -28,6 +28,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+// AI-assisted: Helped fix the loan wizard customer search and prerequisite validation.
 /**
  * Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the
  * mainframe.

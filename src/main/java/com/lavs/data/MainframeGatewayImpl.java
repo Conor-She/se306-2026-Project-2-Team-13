@@ -180,6 +180,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 message.getNationality());
     }
 
+    // AI-assisted: Helped fix the customer date of birth being returned as null.
     private static LocalDate parseDate(String value) {
         return value == null || value.isBlank() ? null : LocalDate.parse(value);
     }
@@ -475,6 +476,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // AI-assisted: Helped implement mapping customer document metadata to and from the mainframe.
     @Override
     public List<CustomerDocument> getDocuments(String customerId) {
         List<CustomerDocument> documents = new ArrayList<>();

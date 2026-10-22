@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+// AI-assisted: Helped implement loan searching by customer and loan number, and loading loan records.
 // Read-only lookups behind the Loans page: finding loans and loading the
 // payments and co-borrowers shown on a loan's details.
 // The mainframe has no "list every loan" message: loans can only be listed

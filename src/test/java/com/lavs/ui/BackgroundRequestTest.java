@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BackgroundRequestTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
+    // AI-assisted: Covered background responsiveness, completion callbacks and progress-dialog closure.
     void slowRequestLeavesUiResponsiveAndClosesProgressOnCompletion(boolean fail) throws Exception {
         JavaFxTestSupport.startToolkit();
         CountDownLatch started = new CountDownLatch(1);

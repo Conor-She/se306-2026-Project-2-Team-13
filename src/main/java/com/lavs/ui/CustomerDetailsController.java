@@ -181,6 +181,7 @@ public class CustomerDetailsController {
     public void setOnCustomerChanged(Consumer<CustomersController.CustomerSummary> onCustomerChanged) {
         this.onCustomerChanged = onCustomerChanged;
     }
+    // AI-assisted: Exposed the background-save executor for customer detail editing.
     public void setRequestExecutor(java.util.concurrent.Executor executor) { editing.setRequestExecutor(executor); }
 
     @FXML private void editPersonal() { editing.editDetails(Kind.PERSONAL); }

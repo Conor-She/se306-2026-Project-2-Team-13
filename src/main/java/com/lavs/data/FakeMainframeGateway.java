@@ -382,6 +382,7 @@ public class FakeMainframeGateway implements MainframeGateway {
         return read(notes, customerId);
     }
 
+    // AI-assisted: Helped implement the in-memory customer document metadata operations.
     @Override
     public List<CustomerDocument> getDocuments(String customerId) {
         checkAvailability();

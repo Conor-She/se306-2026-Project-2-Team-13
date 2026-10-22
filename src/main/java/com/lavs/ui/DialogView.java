@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 
+// AI-assisted: Extracted dialog layouts and shared styling into a reusable FXML helper.
 /** Loads dialog layouts and applies FXML-defined styles to JavaFX-generated controls. */
 final class DialogView {
     private final FXMLLoader theme = load("themedDialog.fxml");

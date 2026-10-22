@@ -17,6 +17,7 @@ import mainframe.client.Status;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+// AI-assisted: Helped write the customer update tests.
 class MainframeGatewayCustomerUpdateTest {
     @Test void createReturnsSubmittedDateWhenReplyOmitsOptionalDateOfBirth() {
         Connection connection = mock(Connection.class);

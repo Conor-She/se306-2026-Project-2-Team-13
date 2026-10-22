@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+// AI-assisted: Helped write the customer date of birth mapping tests.
 class MainframeGatewayCustomerSearchTest {
     @Test void customerNumberUsesRetrievalInsteadOfNameSearch() {
         Connection connection = mock(Connection.class);

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<!-- AI-assisted: Moved the payment editor form layout and styling into FXML. -->
 <GridPane xmlns:fx="http://javafx.com/fxml/1" id="paymentForm" hgap="18" vgap="16" prefWidth="560" style="-fx-padding: 20 20 16 20;">
         <Label fx:id="paymentContext" id="paymentContext" wrapText="true" GridPane.columnSpan="2" style="-fx-text-fill: #747ba6; -fx-font-size: 13px; -fx-padding: 0 0 4 0;"/>
         <Label text="Date" GridPane.rowIndex="1" style="-fx-text-fill: #393a7b; -fx-font-size: 13px; -fx-font-weight: bold;"/>

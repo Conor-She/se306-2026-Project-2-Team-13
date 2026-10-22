@@ -15,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+// AI-assisted: Helped write the customer document service tests.
 class CustomerDocumentServiceTest {
     private static final LocalDate UPLOAD_DATE = LocalDate.of(2026, 10, 14);
 

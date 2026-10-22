@@ -3,6 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.SVGPath?>
+<!-- AI-assisted: Helped lay out the loan search and results list. -->
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lavs.ui.LoansController" minWidth="0" minHeight="0">
  <fx:define>

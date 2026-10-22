@@ -26,6 +26,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 
+// AI-assisted: Helped implement the searchable loan list and navigation to loan details.
 /** Searchable loan list and navigation to the selected loan's details. */
 public class LoansController {
     public static final String NOT_CONNECTED = "Connect to the mainframe to search loans";
@@ -386,6 +387,7 @@ public class LoansController {
         detailsViewController.dispose();
     }
 
+    // AI-assisted: Preserved the originating view's back action when opening loan details.
     void openDetails(LoanSummary loan) {
         openDetails(loan, this::showListAndFocusSearch);
     }

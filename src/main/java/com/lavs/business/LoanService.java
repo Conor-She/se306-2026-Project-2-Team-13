@@ -176,6 +176,7 @@ public class LoanService {
 
     // The mainframe rejects a lookup for a customer that doesn't exist, so that
     // business error means "not a customer"; an outage still reaches the caller.
+    // AI-assisted: Helped implement the customer and guarantor prerequisite checks.
     private boolean customerExists(String customerId) {
         if (customerId == null || customerId.isBlank()) return false;
         try {
