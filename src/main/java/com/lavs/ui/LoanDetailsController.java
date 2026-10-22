@@ -82,7 +82,8 @@ public class LoanDetailsController {
 
     @FXML private void initialize() {
         coborrowers = new LoanCoborrowersEditing(coborrowersTable, coborrowerRowStyle,
-                coborrowerActionStyle, coborrowerIconStyle, coborrowerHoverStyle, coborrowerDeleteHoverStyle);
+                coborrowerActionStyle, coborrowerIconStyle, coborrowerHoverStyle,
+                        coborrowerDeleteHoverStyle);
         showLoanDetailsTab();
         refreshPayments();
     }
@@ -99,7 +100,8 @@ public class LoanDetailsController {
         typeValue.setText(loan.type());
         boolean active = "Active".equals(loan.status());
         editLoanButton.setDisable(active);
-        editLoanButton.setTooltip(new Tooltip(active ? "Active loans can't be edited." : "Edit loan"));
+        editLoanButton.setTooltip(new Tooltip(active ? "Active loans can't be edited."
+                : "Edit loan"));
         interestRateValue.setText(loan.rate());
         paymentFrequencyValue.setText(loan.paymentFrequency());
         rateFrequencyValue.setText(loan.rateFrequency());
@@ -137,7 +139,9 @@ public class LoanDetailsController {
                 LoanBrowsingService.LoanRecords records = loanBrowsingService.recordsFor(loanId);
                 javafx.application.Platform.runLater(() -> {
                     if (recordsSequence.get() != request || loan == null
-                            || !loanId.equals(loan.loanId())) return;
+                            || !loanId.equals(loan.loanId())) {
+                                return;
+                            }
                     payments.setAll(records.payments());
                     recordsUnavailable = false;
                     coborrowers.setRecords(loanId, records.coBorrowers());
@@ -147,7 +151,9 @@ public class LoanDetailsController {
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
                     if (recordsSequence.get() != request || loan == null
-                            || !loanId.equals(loan.loanId())) return;
+                            || !loanId.equals(loan.loanId())) {
+                                return;
+                            }
                     payments.clear();
                     recordsUnavailable = true;
                     refreshPayments();
@@ -171,7 +177,9 @@ public class LoanDetailsController {
     }
 
     @FXML private void back() {
-        if (onBack != null) onBack.run();
+        if (onBack != null) {
+            onBack.run();
+        }
     }
 
     @FXML private void showLoanDetailsTab() {
@@ -183,7 +191,9 @@ public class LoanDetailsController {
     }
 
     @FXML private void addCoborrower() {
-        if (loan != null) coborrowers.add();
+        if (loan != null) {
+            coborrowers.add();
+        }
     }
 
     @FXML private void showRepaymentScheduleTab() {
@@ -221,19 +231,25 @@ public class LoanDetailsController {
     }
 
     private void configureCoborrowers() {
-        if (coborrowers == null) return;
+        if (coborrowers == null) {
+            return;
+        }
         coborrowers.configure(customerService, coBorrowerService, registrationServiceFactory,
                 requestExecutor, () -> {
-                    if (loan != null) loadLoanRecords(loan.loanId());
+                    if (loan != null) {
+                        loadLoanRecords(loan.loanId());
+                    }
                 });
     }
 
     private void selectTab(Button selectedTab, VBox selectedView) {
-        for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab, paymentsTab)) {
+        for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab,
+                paymentsTab)) {
             tab.setStyle(tab == selectedTab ? selectedTabStyle() : tabStyle());
             tab.getParent().lookup(".loan-tab-indicator").setVisible(tab == selectedTab);
         }
-        for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView, paymentsView)) {
+        for (VBox view : List.of(loanDetailsView, coborrowersView, repaymentScheduleView,
+                paymentsView)) {
             boolean selected = view == selectedView;
             view.setVisible(selected);
             view.setManaged(selected);
@@ -245,70 +261,95 @@ public class LoanDetailsController {
     }
 
     @FXML private void editLoan() {
-        if (loan == null || customerService == null) return;
+        if (loan == null || customerService == null) {
+            return;
+        }
         var selected = loan;
         var service = customerService;
         BackgroundRequest.run(loanHeading.getScene().getWindow(), "Loading loan…", requestExecutor,
                 () -> service.getLoan(selected.customerId(), selected.loanId()), existing -> {
-                    if (loan != selected) return;
+                    if (loan != selected) {
+                        return;
+                    }
                     showLoanEditor(existing, selected);
                 }, this::showEditError);
     }
 
-    private void showLoanEditor(com.lavs.model.Loan existing, LoansController.LoanSummary selected) {
+    private void showLoanEditor(com.lavs.model.Loan existing,
+            LoansController.LoanSummary selected) {
         var original = new java.util.LinkedHashMap<String, String>();
         original.put("id", existing.getLoanId());
         original.put("status", loan.status());
         original.put("type", existing.getType() == null ? "" : existing.getType().displayName());
-        original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal()).toPlainString());
+        original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal())
+                .toPlainString());
         original.put("rate", java.math.BigDecimal.valueOf(existing.getInterestRate())
                 .stripTrailingZeros().toPlainString());
         original.put("paymentAmount", Double.toString(existing.getPaymentAmount()));
-        CustomerRecordEditor.create(loanHeading.getScene().getWindow(), CustomerRecordEditor.Kind.SAVED_LOAN,
+        CustomerRecordEditor.create(loanHeading.getScene().getWindow(),
+                CustomerRecordEditor.Kind.SAVED_LOAN,
                 original, false, saved -> {
             var updated = new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
                         existing.getStatus(), Double.parseDouble(saved.get("amount")),
-                        Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
+                        Double.parseDouble(saved.get("rate")),
+                                com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
                         existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
-                        Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
+                        Double.parseDouble(saved.get("paymentAmount")),
+                                existing.getPaymentFrequency(),
                         existing.getRateFrequency(), termFor(existing));
             var service = customerService;
-            BackgroundRequest.run(loanHeading.getScene().getWindow(), "Saving loan…", requestExecutor, () -> {
+            BackgroundRequest.run(loanHeading.getScene().getWindow(), "Saving loan…",
+                    requestExecutor, () -> {
                 service.updateLoan(updated);
                 return service.getLoan(selected.customerId(), selected.loanId());
             }, refreshed -> {
-                if (loan == selected) setLoan(LoansController.summaryFor(refreshed, selected.customerName()));
+                if (loan == selected) {
+                    setLoan(LoansController.summaryFor(refreshed, selected.customerName()));
+                }
             }, this::showEditError);
         }).show();
     }
 
     private void showEditError(RuntimeException failure) {
         Alert alert = new Alert(Alert.AlertType.ERROR,
-                failure.getMessage() == null ? "The loan could not be saved." : failure.getMessage());
+                failure.getMessage() == null ? "The loan could not be saved."
+                        : failure.getMessage());
         alert.setHeaderText("Could not edit loan");
-        if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
+        if (loanHeading.getScene() != null) {
+            alert.initOwner(loanHeading.getScene().getWindow());
+        }
         alert.showAndWait();
     }
 
     // The mainframe doesn't store the term, but the renew date is the start date plus the term,
     // so it can be recovered from those two dates.
     private static Integer termFor(com.lavs.model.Loan loan) {
-        if (loan.getTermMonths() != null) return loan.getTermMonths();
-        if (loan.getStartDate() == null || loan.getRenewDate() == null) return null;
-        long months = java.time.temporal.ChronoUnit.MONTHS.between(loan.getStartDate(), loan.getRenewDate());
+        if (loan.getTermMonths() != null) {
+            return loan.getTermMonths();
+        }
+        if (loan.getStartDate() == null || loan.getRenewDate() == null) {
+            return null;
+        }
+        long months = java.time.temporal.ChronoUnit.MONTHS.between(loan.getStartDate(),
+                loan.getRenewDate());
         return months > 0 ? (int) months : null;
     }
 
     private void editPayment(Payment existingPayment) {
-        if (loan == null) return;
+        if (loan == null) {
+            return;
+        }
 
-        ButtonType saveType = new ButtonType(existingPayment == null ? "Add payment" : "Save changes",
+        ButtonType saveType = new ButtonType(existingPayment == null ? "Add payment"
+                : "Save changes",
                 ButtonType.OK.getButtonData());
         Dialog<Payment> dialog = new Dialog<>();
         DialogView view = new DialogView(dialog, "paymentEditor.fxml");
         dialog.setTitle(existingPayment == null ? "Add payment" : "Edit payment");
         dialog.setHeaderText(existingPayment == null ? "Add payment" : "Edit payment");
-        if (loanHeading.getScene() != null) dialog.initOwner(loanHeading.getScene().getWindow());
+        if (loanHeading.getScene() != null) {
+            dialog.initOwner(loanHeading.getScene().getWindow());
+        }
         var pane = dialog.getDialogPane();
         pane.setId("paymentEditor");
         pane.setPrefWidth(560);
@@ -316,9 +357,11 @@ public class LoanDetailsController {
         dialog.setResizable(false);
 
         DatePicker paymentDate = view.get("paymentDate");
-        paymentDate.setValue(existingPayment == null ? LocalDate.now() : existingPayment.getPaymentDate());
+        paymentDate.setValue(existingPayment == null ? LocalDate.now()
+                : existingPayment.getPaymentDate());
         TextField amount = view.get("paymentAmount");
-        amount.setText(existingPayment == null ? "" : Double.toString(existingPayment.getAmountPaid()));
+        amount.setText(existingPayment == null ? ""
+                : Double.toString(existingPayment.getAmountPaid()));
         Label context = view.get("paymentContext");
         context.setText((existingPayment == null
                 ? "Record a payment for " : "Update the payment for ") + loan.loanId());
@@ -331,26 +374,33 @@ public class LoanDetailsController {
         validate.run();
 
         dialog.setResultConverter(button -> {
-            if (button != saveType) return null;
+            if (button != saveType) {
+                return null;
+            }
             double amountPaid = parseAmount(amount.getText()).doubleValue();
             // A new payment has no ID yet: the mainframe assigns one when it is saved
             String paymentId = existingPayment == null ? null : existingPayment.getPaymentId();
             String repaymentId = existingPayment == null ? null : existingPayment.getRepaymentId();
-            return new Payment(paymentId, loan.loanId(), repaymentId, paymentDate.getValue(), amountPaid);
+            return new Payment(paymentId, loan.loanId(), repaymentId, paymentDate.getValue(),
+                    amountPaid);
         });
 
         dialog.setOnShown(event -> {
             view.apply(pane);
             ButtonBar buttons = (ButtonBar) pane.lookup(".button-bar");
-            if (buttons != null) buttons.setButtonOrder("C+O");
+            if (buttons != null) {
+                buttons.setButtonOrder("C+O");
+            }
             amount.requestFocus();
         });
 
         dialog.showAndWait().ifPresent(updatedPayment -> {
             if (existingPayment == null) {
-                changePayments("Could not add payment", () -> paymentService.addPayment(updatedPayment));
+                changePayments("Could not add payment",
+                        () -> paymentService.addPayment(updatedPayment));
             } else {
-                changePayments("Could not edit payment", () -> paymentService.updatePayment(updatedPayment));
+                changePayments("Could not edit payment",
+                        () -> paymentService.updatePayment(updatedPayment));
             }
         });
     }
@@ -359,7 +409,8 @@ public class LoanDetailsController {
     // records so the table shows exactly what the mainframe now holds (including real IDs).
     private void changePayments(String errorHeader, Runnable change) {
         if (paymentService == null) {
-            showPaymentError(errorHeader, new IllegalStateException("Payments are not available right now."));
+            showPaymentError(errorHeader,
+                    new IllegalStateException("Payments are not available right now."));
             return;
         }
         String loanId = loan.loanId();
@@ -367,7 +418,9 @@ public class LoanDetailsController {
             try {
                 change.run();
                 javafx.application.Platform.runLater(() -> {
-                    if (loan != null && loanId.equals(loan.loanId())) loadLoanRecords(loanId);
+                    if (loan != null && loanId.equals(loan.loanId())) {
+                        loadLoanRecords(loanId);
+                    }
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> showPaymentError(errorHeader, failure));
@@ -377,10 +430,13 @@ public class LoanDetailsController {
 
     private void showPaymentError(String header, RuntimeException failure) {
         Alert alert = new Alert(Alert.AlertType.ERROR,
-                failure.getMessage() == null ? "The mainframe could not save the payment." : failure.getMessage());
+                failure.getMessage() == null ? "The mainframe could not save the payment."
+                        : failure.getMessage());
         alert.setHeaderText(header);
         wrapAlertText(alert);
-        if (loanHeading.getScene() != null) alert.initOwner(loanHeading.getScene().getWindow());
+        if (loanHeading.getScene() != null) {
+            alert.initOwner(loanHeading.getScene().getWindow());
+        }
         alert.showAndWait();
     }
 
@@ -402,12 +458,15 @@ public class LoanDetailsController {
         confirmation.setHeaderText("Delete payment");
         confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(button -> {
             changePayments("Could not delete payment",
-                    () -> paymentService.deletePayment(payment.getLoanId(), payment.getPaymentId()));
+                    () -> paymentService.deletePayment(payment.getLoanId(),
+                            payment.getPaymentId()));
         });
     }
 
     private void refreshPayments() {
-        if (paymentRows == null) return;
+        if (paymentRows == null) {
+            return;
+        }
         paymentRows.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
                 && GridPane.getRowIndex(node) > 0);
         List<Payment> sorted = payments.stream()
@@ -421,15 +480,18 @@ public class LoanDetailsController {
                     formatAmount(payment.getAmountPaid()), payment.getPaymentId() };
             javafx.scene.control.MenuItem edit = new javafx.scene.control.MenuItem("Edit payment");
             edit.setOnAction(event -> editPayment(payment));
-            javafx.scene.control.MenuItem delete = new javafx.scene.control.MenuItem("Delete payment");
+            javafx.scene.control.MenuItem delete =
+                    new javafx.scene.control.MenuItem("Delete payment");
             delete.setOnAction(event -> deletePayment(payment));
-            javafx.scene.control.ContextMenu actions = new javafx.scene.control.ContextMenu(edit, delete);
+            javafx.scene.control.ContextMenu actions = new javafx.scene.control.ContextMenu(edit,
+                    delete);
             for (int column = 0; column < values.length; column++) {
                 Label cell = new Label(values[column]);
                 cell.setStyle(paymentCellStyle);
                 cell.setMaxWidth(Double.MAX_VALUE);
                 cell.setTooltip(new Tooltip("Right-click to edit or delete this payment"));
-                cell.setOnContextMenuRequested(event -> actions.show(cell, event.getScreenX(), event.getScreenY()));
+                cell.setOnContextMenuRequested(event -> actions.show(cell, event.getScreenX(),
+                        event.getScreenY()));
                 paymentRows.add(cell, column, row);
             }
             Button editButton = iconButton("edit", "Edit payment " + payment.getPaymentId());
@@ -486,11 +548,15 @@ public class LoanDetailsController {
             Region divider = new Region();
             divider.getStyleClass().add("repayment-row-divider");
             divider.setMouseTransparent(true);
-            divider.setStyle("-fx-border-color: #edf0fc transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+            divider.setStyle("-fx-border-color: #edf0fc transparent transparent transparent; "
+                    + "-fx-border-width: 1 0 0 0;");
             repaymentScheduleTable.add(divider, 0, row, 6, 1);
-            String[] values = {Integer.toString(row), PAYMENT_DATE_FORMAT.format(repayment.getDueDate()),
-                    formatAmount(repayment.getAmountDue()), formatAmount(repayment.getPrincipalComponent()),
-                    formatAmount(repayment.getInterestComponent()), formatAmount(repayment.getRemainingBalance())};
+            String[] values = {Integer.toString(row),
+                    PAYMENT_DATE_FORMAT.format(repayment.getDueDate()),
+                    formatAmount(repayment.getAmountDue()),
+                            formatAmount(repayment.getPrincipalComponent()),
+                    formatAmount(repayment.getInterestComponent()),
+                            formatAmount(repayment.getRemainingBalance())};
             for (int column = 0; column < values.length; column++) {
                 Label cell = new Label(values[column]);
                 cell.setMaxWidth(Double.MAX_VALUE);
@@ -498,13 +564,17 @@ public class LoanDetailsController {
                 repaymentScheduleTable.add(cell, column, row);
             }
         }
-        if (schedule.isEmpty()) addRepaymentMessage("No repayment schedule recorded for this loan.");
+        if (schedule.isEmpty()) {
+            addRepaymentMessage("No repayment schedule recorded for this loan.");
+        }
         repaymentsCount.setText(schedule.isEmpty() ? "Showing 0 of 0"
                 : "Showing 1-" + schedule.size() + " of " + schedule.size());
     }
 
     private void clearRepaymentRows() {
-        if (repaymentScheduleTable == null) return;
+        if (repaymentScheduleTable == null) {
+            return;
+        }
         repaymentScheduleTable.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null
                 && GridPane.getRowIndex(node) > 0);
     }
@@ -516,11 +586,17 @@ public class LoanDetailsController {
     }
 
     private String formatTerm(Integer termMonths) {
-        if (termMonths == null) return "Not recorded";
+        if (termMonths == null) {
+            return "Not recorded";
+        }
         int years = termMonths / 12;
         int months = termMonths % 12;
-        if (years == 0) return months + (months == 1 ? " month" : " months");
-        if (months == 0) return years + (years == 1 ? " year" : " years");
+        if (years == 0) {
+            return months + (months == 1 ? " month" : " months");
+        }
+        if (months == 0) {
+            return years + (years == 1 ? " year" : " years");
+        }
         return years + (years == 1 ? " year " : " years ")
                 + months + (months == 1 ? " month" : " months");
     }
@@ -528,12 +604,15 @@ public class LoanDetailsController {
     private Button iconButton(String iconType, String accessibleText) {
         SVGPath icon = new SVGPath();
         if ("edit".equals(iconType)) {
-            icon.setContent("M 3 14 L 13 4 L 17 8 L 7 18 L 2 19 Z M 11 6 L 15 10 M 14 3 L 16 1 L 20 5 L 18 7");
+            icon.setContent("M 3 14 L 13 4 L 17 8 L 7 18 L 2 19 Z "
+                    + "M 11 6 L 15 10 M 14 3 L 16 1 L 20 5 L 18 7");
         } else {
-            icon.setContent("M 3 5 H 19 M 7 5 V 2 H 15 V 5 M 5 5 L 6 20 H 16 L 17 5 M 9 9 V 16 M 13 9 V 16");
+            icon.setContent("M 3 5 H 19 M 7 5 V 2 H 15 V 5 M 5 5 L 6 20 H 16 L 17 5 "
+                    + "M 9 9 V 16 M 13 9 V 16");
         }
         icon.setFill(Color.TRANSPARENT);
-        icon.setStyle(coborrowerIconStyle + ("delete".equals(iconType) ? " -fx-stroke: #c34f64;" : ""));
+        icon.setStyle(coborrowerIconStyle + ("delete".equals(iconType) ? " -fx-stroke: #c34f64;"
+                : ""));
 
         Button button = new Button();
         button.setGraphic(icon);
@@ -565,7 +644,8 @@ public class LoanDetailsController {
     private String tabStyle() {
         return "-fx-background-color: transparent; -fx-border-color: transparent;"
                 + " -fx-border-width: 0 0 5 0; -fx-border-radius: 0;"
-                + " -fx-padding: 4 17 11 17; -fx-font-size: 14px; -fx-text-fill: #55558d; -fx-cursor: hand;";
+                + " -fx-padding: 4 17 11 17; -fx-font-size: 14px; -fx-text-fill: #55558d;"
+                + " -fx-cursor: hand;";
     }
 
     private String selectedTabStyle() {

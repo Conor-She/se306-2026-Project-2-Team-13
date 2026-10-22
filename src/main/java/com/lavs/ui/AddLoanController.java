@@ -28,7 +28,10 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-/** Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the mainframe. */
+/**
+ * Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the
+ * mainframe.
+ */
 public class AddLoanController {
     @FXML private TextField customerSearch, principal, interestRate, term;
     @FXML private ListView<CustomersController.CustomerSummary> customerResults;
@@ -52,9 +55,11 @@ public class AddLoanController {
     private java.util.function.Consumer<String> prerequisiteValidator;
     @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
-    private final com.lavs.business.LoanDetailsValidator loanValidator = new com.lavs.business.LoanDetailsValidator();
+    private final com.lavs.business.LoanDetailsValidator loanValidator =
+            new com.lavs.business.LoanDetailsValidator();
     @FXML private TableView<Repayment> repaymentTable;
-    @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn, interestColumn, balanceColumn;
+    @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn,
+            interestColumn, balanceColumn;
     @FXML private Label repaymentCount, totalRepayable, totalInterest;
     private int step;
     private boolean editingReview;
@@ -81,49 +86,69 @@ public class AddLoanController {
         this.saveExecutor = saveExecutor;
     }
 
-    public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) { this.onSave = onSave; }
+    public void setOnSave(java.util.function.Consumer<LoanDraft> onSave) {
+        this.onSave = onSave;
+    }
 
     @FXML private void initialize() {
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
         var currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
-        dueDateColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().getDueDate().format(dateFormat)));
-        paymentColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getAmountDue())));
-        principalColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getPrincipalComponent())));
-        interestColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getInterestComponent())));
-        balanceColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(currency.format(cell.getValue().getRemainingBalance())));
-        ScrollPaneAppearance.install(repaymentTable, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        dueDateColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue()
+                .getDueDate().format(dateFormat)));
+        paymentColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                currency.format(cell.getValue().getAmountDue())));
+        principalColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                currency.format(cell.getValue().getPrincipalComponent())));
+        interestColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                currency.format(cell.getValue().getInterestComponent())));
+        balanceColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                currency.format(cell.getValue().getRemainingBalance())));
+        ScrollPaneAppearance.install(repaymentTable, scrollBarStyle, scrollTrackStyle,
+                scrollThumbStyle, scrollButtonStyle);
         // Let the table scroll first, then stop boundary events reaching the review page.
         repaymentTable.addEventHandler(ScrollEvent.ANY, ScrollEvent::consume);
-        ScrollPaneAppearance.install(loanScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
-        ScrollPaneAppearance.install(customerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
-        ScrollPaneAppearance.install(coborrowerResults, scrollBarStyle, scrollTrackStyle, scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(loanScroll, scrollBarStyle, scrollTrackStyle, scrollThumbStyle,
+                scrollButtonStyle);
+        ScrollPaneAppearance.install(customerResults, scrollBarStyle, scrollTrackStyle,
+                scrollThumbStyle, scrollButtonStyle);
+        ScrollPaneAppearance.install(coborrowerResults, scrollBarStyle, scrollTrackStyle,
+                scrollThumbStyle, scrollButtonStyle);
         activeMarkerStyle = marker0.getStyle();
         inactiveMarkerStyle = marker1.getStyle();
         activeNameStyle = stepName0.getStyle();
         inactiveNameStyle = stepName1.getStyle();
-        primarySearchDelay.setOnFinished(event -> loadPrimaryCustomers(pendingPrimaryQuery, pendingPrimaryVersion));
-        coborrowerSearchDelay.setOnFinished(event -> loadCoborrowers(pendingCoborrowerQuery, pendingCoborrowerVersion));
+        primarySearchDelay.setOnFinished(event -> loadPrimaryCustomers(pendingPrimaryQuery,
+                pendingPrimaryVersion));
+        coborrowerSearchDelay.setOnFinished(event -> loadCoborrowers(pendingCoborrowerQuery,
+                pendingCoborrowerVersion));
         customerSearch.setOnAction(event -> {
             searchCustomers();
             primarySearchDelay.stop();
-            if (customerService != null && !customerSearch.getText().isBlank())
+            if (customerService != null && !customerSearch.getText().isBlank()) {
                 loadPrimaryCustomers(pendingPrimaryQuery, pendingPrimaryVersion);
+            }
         });
         coborrowerSearch.setOnAction(event -> {
             searchCoborrowers();
             coborrowerSearchDelay.stop();
-            if (customerService != null && !coborrowerSearch.getText().isBlank() && draft.coborrowers.size() < 3)
+            if (customerService != null && !coborrowerSearch.getText().isBlank()
+                    && draft.coborrowers.size() < 3) {
                 loadCoborrowers(pendingCoborrowerQuery, pendingCoborrowerVersion);
+            }
         });
         coborrowerSearch.textProperty().addListener((obs, old, value) -> searchCoborrowers());
-        coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
-            if (value == null || draft.coborrowers.size() >= 3 || !eligibleCoborrower(value)) return;
+        coborrowerResults.getSelectionModel().selectedItemProperty().addListener((obs, old,
+                value) -> {
+            if (value == null || draft.coborrowers.size() >= 3 || !eligibleCoborrower(value)) {
+                return;
+            }
             draft.coborrowers.add(new LoanDraft.Borrower(value.customerId(), value.name()));
             coborrowerSearch.clear();
             renderCoborrowers();
         });
         loanType.getItems().setAll("Table Loan", "Reducing Balance", "Interest Only");
-        paymentFrequency.getItems().setAll("Weekly", "Fortnightly", "Monthly", "Yearly", "On Renewal");
+        paymentFrequency.getItems().setAll("Weekly", "Fortnightly", "Monthly", "Yearly",
+                "On Renewal");
         rateFrequency.getItems().setAll("Daily", "Weekly", "Fortnightly", "Monthly", "Yearly");
         status.getItems().setAll("New", "Pending", "Active", "Defaulted", "Cancelled");
         bindText("principal", principal);
@@ -137,15 +162,20 @@ public class AddLoanController {
         renewDate.valueProperty().addListener((obs, old, value) -> draft.renewDate = value);
         status.setValue("New");
         customerResults.setCellFactory(list -> new ListCell<>() {
-            @Override protected void updateItem(CustomersController.CustomerSummary customer, boolean empty) {
+            @Override protected void updateItem(CustomersController.CustomerSummary customer,
+                    boolean empty) {
                 super.updateItem(customer, empty);
-                setText(empty || customer == null ? null : customer.name() + " | Customer ID: " + customer.customerId());
+                setText(empty || customer == null ? null
+                        : customer.name() + " | Customer ID: " + customer.customerId());
             }
         });
         coborrowerResults.setCellFactory(customerResults.getCellFactory());
         customerSearch.textProperty().addListener((obs, old, value) -> searchCustomers());
-        customerResults.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
-            if (value == null) return;
+        customerResults.getSelectionModel().selectedItemProperty().addListener((obs, old,
+                value) -> {
+            if (value == null) {
+                return;
+            }
             setPrimaryBorrower(value);
         });
     }
@@ -173,11 +203,14 @@ public class AddLoanController {
     }
 
     private void bindChoice(String key, ComboBox<String> field) {
-        field.valueProperty().addListener((obs, old, value) -> draft.details.put(key, value == null ? "" : value));
+        field.valueProperty().addListener((obs, old, value) -> draft.details.put(key, value == null
+                ? "" : value));
     }
 
     /** Returns an independent snapshot, including incomplete edits. */
-    public LoanDraft getDraft() { return draft.copy(); }
+    public LoanDraft getDraft() {
+        return draft.copy();
+    }
 
     public void configure(List<CustomersController.CustomerSummary> customers, Runnable onCancel) {
         this.customers = List.copyOf(customers);
@@ -203,7 +236,9 @@ public class AddLoanController {
 
     public void focusBorrowerSearch() {
         javafx.application.Platform.runLater(() -> {
-            if (customerSearch.getScene() != null && customerSearch.isVisible()) customerSearch.requestFocus();
+            if (customerSearch.getScene() != null && customerSearch.isVisible()) {
+                customerSearch.requestFocus();
+            }
         });
     }
 
@@ -240,7 +275,9 @@ public class AddLoanController {
     }
 
     @FXML private void editPrimaryCustomer() {
-        if (draft.primaryBorrower == null) return;
+        if (draft.primaryBorrower == null) {
+            return;
+        }
         if (customerService == null) {
             showCustomerEditFailure("Customer editing is not connected. Sign in again.");
             return;
@@ -258,13 +295,15 @@ public class AddLoanController {
 
     private void openCustomerEditor(com.lavs.model.CustomerDetails details) {
         try {
-            var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/customerDetails.fxml"));
+            var loader = new javafx.fxml.FXMLLoader(getClass()
+                    .getResource("fxml/customerDetails.fxml"));
             javafx.scene.Parent root = loader.load();
             CustomerDetailsController controller = loader.getController();
             controller.setCustomerService(customerService);
 
             Stage editor = new Stage();
-            if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null) {
+            if (selectedBorrower.getScene() != null && selectedBorrower.getScene()
+                    .getWindow() != null) {
                 editor.initOwner(selectedBorrower.getScene().getWindow());
                 editor.initModality(Modality.WINDOW_MODAL);
             }
@@ -281,8 +320,10 @@ public class AddLoanController {
 
     private void showCustomerEditFailure(String detail) {
         Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
-        if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null)
+        if (selectedBorrower.getScene() != null && selectedBorrower.getScene()
+                .getWindow() != null) {
             alert.initOwner(selectedBorrower.getScene().getWindow());
+        }
         alert.setTitle("Customer could not be edited");
         alert.setHeaderText("Customer details could not be opened");
         String error = detail == null || detail.isBlank()
@@ -292,14 +333,20 @@ public class AddLoanController {
     }
 
     @FXML private void cancel() {
-        if (saving) return;
-        if (confirmLeave()) onCancel.run();
+        if (saving) {
+            return;
+        }
+        if (confirmLeave()) {
+            onCancel.run();
+        }
     }
 
     public boolean confirmLeave() {
         boolean hasUncommittedDate = !startDate.getEditor().getText().isBlank()
                 || !renewDate.getEditor().getText().isBlank();
-        if (!draft.hasData() && !hasUncommittedDate) return true;
+        if (!draft.hasData() && !hasUncommittedDate) {
+            return true;
+        }
         return confirmDiscardDetails();
     }
 
@@ -310,15 +357,21 @@ public class AddLoanController {
                 "The loan has not been saved. Discard the entered details?", keepEditing, discard);
         alert.setTitle("Discard loan details?");
         alert.setHeaderText("Cancel creating this loan?");
-        if (loanScroll.getScene() != null && loanScroll.getScene().getWindow() != null)
+        if (loanScroll.getScene() != null && loanScroll.getScene().getWindow() != null) {
             alert.initOwner(loanScroll.getScene().getWindow());
+        }
         return alert.showAndWait().orElse(keepEditing) == discard;
     }
 
     @FXML private void next() {
-        if (saved || saving) return;
+        if (saved || saving) {
+            return;
+        }
         String error = validateDetails();
-        if (error != null) { showMessage(error); return; }
+        if (error != null) {
+            showMessage(error);
+            return;
+        }
         if (step == 2 || step == 1 || editingReview) {
             try {
                 updateSchedule();
@@ -331,7 +384,8 @@ public class AddLoanController {
         }
         if (step == 2) {
             if (onSave == null) {
-                showMessage("Saving loans is not connected yet. No loan has been saved. Your details are kept here.");
+                showMessage("Saving loans is not connected yet. No loan has been saved. "
+                        + "Your details are kept here.");
                 return;
             }
             save();
@@ -383,27 +437,36 @@ public class AddLoanController {
                     : "The mainframe rejected the loan, so no loan has been saved: "
                             + mainframe.getMessage();
         }
-        if (failure instanceof LoanSubmissionException || failure instanceof IllegalArgumentException) {
+        if (failure instanceof LoanSubmissionException || failure
+                instanceof IllegalArgumentException) {
             return failure.getMessage();
         }
         return "The loan could not be saved: "
-                + (failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage());
+                + (failure.getMessage() == null ? failure.getClass().getSimpleName()
+                : failure.getMessage());
     }
 
     /** Runs the action now if already on the screen thread, otherwise queues it there. */
     static void runOnFxThread(Runnable action) {
-        if (javafx.application.Platform.isFxApplicationThread()) action.run();
-        else javafx.application.Platform.runLater(action);
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            javafx.application.Platform.runLater(action);
+        }
     }
 
-    @FXML private void editBorrower() { editStep(0); }
+    @FXML private void editBorrower() {
+        editStep(0);
+    }
 
     @FXML private void editLoanDetails() {
         editStep(0);
         javafx.application.Platform.runLater(principal::requestFocus);
     }
 
-    @FXML private void editCoborrowers() { editStep(1); }
+    @FXML private void editCoborrowers() {
+        editStep(1);
+    }
 
     private void editStep(int target) {
         editingReview = true;
@@ -417,7 +480,9 @@ public class AddLoanController {
     }
 
     @FXML private void back() {
-        if (saving) return;
+        if (saving) {
+            return;
+        }
         showStep(Math.max(0, step - 1));
     }
 
@@ -446,18 +511,25 @@ public class AddLoanController {
         } else if (step == 2) {
             renderReview();
             javafx.application.Platform.runLater(next::requestFocus);
-        } else focusBorrowerSearch();
+        } else {
+            focusBorrowerSearch();
+        }
     }
 
     private void renderReview() {
-        reviewBorrower.setText(draft.primaryBorrower.name() + " | Customer ID: " + draft.primaryBorrower.customerId());
+        reviewBorrower.setText(draft.primaryBorrower.name() + " | Customer ID: "
+                + draft.primaryBorrower.customerId());
         reviewType.setText(draft.details.getOrDefault("loanType", ""));
-        java.text.NumberFormat currency = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-NZ"));
-        reviewPrincipal.setText(currency.format(new BigDecimal(draft.details.getOrDefault("principal", "").strip())));
-        reviewInterest.setText(new BigDecimal(draft.details.getOrDefault("interestRate", "").strip()).stripTrailingZeros().toPlainString() + "%");
+        java.text.NumberFormat currency = java.text.NumberFormat.getCurrencyInstance(
+                Locale.forLanguageTag("en-NZ"));
+        reviewPrincipal.setText(currency.format(
+                new BigDecimal(draft.details.getOrDefault("principal", "").strip())));
+        reviewInterest.setText(new BigDecimal(draft.details.getOrDefault("interestRate",
+                "").strip()).stripTrailingZeros().toPlainString() + "%");
         reviewPaymentFrequency.setText(draft.details.getOrDefault("paymentFrequency", ""));
         reviewRateFrequency.setText(draft.details.getOrDefault("rateFrequency", ""));
-        reviewTerm.setText(Integer.parseInt(draft.details.getOrDefault("term", "").strip()) + " months");
+        reviewTerm.setText(Integer.parseInt(draft.details.getOrDefault("term",
+                "").strip()) + " months");
         var dateFormat = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
         reviewStartDate.setText(draft.startDate.format(dateFormat));
         reviewRenewDate.setText(draft.renewDate.format(dateFormat));
@@ -468,7 +540,8 @@ public class AddLoanController {
             reviewCoborrowers.getChildren().add(new Label("No co-borrowers added."));
         } else {
             for (var customer : draft.coborrowers) {
-                Label name = new Label(customer.name() + " | Customer ID: " + customer.customerId());
+                Label name = new Label(
+                        customer.name() + " | Customer ID: " + customer.customerId());
                 name.setWrapText(true);
                 name.setMinWidth(0);
                 reviewCoborrowers.getChildren().add(name);
@@ -487,8 +560,10 @@ public class AddLoanController {
     }
 
     private boolean eligibleCoborrower(CustomersController.CustomerSummary customer) {
-        return (draft.primaryBorrower == null || !draft.primaryBorrower.customerId().equals(customer.customerId()))
-                && draft.coborrowers.stream().noneMatch(c -> c.customerId().equals(customer.customerId()));
+        return (draft.primaryBorrower == null || !draft.primaryBorrower.customerId()
+                .equals(customer.customerId()))
+                && draft.coborrowers.stream().noneMatch(c -> c.customerId()
+                .equals(customer.customerId()));
     }
 
     // Choosing a result clears the search while the list is still handling that click, and
@@ -498,7 +573,9 @@ public class AddLoanController {
         results.setVisible(false);
         results.setManaged(false);
         javafx.application.Platform.runLater(() -> {
-            if (!results.isVisible()) results.getItems().clear();
+            if (!results.isVisible()) {
+                results.getItems().clear();
+            }
         });
     }
 
@@ -530,15 +607,22 @@ public class AddLoanController {
             try {
                 List<CustomersController.CustomerSummary> found = searchBackendCustomers(query);
                 javafx.application.Platform.runLater(() -> {
-                    if (request != primarySearchVersion || !query.equals(text(customerSearch.getText()).strip())) return;
+                    if (request != primarySearchVersion
+                            || !query.equals(text(customerSearch.getText()).strip())) {
+                        return;
+                    }
                     customerResults.getItems().setAll(found);
                     customerResults.setPlaceholder(new Label("No customers found"));
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
-                    if (request != primarySearchVersion || !query.equals(text(customerSearch.getText()).strip())) return;
+                    if (request != primarySearchVersion
+                            || !query.equals(text(customerSearch.getText()).strip())) {
+                        return;
+                    }
                     customerResults.getItems().clear();
-                    customerResults.setPlaceholder(new Label("Customer search is unavailable. Press Enter to retry."));
+                    customerResults.setPlaceholder(
+                            new Label("Customer search is unavailable. Press Enter to retry."));
                 });
             }
         });
@@ -550,16 +634,22 @@ public class AddLoanController {
                 List<CustomersController.CustomerSummary> found = searchBackendCustomers(query);
                 javafx.application.Platform.runLater(() -> {
                     if (request != coborrowerSearchVersion
-                            || !query.equals(text(coborrowerSearch.getText()).strip())) return;
-                    coborrowerResults.getItems().setAll(found.stream().filter(this::eligibleCoborrower).toList());
+                            || !query.equals(text(coborrowerSearch.getText()).strip())) {
+                                return;
+                            }
+                    coborrowerResults.getItems()
+                            .setAll(found.stream().filter(this::eligibleCoborrower).toList());
                     coborrowerResults.setPlaceholder(new Label("No eligible customers found"));
                 });
             } catch (RuntimeException failure) {
                 javafx.application.Platform.runLater(() -> {
                     if (request != coborrowerSearchVersion
-                            || !query.equals(text(coborrowerSearch.getText()).strip())) return;
+                            || !query.equals(text(coborrowerSearch.getText()).strip())) {
+                                return;
+                            }
                     coborrowerResults.getItems().clear();
-                    coborrowerResults.setPlaceholder(new Label("Customer search is unavailable. Press Enter to retry."));
+                    coborrowerResults.setPlaceholder(
+                            new Label("Customer search is unavailable. Press Enter to retry."));
                 });
             }
         });
@@ -578,15 +668,20 @@ public class AddLoanController {
     private static List<CustomersController.CustomerSummary> filterCustomers(
             List<CustomersController.CustomerSummary> customers, String query) {
         String normalized = query.toLowerCase(Locale.ROOT);
-        return customers.stream().filter(customer -> customer.name().toLowerCase(Locale.ROOT).contains(normalized)
+        return customers.stream().filter(customer -> customer.name().toLowerCase(Locale.ROOT)
+                .contains(normalized)
                 || customer.customerId().toLowerCase(Locale.ROOT).contains(normalized)).toList();
     }
 
-    private static String text(String value) { return value == null ? "" : value; }
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
 
     @FXML private void focusCoborrowerSearch() {
         javafx.application.Platform.runLater(() -> {
-            if (step == 1 && !coborrowerSearch.isDisabled()) coborrowerSearch.requestFocus();
+            if (step == 1 && !coborrowerSearch.isDisabled()) {
+                coborrowerSearch.requestFocus();
+            }
         });
     }
 
@@ -623,19 +718,27 @@ public class AddLoanController {
     // returns the message to show.
     String validateDetails() {
         String borrowerError = loanValidator.borrowerError(draft);
-        if (borrowerError != null) return borrowerError;
+        if (borrowerError != null) {
+            return borrowerError;
+        }
         String prerequisiteError = prerequisiteError();
-        if (prerequisiteError != null) return prerequisiteError;
+        if (prerequisiteError != null) {
+            return prerequisiteError;
+        }
         boolean datesReadable = true;
         try {
             startDate.commitValue();
             renewDate.commitValue();
-        } catch (RuntimeException exception) { datesReadable = false; }
+        } catch (RuntimeException exception) {
+            datesReadable = false;
+        }
         return loanValidator.detailsError(draft, datesReadable);
     }
 
     private String prerequisiteError() {
-        if (draft.primaryBorrower == null) return null;
+        if (draft.primaryBorrower == null) {
+            return null;
+        }
         if (prerequisiteValidator == null) {
             return "Could not check " + draft.primaryBorrower.name()
                     + "'s loan requirements. Connect to the mainframe and try again.";
@@ -651,13 +754,18 @@ public class AddLoanController {
         }
     }
 
-    private static String prerequisiteMessage(String borrowerName, LoanPrerequisiteException exception) {
-        if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage()))
+    private static String prerequisiteMessage(String borrowerName,
+            LoanPrerequisiteException exception) {
+        if (LoanPrerequisiteChecker.MAILING_ADDRESS_MESSAGE.equals(exception.getMessage())) {
             return borrowerName + " has no mailing address recorded. "
-                    + "Add an address marked as mailing to this customer's record before continuing with the loan.";
-        if (LoanPrerequisiteChecker.CONTACT_MESSAGE.equals(exception.getMessage()))
+                    + "Add an address marked as mailing to this customer's record before "
+                    + "continuing with the loan.";
+        }
+        if (LoanPrerequisiteChecker.CONTACT_MESSAGE.equals(exception.getMessage())) {
             return borrowerName + " has no phone number or email recorded. "
-                    + "Add at least one alternate contact to this customer's record before continuing with the loan.";
+                    + "Add at least one alternate contact to this customer's record before "
+                    + "continuing with the loan.";
+        }
         return borrowerName + " has no employer recorded and needs a guarantor. "
                 + "Add a guarantor to this customer's record before continuing with the loan.";
     }

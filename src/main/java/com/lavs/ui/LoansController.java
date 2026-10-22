@@ -39,7 +39,8 @@ public class LoansController {
         public LoanSummary(String loanId, String customerId, String customerName,
                 String status, String amount, String type) {
             this(loanId, customerId, customerName, status, amount, type,
-                    NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED);
+                    NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED, NOT_RECORDED,
+                            NOT_RECORDED);
         }
     }
 
@@ -49,18 +50,20 @@ public class LoansController {
     @FXML private TableColumn<LoanSummary, LoanSummary> actionsColumn;
     @FXML private Label resultsHeading;
     @FXML private TableView<LoanSummary> loanTable;
-    @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn, amountColumn, typeColumn;
+    @FXML private TableColumn<LoanSummary, String> idColumn, customerIdColumn, statusColumn,
+            amountColumn, typeColumn;
     @FXML private VBox listView, detailsView;
     @FXML private LoanDetailsController detailsViewController;
 
     private VBox addLoanView;
     private AddLoanController activeAddLoanController;
     private final ObservableList<LoanSummary> loans = FXCollections.observableArrayList();
-    private final ExecutorService defaultRequestExecutor = Executors.newSingleThreadExecutor(task -> {
-        Thread thread = new Thread(task, "lavs-loan-search");
-        thread.setDaemon(true);
-        return thread;
-    });
+    private final ExecutorService defaultRequestExecutor =
+            Executors.newSingleThreadExecutor(task -> {
+                Thread thread = new Thread(task, "lavs-loan-search");
+                thread.setDaemon(true);
+                return thread;
+            });
     private Executor requestExecutor = defaultRequestExecutor;
     private final AtomicLong searchSequence = new AtomicLong();
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(300));
@@ -128,7 +131,8 @@ public class LoansController {
         openAddLoan(null, this::showListAndFocusSearch);
     }
 
-    public void openAddLoan(CustomersController.CustomerSummary customer, Runnable onCancel) throws java.io.IOException {
+    public void openAddLoan(CustomersController.CustomerSummary customer,
+            Runnable onCancel) throws java.io.IOException {
         var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/addLoan.fxml"));
         loader.setControllerFactory(type -> createAddLoanController());
         VBox editor = loader.load();
@@ -144,7 +148,9 @@ public class LoansController {
         if (submission != null) {
             controller.setPrerequisiteValidator(submission::validatePrerequisites);
         }
-        if (customer != null) controller.setPrimaryBorrower(customer);
+        if (customer != null) {
+            controller.setPrimaryBorrower(customer);
+        }
         controller.setOnSave(draft -> {
             if (submission == null) {
                 throw new IllegalStateException("Saving loans is not connected to the mainframe.");
@@ -170,33 +176,49 @@ public class LoansController {
         activeAddLoanController = controller;
         VBox.setVgrow(editor, javafx.scene.layout.Priority.ALWAYS);
         ((VBox) listView.getParent()).getChildren().add(editor);
-        if (customer == null) controller.focusBorrowerSearch();
-        else controller.focusLoanType();
+        if (customer == null) {
+            controller.focusBorrowerSearch();
+        } else {
+            controller.focusLoanType();
+        }
     }
 
-    protected AddLoanController createAddLoanController() { return new AddLoanController(); }
+    protected AddLoanController createAddLoanController() {
+        return new AddLoanController();
+    }
 
     @FXML private void initialize() {
-        listView.getParent().getStylesheets().add("data:text/css;base64," + java.util.Base64.getEncoder()
+        listView.getParent().getStylesheets()
+                .add("data:text/css;base64," + java.util.Base64.getEncoder()
                 .encodeToString(loanStyles.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        resultsFooter.textProperty().bind(javafx.beans.binding.Bindings.size(loans).asString("Showing %d loans"));
-        actionsColumn.setCellValueFactory(c -> new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue()));
+        resultsFooter.textProperty().bind(javafx.beans.binding.Bindings.size(loans)
+                .asString("Showing %d loans"));
+        actionsColumn.setCellValueFactory(
+                c -> new javafx.beans.property.ReadOnlyObjectWrapper<>(c.getValue()));
         actionsColumn.setCellFactory(column -> new javafx.scene.control.TableCell<>() {
-            private final javafx.scene.control.Hyperlink view = new javafx.scene.control.Hyperlink("View loan  →");
+            private final javafx.scene.control.Hyperlink view =
+                    new javafx.scene.control.Hyperlink("View loan  →");
             {
                 view.getStyleClass().add("loan-profile-link");
-                view.setOnAction(event -> { if (getItem() != null) openDetails(getItem()); });
+                view.setOnAction(event -> {
+                    if (getItem() != null) {
+                        openDetails(getItem());
+                    }
+                });
                 view.setOnMouseClicked(javafx.event.Event::consume);
             }
             @Override protected void updateItem(LoanSummary value, boolean empty) {
                 super.updateItem(value, empty);
                 setText(null);
                 setGraphic(empty || value == null ? null : view);
-                if (!empty && value != null) view.setAccessibleText("View loan " + value.loanId());
+                if (!empty && value != null) {
+                    view.setAccessibleText("View loan " + value.loanId());
+                }
             }
         });
         idColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().loanId()));
-        customerIdColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().customerId()));
+        customerIdColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue()
+                .customerId()));
         statusColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().status()));
         amountColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().amount()));
         typeColumn.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().type()));
@@ -221,7 +243,9 @@ public class LoansController {
         loanTable.setRowFactory(table -> {
             TableRow<LoanSummary> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
-                if (event.getButton() == MouseButton.PRIMARY && !row.isEmpty()) openDetails(row.getItem());
+                if (event.getButton() == MouseButton.PRIMARY && !row.isEmpty()) {
+                    openDetails(row.getItem());
+                }
             });
             return row;
         });
@@ -251,7 +275,9 @@ public class LoansController {
             try {
                 LoanBrowsingService.LoanSearchResult result = loanBrowsingService.search(query);
                 Platform.runLater(() -> {
-                    if (searchSequence.get() != request) return;
+                    if (searchSequence.get() != request) {
+                        return;
+                    }
                     loans.setAll(result.loans().stream().map(LoansController::summaryOf).toList());
                     resultsHeading.setText("Search results (" + loans.size() + ")");
                     updateEmptyState();
@@ -265,7 +291,9 @@ public class LoansController {
                 });
             } catch (RuntimeException failure) {
                 Platform.runLater(() -> {
-                    if (searchSequence.get() != request) return;
+                    if (searchSequence.get() != request) {
+                        return;
+                    }
                     loans.clear();
                     resultsHeading.setText("Could not load loans. Press Enter to retry.");
                     loanTable.setPlaceholder(new Label("Loan search is unavailable"));
@@ -280,20 +308,25 @@ public class LoansController {
 
     static LoanSummary summaryFor(Loan loan, String customerName) {
         NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
-        String status = loan.getStatus() == null ? "Not recorded" : titleCase(loan.getStatus().name());
+        String status = loan.getStatus() == null ? "Not recorded"
+                : titleCase(loan.getStatus().name());
         String type = loan.getType() == null ? "Not recorded" : titleCase(loan.getType().name());
         return new LoanSummary(loan.getLoanId(), loan.getCustomerId(), customerName, status,
                 currency.format(loan.getPrincipal()), type,
-                java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros().toPlainString() + "%",
+                java.math.BigDecimal.valueOf(loan.getInterestRate()).stripTrailingZeros()
+                        .toPlainString() + "%",
                 enumText(loan.getPaymentFrequency()), enumText(loan.getRateFrequency()),
-                currency.format(loan.getPaymentAmount()), dateText(loan.getStartDate()), dateText(loan.getRenewDate()));
+                currency.format(loan.getPaymentAmount()), dateText(loan.getStartDate()),
+                        dateText(loan.getRenewDate()));
     }
 
     private static String titleCase(String value) {
         String[] words = value.toLowerCase(Locale.ROOT).split("_");
         StringBuilder result = new StringBuilder();
         for (String word : words) {
-            if (!result.isEmpty()) result.append(' ');
+            if (!result.isEmpty()) {
+                result.append(' ');
+            }
             result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
         }
         return result.toString();
@@ -311,12 +344,18 @@ public class LoansController {
     }
 
     private void updateEmptyState() {
-        if (resultsHeading == null || loanTable == null) return;
+        if (resultsHeading == null || loanTable == null) {
+            return;
+        }
         if (loans.isEmpty()) {
-            if (loanBrowsingService == null) loanTable.setPlaceholder(new Label(NOT_CONNECTED));
-            else if (searchField == null || searchField.getText().isBlank())
+            if (loanBrowsingService == null) {
+                loanTable.setPlaceholder(new Label(NOT_CONNECTED));
+            } else if (searchField == null || searchField.getText().isBlank()) {
                 loanTable.setPlaceholder(new Label(SEARCH_PROMPT));
-            else loanTable.setPlaceholder(new Label("No loans found for \"" + searchField.getText().strip() + "\""));
+            } else {
+                loanTable.setPlaceholder(new Label("No loans found for \"" + searchField.getText()
+                        .strip() + "\""));
+            }
         }
     }
 
@@ -340,7 +379,9 @@ public class LoansController {
     public void dispose() {
         searchDelay.stop();
         searchSequence.incrementAndGet();
-        if (activeAddLoanController != null) activeAddLoanController.dispose();
+        if (activeAddLoanController != null) {
+            activeAddLoanController.dispose();
+        }
         defaultRequestExecutor.shutdownNow();
         detailsViewController.dispose();
     }
@@ -361,14 +402,20 @@ public class LoansController {
     }
 
     public void openLoan(String loanId, Runnable onBack, Runnable onNotFound) {
-        if (loanBrowsingService == null) { onNotFound.run(); return; }
+        if (loanBrowsingService == null) {
+            onNotFound.run();
+            return;
+        }
         requestExecutor.execute(() -> {
             try {
                 var match = loanBrowsingService.search(loanId).loans().stream()
                         .filter(listing -> loanId.equals(listing.loan().getLoanId())).findFirst();
                 Platform.runLater(() -> {
-                    if (match.isPresent()) openDetails(summaryOf(match.get()), onBack);
-                    else onNotFound.run();
+                    if (match.isPresent()) {
+                        openDetails(summaryOf(match.get()), onBack);
+                    } else {
+                        onNotFound.run();
+                    }
                 });
             } catch (RuntimeException failure) {
                 Platform.runLater(onNotFound);
@@ -382,7 +429,11 @@ public class LoansController {
     }
 
     private void focusSearch() {
-        Platform.runLater(() -> { if (listView.isVisible()) searchField.requestFocus(); });
+        Platform.runLater(() -> {
+            if (listView.isVisible()) {
+                searchField.requestFocus();
+            }
+        });
     }
 
     private void showList(boolean visible) {
