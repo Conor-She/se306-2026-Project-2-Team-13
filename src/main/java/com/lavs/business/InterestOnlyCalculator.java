@@ -19,6 +19,7 @@ public class InterestOnlyCalculator extends BaseRepaymentCalculator {
     public List<Repayment> calculateSchedule(Loan loan) {
         validate(loan, Loan.Type.INTEREST_ONLY);
 
+        // Prepare the payment count and interest rate for the schedule.
         int paymentsPerYear = periodsPerYear(loan.getPaymentFrequency());
         int ratePeriodsPerYear = periodsPerYear(loan.getRateFrequency());
         int paymentCount = paymentCount(loan.getTermMonths(), paymentsPerYear);
@@ -29,6 +30,7 @@ public class InterestOnlyCalculator extends BaseRepaymentCalculator {
         BigDecimal zero = BigDecimal.ZERO.setScale(MONEY_SCALE);
         List<Repayment> schedule = new ArrayList<>(paymentCount);
 
+        // Regular payments cover interest; the final one also repays the principal.
         for (int paymentNumber = 1; paymentNumber <= paymentCount; paymentNumber++) {
             BigDecimal interest = money(
                     balance.multiply(BigDecimal.valueOf(paymentPeriodRate)));

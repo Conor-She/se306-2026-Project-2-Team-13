@@ -12,6 +12,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
     protected static final int MONEY_SCALE = 2;
     protected static final RoundingMode MONEY_ROUNDING = RoundingMode.HALF_UP;
 
+    // Check that the loan contains everything needed to build a schedule.
     protected final void validate(Loan loan, Loan.Type expectedType) {
         if (loan == null) {
             throw new IllegalArgumentException("loan must not be null");
@@ -44,6 +45,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         }
     }
 
+    // Convert the selected payment frequency into payments per year.
     protected final int periodsPerYear(Loan.PaymentFrequency frequency) {
         return switch (frequency) {
             case WEEKLY -> 52;
@@ -55,6 +57,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         };
     }
 
+    // Convert the selected interest frequency into rate periods per year.
     protected final int periodsPerYear(Loan.RateFrequency frequency) {
         return switch (frequency) {
             case DAILY -> 365;
@@ -65,6 +68,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         };
     }
 
+    // Work out how many payments fit into the loan term.
     protected final int paymentCount(int termMonths, int paymentsPerYear) {
         int periodNumerator = Math.multiplyExact(termMonths, paymentsPerYear);
         if (periodNumerator % 12 != 0) {
@@ -74,6 +78,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         return periodNumerator / 12;
     }
 
+    // Convert the annual interest rate into the rate charged for one payment.
     protected final double paymentPeriodRate(
             double annualPercentageRate,
             int ratePeriodsPerYear,
@@ -96,6 +101,7 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
         return rate;
     }
 
+    // Build one repayment row with its calculated due date.
     protected final Repayment repayment(
             Loan loan,
             int paymentNumber,
@@ -113,10 +119,12 @@ abstract class BaseRepaymentCalculator implements RepaymentCalculator {
                 remainingBalance.doubleValue());
     }
 
+    // Keep all money values rounded to cents.
     protected final BigDecimal money(BigDecimal value) {
         return value.setScale(MONEY_SCALE, MONEY_ROUNDING);
     }
 
+    // Move the start date forward by the correct payment interval.
     private LocalDate dueDate(
             LocalDate startDate,
             Loan.PaymentFrequency paymentFrequency,

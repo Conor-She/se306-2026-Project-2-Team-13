@@ -2,6 +2,7 @@ package com.lavs.model;
 
 import java.time.LocalDate;
 
+// Stores a customer's personal details.
 public class Customer {
     private String customerId;
     private String title;

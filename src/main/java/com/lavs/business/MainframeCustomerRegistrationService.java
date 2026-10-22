@@ -19,6 +19,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
     private final MainframeGateway gateway;
     // Reuses the validation rules of the in-memory service; saving goes through the gateway
     private final CustomerRegistrationService validator = new StubCustomerRegistrationService();
+    // Track completed steps so a retry continues instead of creating a duplicate customer.
     private CustomerDraft pending;
     private String customerId;
     private boolean personalDetailsConfirmed;
@@ -38,6 +39,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
     }
 
     @Override public synchronized String save(CustomerDraft draft) throws RegistrationException {
+        // Stop before contacting the mainframe when the form is incomplete.
         var errors = validate(draft);
         if (!errors.isEmpty()) throw new RegistrationException(errors);
         // Keep confirmed progress so retrying child records does not create another customer.
@@ -56,6 +58,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
                 gateway.updateCustomer(customerFrom(draft, customerId));
                 personalDetailsConfirmed = true;
             }
+            // Save each group of related customer records in order.
             while (addressIndex < draft.addresses.size()) {
                 var a = draft.addresses.get(addressIndex);
                 gateway.addAddress(new Address(null, customerId, a.get("street"), a.get("suburb"),
@@ -99,6 +102,7 @@ public class MainframeCustomerRegistrationService implements CustomerRegistratio
             failure.initCause(exception);
             throw failure;
         }
+        // Clear progress after every part of the customer has been saved.
         String result = customerId;
         customerId = null;
         pending = null;

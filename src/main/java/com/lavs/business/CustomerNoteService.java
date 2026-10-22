@@ -12,6 +12,7 @@ public final class CustomerNoteService {
 
     public CustomerNoteService(MainframeGateway gateway) { this.gateway = Objects.requireNonNull(gateway); }
 
+    // Load the notes belonging to one customer.
     public List<CustomerNote> getNotes(String customerId) {
         requireText(customerId, "Customer ID");
         return List.copyOf(gateway.getNotes(customerId));
@@ -19,16 +20,19 @@ public final class CustomerNoteService {
 
     public CustomerNote addNote(String customerId, String text) { return addNote(customerId, text, "General"); }
 
+    // Create a note with today's date and the selected type.
     public CustomerNote addNote(String customerId, String text, String type) {
         return gateway.addNote(new CustomerNote(null, customerId, text, LocalDate.now(), type, null));
     }
 
+    // Save changed text or type for an existing note.
     public CustomerNote updateNote(CustomerNote note) {
         Objects.requireNonNull(note, "note");
         requireText(note.getNoteId(), "Note ID");
         return gateway.updateNote(note);
     }
 
+    // Delete the note identified within this customer.
     public void deleteNote(String customerId, String noteId) {
         requireText(customerId, "Customer ID");
         requireText(noteId, "Note ID");

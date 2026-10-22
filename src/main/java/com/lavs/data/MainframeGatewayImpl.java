@@ -74,6 +74,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         this.organisationNumber = null;
     }
 
+    // Start and end the authenticated mainframe session.
     @Override
     public void login(String username, String password) {
         try {
@@ -88,6 +89,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         connection.Logout();
     }
 
+    // Create the main customer record and return its assigned number.
     @Override
     public Customer createCustomer(Customer customer) {
         long organisationId = requireOrganisationNumber();
@@ -118,6 +120,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         return organisationNumber;
     }
 
+    // Save customer address and contact records through their matching messages.
     @Override
     public Address addAddress(Address address) {
         AddAddress message = new AddAddress(
@@ -391,6 +394,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Save and maintain a customer's employment records.
     @Override
     public Employer addEmployer(Employer employer) {
         AddEmployer message = new AddEmployer(employer.getCustomerId(),
@@ -429,6 +433,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         sendOrThrow(new DeleteEmployer(customerId, employerId));
     }
 
+    // Save and maintain notes attached to a customer.
     @Override
     public CustomerNote addNote(CustomerNote note) {
         var message = new mainframe.client.messages.customer.AddNote(note.getCustomerId(), note.getNoteText(), note.getType());
@@ -540,6 +545,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Store guarantors as relationships between two customers.
     @Override
     public Guarantor addGuarantor(Guarantor guarantor) {
         AddRelationship message = new AddRelationship(guarantor.getCustomerId(),
@@ -668,6 +674,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 hasOtherText ? otherType : type);
     }
 
+    // Create the loan, initialise its schedule and preserve missing metadata.
     @Override
     public Loan createLoan(Loan loan) {
         mainframe.client.messages.loan.Create message = new mainframe.client.messages.loan.Create(
@@ -828,6 +835,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Add and remove customers linked to a loan as co-borrowers.
     @Override
     public CoBorrower addCoBorrower(CoBorrower coBorrower) {
         AddCoborrower message = new AddCoborrower(
@@ -928,6 +936,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Record payments against a loan using the mainframe-assigned payment ID.
     @Override
     public Payment addPayment(Payment payment) {
         AddPayment message = new AddPayment(
@@ -995,6 +1004,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Load the allowed values used by dropdown fields.
     @Override
     public List<String> getCategoryValues(String categoryType) {
         Long categoryId = findCategoryId(categoryType);
@@ -1045,6 +1055,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
+    // Send one message and turn mainframe failures into application exceptions.
     private void sendOrThrow(Message message) {
             try {
                 throwIfFailed(message.send(connection));

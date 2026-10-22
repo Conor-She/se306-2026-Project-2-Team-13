@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Stores one email address linked to a customer.
 public class Email {
     private Long emailId;
     private String customerId;

@@ -1,5 +1,6 @@
 package com.lavs.model;
 
+// Links a customer to the separate customer who guarantees their loan.
 public class Guarantor {
 
     private final String guarantorId;

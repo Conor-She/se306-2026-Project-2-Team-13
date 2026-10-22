@@ -89,6 +89,7 @@ public class LoanDetailsController {
         refreshPayments();
     }
 
+    // Display the selected loan and begin loading its related records.
     public void setLoan(LoansController.LoanSummary loan) {
         this.loan = loan;
         coborrowers.select(loan.loanId(), loan.customerId());
@@ -127,6 +128,7 @@ public class LoanDetailsController {
         configureCoborrowers();
     }
 
+    // Load details, repayments, co-borrowers and payments away from the UI thread.
     private void loadLoanRecords(String loanId) {
         long request = recordsSequence.incrementAndGet();
         coborrowers.setRecords(loanId, List.of());
@@ -231,6 +233,7 @@ public class LoanDetailsController {
         configureCoborrowers();
     }
 
+    // Connect the co-borrower table to the current loan and services.
     private void configureCoborrowers() {
         if (coborrowers == null) {
             return;
@@ -243,6 +246,7 @@ public class LoanDetailsController {
                 });
     }
 
+    // Show one loan tab and apply its selected style.
     private void selectTab(Button selectedTab, VBox selectedView) {
         for (Button tab : List.of(loanDetailsTab, coborrowersTab, repaymentScheduleTab,
                 paymentsTab)) {
@@ -277,6 +281,7 @@ public class LoanDetailsController {
                 }, this::showEditError);
     }
 
+    // Open the loan editor and refresh the page after a successful save.
     private void showLoanEditor(com.lavs.model.Loan existing,
             LoansController.LoanSummary selected) {
         var original = new java.util.LinkedHashMap<String, String>();
@@ -338,6 +343,7 @@ public class LoanDetailsController {
         return months > 0 ? (int) months : null;
     }
 
+    // Use the same dialog for adding a payment and editing an existing one.
     private void editPayment(Payment existingPayment) {
         if (loan == null) {
             return;
@@ -456,6 +462,7 @@ public class LoanDetailsController {
         alert.getDialogPane().setContent(message);
     }
 
+    // Ask for confirmation before deleting a stored payment.
     private void deletePayment(Payment payment) {
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
                 "Delete the payment of " + formatAmount(payment.getAmountPaid()) + "?",
@@ -469,6 +476,7 @@ public class LoanDetailsController {
         });
     }
 
+    // Rebuild the payment table from the latest loaded records.
     private void refreshPayments() {
         if (paymentRows == null) {
             return;
@@ -540,6 +548,7 @@ public class LoanDetailsController {
         addRepaymentMessage("Repayment schedule could not be loaded.");
     }
 
+    // Fill the schedule tab with calculated repayment rows and totals.
     private void refreshRepaymentSchedule(LoanWithSchedule details) {
         clearRepaymentRows();
         repaymentTotalValue.setText(formatAmount(details.getSummary().getTotalRepayable()));
