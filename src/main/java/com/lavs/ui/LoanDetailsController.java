@@ -35,6 +35,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 
+// AI-assisted: Helped implement loan details, repayment schedule and payment interactions.
 /** Displays loan information and the loan's related tabs and payments. */
 public class LoanDetailsController {
     private static final DateTimeFormatter PAYMENT_DATE_FORMAT =

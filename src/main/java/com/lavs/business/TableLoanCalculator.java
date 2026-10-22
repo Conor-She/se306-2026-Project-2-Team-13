@@ -7,6 +7,7 @@ import java.util.List;
 import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 
+// AI-assisted: Helped implement the amortised table-loan repayment schedule.
 /**
  * Generates a table-loan schedule using a fixed payment calculated from the
  * principal, annual percentage rate and term. Monetary values are rounded to

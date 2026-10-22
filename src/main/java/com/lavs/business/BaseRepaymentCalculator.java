@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import com.lavs.model.Loan;
 import com.lavs.model.Repayment;
 
+// AI-assisted: Helped design shared validation, frequency conversion and financial calculations.
 abstract class BaseRepaymentCalculator implements RepaymentCalculator {
     protected static final int MONEY_SCALE = 2;
     protected static final RoundingMode MONEY_ROUNDING = RoundingMode.HALF_UP;
