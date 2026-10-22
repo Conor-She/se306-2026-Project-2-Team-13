@@ -155,12 +155,11 @@ final class CustomerDetailsEditing {
     private static String text(String value) { return value == null ? "" : value; }
     private static String id(Long value) { return value == null ? "" : value.toString(); }
 
-    // A loan read from the mainframe, in the form the Loans tab shows. The mainframe doesn't
-    // keep whether a loan is a table or a reducing balance loan, so those show as Fixed or Floating.
+    // Fixed/floating describes the interest rate, not the loan's repayment type.
     private static Map<String, String> loanRecord(com.lavs.model.Loan loan) {
         String type;
         if (loan.getType() == null) {
-            type = loan.isFloating() ? "Floating" : "Fixed";
+            type = "Not recorded";
         } else {
             type = switch (loan.getType()) {
                 case TABLE_LOAN -> "Table Loan";
@@ -336,17 +335,15 @@ final class CustomerDetailsEditing {
         if (record != null) {
             State target = state;
             int recordIndex = target.records.get(Kind.CONTACT_RECORD).indexOf(record);
-            Button primary = new Button("Make primary");
+            CheckBox primary = new CheckBox("Make primary");
             primary.setAccessibleText("Make primary " + value);
-            primary.setStyle("-fx-background-color: white; -fx-text-fill: #55558d; "
-                    + "-fx-border-color: #dce2ff; -fx-border-radius: 6; -fx-background-radius: 6; "
-                    + "-fx-padding: 7 10; -fx-min-height: 36; -fx-cursor: hand;");
+            primary.setDisable(readOnly);
             primary.setOnAction(event -> {
                 save(target, draft -> promoteContact(draft, type,
                         draft.records.get(Kind.CONTACT_RECORD).get(recordIndex)),
                         () -> populateContacts(type, list));
             });
-            actions.getChildren().add(primary);
+            text.getChildren().add(primary);
         }
         if (type.equals("Phone")) {
             CheckBox texts = new CheckBox("Send TXT messages");
