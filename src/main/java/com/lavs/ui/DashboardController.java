@@ -57,6 +57,9 @@ public class DashboardController {
         customersViewController.setOnReviewLoan(loanId -> {
             navigate(loansNav, loansView);
             loansViewController.openLoan(loanId, () -> {
+                navigate(customersNav, customersView);
+                customersViewController.showCustomerLoans();
+            }, () -> {
                 var error = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
                         "That loan could not be opened. Please try again.");
                 error.setHeaderText("Loan not found");

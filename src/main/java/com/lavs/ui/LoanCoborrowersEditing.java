@@ -32,7 +32,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -104,78 +103,47 @@ final class LoanCoborrowersEditing {
         }
 
         Dialog<Void> dialog = new Dialog<>();
+        DialogView view = new DialogView(dialog, "coborrowerChoice.fxml");
         dialog.setTitle("Add co-borrower");
         dialog.setHeaderText("How would you like to add the co-borrower?");
         dialog.getDialogPane().setId("addCoborrowerChoice");
         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL);
         dialog.getDialogPane().setPrefSize(500, 340);
-        applyDialogTheme(dialog.getDialogPane());
         dialog.setResizable(false);
 
-        Button existing = optionButton("Choose existing customer",
-                "Search for a customer who is already registered.");
-        existing.setId("chooseExistingCustomer");
+        Button existing = view.get("chooseExistingCustomer");
         existing.setOnAction(event -> {
             dialog.close();
             showExistingCustomerPicker();
         });
 
-        Button create = optionButton("Create new customer",
-                "Register a new customer, then add them to this loan.");
-        create.setId("createNewCustomer");
+        Button create = view.get("createNewCustomer");
         create.setOnAction(event -> {
             dialog.close();
             showNewCustomerEditor();
         });
 
-        VBox options = new VBox(12, existing, create);
-        options.setFillWidth(true);
-        options.setMinHeight(Region.USE_PREF_SIZE);
-        options.setPrefHeight(188);
-        options.setMaxHeight(Region.USE_PREF_SIZE);
-        dialog.getDialogPane().setContent(options);
+        dialog.setOnShown(event -> view.apply(dialog.getDialogPane()));
         initOwner(dialog);
         dialog.show();
-    }
-
-    private Button optionButton(String title, String description) {
-        Label heading = new Label(title);
-        heading.setStyle("-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #22245f;");
-        Label copy = new Label(description);
-        copy.setWrapText(true);
-        copy.setStyle("-fx-font-size: 12; -fx-text-fill: #747ba6;");
-        VBox text = new VBox(3, heading, copy);
-        text.setAlignment(Pos.CENTER_LEFT);
-        Button button = new Button(null, text);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setMinHeight(88);
-        button.setPrefHeight(88);
-        button.setMaxHeight(88);
-        button.setAlignment(Pos.CENTER_LEFT);
-        button.setStyle("-fx-background-color: white; -fx-border-color: #dce2ff; "
-                + "-fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 14; -fx-cursor: hand;");
-        return button;
     }
 
     private void showExistingCustomerPicker() {
         ButtonType addType = new ButtonType("Add selected", ButtonBar.ButtonData.OK_DONE);
         Dialog<String> dialog = new Dialog<>();
+        DialogView view = new DialogView(dialog, "coborrowerPicker.fxml");
         dialog.setTitle("Add existing customer");
         dialog.setHeaderText("Search for an existing customer");
         DialogPane pane = dialog.getDialogPane();
         pane.setId("existingCoborrowerPicker");
         pane.getButtonTypes().setAll(ButtonType.CANCEL, addType);
         pane.setPrefSize(680, 430);
-        applyDialogTheme(pane);
         dialog.setResizable(false);
 
-        TextField search = new TextField();
-        search.setId("coborrowerCustomerSearch");
-        search.setPromptText("Customer name or ID");
-        ListView<CustomerPreview> results = new ListView<>();
-        results.setId("coborrowerCustomerResults");
-        results.setPrefHeight(190);
+        TextField search = view.get("coborrowerCustomerSearch");
+        ListView<CustomerPreview> results = view.get("coborrowerCustomerResults");
         results.setCellFactory(list -> new ListCell<>() {
+            { DialogView.styleCustomerCell(this); }
             @Override protected void updateItem(CustomerPreview customer, boolean empty) {
                 super.updateItem(customer, empty);
                 if (empty || customer == null) {
@@ -188,15 +156,8 @@ final class LoanCoborrowersEditing {
                 setText(name + "\nCustomer ID: " + customer.customerId().value() + "  •  " + birthDate);
             }
         });
-        Label status = new Label("Enter a customer name or ID.");
-        status.setId("coborrowerSearchStatus");
-        status.setWrapText(true);
-        status.setStyle("-fx-text-fill: #747ba6;");
-        VBox searchContent = new VBox(12, search, status, results);
-        searchContent.setPrefWidth(640);
-        searchContent.setPrefHeight(275);
-        searchContent.setMaxHeight(Region.USE_PREF_SIZE);
-        pane.setContent(searchContent);
+        Label status = view.get("coborrowerSearchStatus");
+        dialog.setOnShown(event -> view.apply(pane));
 
         Button add = (Button) pane.lookupButton(addType);
         add.disableProperty().bind(results.getSelectionModel().selectedItemProperty().isNull());
@@ -414,11 +375,6 @@ final class LoanCoborrowersEditing {
     private void initOwner(Dialog<?> dialog) {
         Window owner = owner();
         if (owner != null) dialog.initOwner(owner);
-    }
-
-    private void applyDialogTheme(DialogPane pane) {
-        var stylesheet = getClass().getResource("coborrowerDialogs.css");
-        if (stylesheet != null) pane.getStylesheets().add(stylesheet.toExternalForm());
     }
 
     private Window owner() {

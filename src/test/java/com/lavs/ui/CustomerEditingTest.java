@@ -330,7 +330,7 @@ class CustomerEditingTest {
             dialogButton(pane, "Save").fire();
             ((Button) loader.getNamespace().get("viewAllAddress")).fire();
             DialogPane contacts = contactList();
-            nodes(contacts).stream().filter(Button.class::isInstance).map(Button.class::cast)
+            nodes(contacts).stream().filter(CheckBox.class::isInstance).map(CheckBox.class::cast)
                     .filter(button -> "Make primary 34 Queen Street, Auckland, NZ".equals(button.getAccessibleText())).findFirst().orElseThrow().fire();
             assertEquals("34 Queen Street, Auckland, NZ", ((Label) loader.getNamespace().get("addressValue")).getText());
             assertTrue(nodes(contacts).stream().filter(Label.class::isInstance).map(Label.class::cast)

@@ -181,6 +181,8 @@ public class CustomerDetailsController {
     public void setOnCustomerChanged(Consumer<CustomersController.CustomerSummary> onCustomerChanged) {
         this.onCustomerChanged = onCustomerChanged;
     }
+    public void setRequestExecutor(java.util.concurrent.Executor executor) { editing.setRequestExecutor(executor); }
+
     @FXML private void editPersonal() { editing.editDetails(Kind.PERSONAL); }
     @FXML private void editEmail() { editing.editContact("Email"); }
     @FXML private void editPhone() { editing.editContact("Phone"); }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
+<?import javafx.scene.control.ListCell?>
+<fx:root type="javafx.scene.control.ListCell" xmlns:fx="http://javafx.com/fxml/1" style="-fx-background-color: white; -fx-border-color: transparent transparent #edf0fc transparent; -fx-padding: 11 14; -fx-font-size: 12px; -fx-text-fill: #55558d;">
+    <fx:define>
+        <String fx:id="hoverStyle" fx:value="-fx-background-color: #f8faff;"/>
+        <String fx:id="selectedStyle" fx:value="-fx-background-color: #eeecff; -fx-text-fill: #22245f;"/>
+    </fx:define>
+</fx:root>

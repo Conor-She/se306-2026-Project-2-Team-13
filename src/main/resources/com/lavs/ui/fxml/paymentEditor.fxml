@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<GridPane xmlns:fx="http://javafx.com/fxml/1" id="paymentForm" hgap="18" vgap="16" prefWidth="560" style="-fx-padding: 20 20 16 20;">
+        <Label fx:id="paymentContext" id="paymentContext" wrapText="true" GridPane.columnSpan="2" style="-fx-text-fill: #747ba6; -fx-font-size: 13px; -fx-padding: 0 0 4 0;"/>
+        <Label text="Date" GridPane.rowIndex="1" style="-fx-text-fill: #393a7b; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+        <DatePicker fx:id="paymentDate" id="paymentDate" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-size: 13px; -fx-text-fill: #20205e; -fx-prompt-text-fill: #8b8db1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-pref-height: 42px;"/>
+        <Label text="Amount paid" GridPane.rowIndex="2" style="-fx-text-fill: #393a7b; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+        <TextField fx:id="paymentAmount" id="paymentAmount" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" promptText="e.g. 500" style="-fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-size: 13px; -fx-text-fill: #20205e; -fx-prompt-text-fill: #8b8db1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-pref-height: 42px; -fx-padding: 10 12;"/>
+</GridPane>
