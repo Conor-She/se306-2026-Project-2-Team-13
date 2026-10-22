@@ -150,6 +150,7 @@
                   </ScrollPane>
             </VBox>
 
+            <!-- AI-assisted: Styling refinements and layout debugging for the repayment schedule section. -->
             <VBox fx:id="repaymentScheduleView" spacing="12" visible="false" managed="false" styleClass="repayment-schedule" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 8; -fx-background-radius: 8; -fx-alignment: top-left;">
                 <HBox alignment="CENTER_LEFT" spacing="16" styleClass="repayment-heading" style="-fx-background-color: linear-gradient(to right, #f8faff, #f0f5ff); -fx-background-radius: 8 8 0 0; -fx-padding: 16 20;">
                     <SVGPath content="M 2 5 H 22 V 23 H 2 Z M 2 10 H 22 M 7 2 V 7 M 17 2 V 7 M 6 14 H 9 M 12 14 H 15 M 18 14 H 20 M 6 18 H 9 M 12 18 H 15" fill="transparent" stroke="#393a7b" strokeWidth="1.8" />

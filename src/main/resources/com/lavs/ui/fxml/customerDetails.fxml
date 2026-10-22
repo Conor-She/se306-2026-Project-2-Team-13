@@ -72,6 +72,7 @@
   <Label text="Customer Overview" style="$titleStyle"/>
   <Label text="Key information about the customer at a glance." wrapText="true" style="$mutedStyle"/>
  </VBox>
+ <!-- AI-assisted: Refined the styling and layout of the customer overview cards. -->
  <GridPane fx:id="overviewCards" hgap="14" vgap="14" minWidth="0">
  <VBox fx:id="personalCard" minWidth="0" GridPane.fillHeight="false" GridPane.valignment="TOP" style="$cardStyle">
 <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #f5f6ff; -fx-background-radius: 9 9 0 0; -fx-padding: 12;"><StackPane minWidth="24" prefWidth="24"><SVGPath content="M 10 0 A 5 5 0 1 1 10 10 A 5 5 0 1 1 10 0 Z M 0 22 C 0 8 20 8 20 22 Q 10 25 0 22 Z" fill="#393a7b"/></StackPane><Label text="Personal Information" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #20205e;"/><Region HBox.hgrow="ALWAYS"/><Button accessibleText="Edit personal information" onAction="#editPersonal" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 4; -fx-background-radius: 4; -fx-text-fill: #55558d; -fx-padding: 4 7; -fx-cursor: hand;"><graphic><SVGPath content="M 1 15 L 4 8 L 12 0 L 16 4 L 8 12 Z M 4 8 L 8 12 M 10 2 L 14 6" fill="transparent" stroke="#55558d" strokeWidth="1.3"/></graphic></Button></HBox>
