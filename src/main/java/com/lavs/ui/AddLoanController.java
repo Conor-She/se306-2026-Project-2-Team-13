@@ -23,6 +23,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 /** Three-step loan wizard. Finishing hands the draft to onSave, which saves it through the mainframe. */
@@ -49,6 +52,7 @@ public class AddLoanController {
     private java.util.function.Consumer<String> prerequisiteValidator;
     @FXML private Label prerequisiteNotice;
     private final LoanSchedulePreviewService previewService = new LoanSchedulePreviewService();
+    private final com.lavs.business.LoanDetailsValidator loanValidator = new com.lavs.business.LoanDetailsValidator();
     @FXML private TableView<Repayment> repaymentTable;
     @FXML private TableColumn<Repayment, String> dueDateColumn, paymentColumn, principalColumn, interestColumn, balanceColumn;
     @FXML private Label repaymentCount, totalRepayable, totalInterest;
@@ -233,6 +237,58 @@ public class AddLoanController {
         message.setVisible(false);
         message.setManaged(false);
         customerSearch.requestFocus();
+    }
+
+    @FXML private void editPrimaryCustomer() {
+        if (draft.primaryBorrower == null) return;
+        if (customerService == null) {
+            showCustomerEditFailure("Customer editing is not connected. Sign in again.");
+            return;
+        }
+        String customerId = draft.primaryBorrower.customerId();
+        customerSearchExecutor.execute(() -> {
+            try {
+                var details = customerService.getById(new com.lavs.model.CustomerId(customerId));
+                runOnFxThread(() -> openCustomerEditor(details));
+            } catch (RuntimeException failure) {
+                runOnFxThread(() -> showCustomerEditFailure(failure.getMessage()));
+            }
+        });
+    }
+
+    private void openCustomerEditor(com.lavs.model.CustomerDetails details) {
+        try {
+            var loader = new javafx.fxml.FXMLLoader(getClass().getResource("fxml/customerDetails.fxml"));
+            javafx.scene.Parent root = loader.load();
+            CustomerDetailsController controller = loader.getController();
+            controller.setCustomerService(customerService);
+
+            Stage editor = new Stage();
+            if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null) {
+                editor.initOwner(selectedBorrower.getScene().getWindow());
+                editor.initModality(Modality.WINDOW_MODAL);
+            }
+            editor.setTitle("Edit customer");
+            editor.setScene(new Scene(root, 1080, 760));
+            controller.setOnBack(editor::close);
+            controller.setCustomerDetails(details);
+            editor.setOnHidden(event -> refreshPrerequisiteNotice());
+            editor.show();
+        } catch (java.io.IOException failure) {
+            showCustomerEditFailure("The customer editor could not be opened.");
+        }
+    }
+
+    private void showCustomerEditFailure(String detail) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
+        if (selectedBorrower.getScene() != null && selectedBorrower.getScene().getWindow() != null)
+            alert.initOwner(selectedBorrower.getScene().getWindow());
+        alert.setTitle("Customer could not be edited");
+        alert.setHeaderText("Customer details could not be opened");
+        String error = detail == null || detail.isBlank()
+                ? "Check the mainframe connection and try again." : detail;
+        alert.setContentText(error);
+        alert.show();
     }
 
     @FXML private void cancel() {
@@ -563,26 +619,19 @@ public class AddLoanController {
         coborrowerSearch.setDisable(draft.coborrowers.size() >= 3);
     }
 
+    // The rules live in LoanDetailsValidator; this only gathers what the screen holds and
+    // returns the message to show.
     String validateDetails() {
-        if (draft.primaryBorrower == null) return "Select a primary borrower from the customer search results.";
+        String borrowerError = loanValidator.borrowerError(draft);
+        if (borrowerError != null) return borrowerError;
         String prerequisiteError = prerequisiteError();
         if (prerequisiteError != null) return prerequisiteError;
-        if (draft.details.getOrDefault("loanType", "").isBlank()) return "Select a loan type.";
-        if (!validNumber(draft.details.getOrDefault("principal", ""), false)) return "Enter a principal greater than zero.";
-        if (!validNumber(draft.details.getOrDefault("interestRate", ""), true)) return "Enter an interest rate of zero or greater.";
-        if (draft.details.getOrDefault("paymentFrequency", "").isBlank()) return "Select a payment frequency.";
-        if (draft.details.getOrDefault("rateFrequency", "").isBlank()) return "Select a rate frequency.";
-        try {
-            if (Integer.parseInt(draft.details.getOrDefault("term", "").strip()) <= 0) return "Enter a term greater than zero in months.";
-        } catch (NumberFormatException exception) { return "Enter the term as a whole number of months."; }
+        boolean datesReadable = true;
         try {
             startDate.commitValue();
             renewDate.commitValue();
-        } catch (RuntimeException exception) { return "Enter valid start and renewal dates."; }
-        if (draft.startDate == null || draft.renewDate == null) return "Choose start and renewal dates.";
-        if (!draft.renewDate.isAfter(draft.startDate)) return "Renewal date must be after the start date.";
-        if (draft.details.getOrDefault("status", "").isBlank()) return "Select a status.";
-        return null;
+        } catch (RuntimeException exception) { datesReadable = false; }
+        return loanValidator.detailsError(draft, datesReadable);
     }
 
     private String prerequisiteError() {
@@ -618,12 +667,5 @@ public class AddLoanController {
         prerequisiteNotice.setText(error == null ? "" : error);
         prerequisiteNotice.setVisible(error != null);
         prerequisiteNotice.setManaged(error != null);
-    }
-
-    private static boolean validNumber(String text, boolean allowZero) {
-        try {
-            int sign = new BigDecimal(text.strip()).signum();
-            return allowZero ? sign >= 0 : sign > 0;
-        } catch (NumberFormatException exception) { return false; }
     }
 }

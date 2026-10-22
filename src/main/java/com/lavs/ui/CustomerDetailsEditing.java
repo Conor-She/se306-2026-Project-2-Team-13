@@ -167,11 +167,7 @@ final class CustomerDetailsEditing {
         if (loan.getType() == null) {
             type = "Not recorded";
         } else {
-            type = switch (loan.getType()) {
-                case TABLE_LOAN -> "Table Loan";
-                case REDUCING_BALANCE -> "Reducing Balance";
-                case INTEREST_ONLY -> "Interest Only";
-            };
+            type = loan.getType().displayName();
         }
         String name = loan.getStatus().name();
         return values("id", loan.getLoanId(), "type", type,
@@ -430,7 +426,7 @@ final class CustomerDetailsEditing {
         } catch (RuntimeException failure) { showSaveError(failure); return; }
         if (existingLoan != null) {
             editorKind = Kind.SAVED_LOAN;
-            original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().name());
+            original.put("type", existingLoan.getType() == null ? "" : existingLoan.getType().displayName());
             original.put("paymentAmount", Double.toString(existingLoan.getPaymentAmount()));
         }
         if (record == null && kind == Kind.DOCUMENT) original.put("date", LocalDate.now().toString());
@@ -447,7 +443,7 @@ final class CustomerDetailsEditing {
                 } else {
                     customerService.updateLoan(new com.lavs.model.Loan(existingLoan.getLoanId(), customerId,
                             existingLoan.getStatus(), Double.parseDouble(saved.get("amount")),
-                            Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
+                            Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
                             existingLoan.isFloating(), existingLoan.getStartDate(), existingLoan.getRenewDate(),
                             Double.parseDouble(saved.get("paymentAmount")), existingLoan.getPaymentFrequency(),
                             existingLoan.getRateFrequency(), existingLoan.getTermMonths()));

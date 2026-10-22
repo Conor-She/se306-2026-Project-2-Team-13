@@ -29,6 +29,12 @@ public class PaymentService {
     static final String AS_OF_REQUIRED_MESSAGE =
             "The date to judge the repayments on is required";
 
+    // The one place that decides whether an amount can be paid. The Add Payment dialog asks
+    // this too, so the screen doesn't carry its own copy of the rule.
+    public static boolean isValidAmount(BigDecimal amount) {
+        return amount != null && amount.signum() > 0;
+    }
+
     private final MainframeGateway gateway;
 
     public PaymentService(MainframeGateway gateway) {

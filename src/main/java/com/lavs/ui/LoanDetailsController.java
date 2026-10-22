@@ -259,7 +259,7 @@ public class LoanDetailsController {
         var original = new java.util.LinkedHashMap<String, String>();
         original.put("id", existing.getLoanId());
         original.put("status", loan.status());
-        original.put("type", existing.getType() == null ? "" : existing.getType().name());
+        original.put("type", existing.getType() == null ? "" : existing.getType().displayName());
         original.put("amount", java.math.BigDecimal.valueOf(existing.getPrincipal()).toPlainString());
         original.put("rate", java.math.BigDecimal.valueOf(existing.getInterestRate())
                 .stripTrailingZeros().toPlainString());
@@ -268,7 +268,7 @@ public class LoanDetailsController {
                 original, false, saved -> {
             var updated = new com.lavs.model.Loan(existing.getLoanId(), existing.getCustomerId(),
                         existing.getStatus(), Double.parseDouble(saved.get("amount")),
-                        Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.valueOf(saved.get("type")),
+                        Double.parseDouble(saved.get("rate")), com.lavs.model.Loan.Type.fromDisplayName(saved.get("type")),
                         existing.isFloating(), existing.getStartDate(), existing.getRenewDate(),
                         Double.parseDouble(saved.get("paymentAmount")), existing.getPaymentFrequency(),
                         existing.getRateFrequency(), termFor(existing));
@@ -545,7 +545,7 @@ public class LoanDetailsController {
 
     private boolean isPositiveAmount(String value) {
         try {
-            return parseAmount(value).signum() > 0;
+            return com.lavs.business.PaymentService.isValidAmount(parseAmount(value));
         } catch (NumberFormatException exception) {
             return false;
         }
