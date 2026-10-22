@@ -31,6 +31,7 @@ final class CustomerNotesEditing {
     // Reload notes in the background so the screen stays responsive.
     void refresh() {
         if (customerId == null) return;
+        // AI-assisted: Debugging of asynchronous note loading and stale-result handling.
         long request = ++version;
         String selectedCustomer = customerId;
         replaceRows(new Label("Loading customer notes..."));
@@ -52,7 +53,7 @@ final class CustomerNotesEditing {
         list.getChildren().addAll(rows);
     }
 
-    // Build one visible row for each stored note.
+    // AI-assisted: Styling refinements for note cards, metadata and edit/delete controls.
     private void render(List<CustomerNote> notes) {
         replaceRows();
         if (notes.isEmpty()) list.getChildren().add(new Label("No notes added."));

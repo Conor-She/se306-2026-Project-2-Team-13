@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// AI-assisted: Helped write the co-borrower display tests.
 class LoanCoborrowersTest {
     private FXMLLoader loader;
     private Stage stage;

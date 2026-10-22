@@ -21,6 +21,7 @@ import mainframe.client.Status;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+// AI-assisted: Helped write the document metadata gateway tests.
 class MainframeGatewayDocumentTest {
     private static final LocalDate UPLOAD_DATE = LocalDate.of(2026, 10, 14);
 

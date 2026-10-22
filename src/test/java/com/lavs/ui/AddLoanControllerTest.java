@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+// AI-assisted: Helped write the loan wizard tests.
 class AddLoanControllerTest {
     @BeforeAll static void startToolkit() throws Exception { JavaFxTestSupport.startToolkit(); }
 

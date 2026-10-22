@@ -44,6 +44,7 @@ class CustomersServiceIntegrationTest {
             new Scene(root, 1100, 800);
             controller = loader.getController();
             controller.setCustomerService(service);
+            // AI-assisted: Configured background customer saves for deterministic integration tests.
             ((CustomerDetailsController) loader.getNamespace().get("detailsViewController"))
                     .setRequestExecutor(Runnable::run);
             search = (TextField) loader.getNamespace().get("searchField");

@@ -29,6 +29,7 @@ public class PaymentService {
     static final String AS_OF_REQUIRED_MESSAGE =
             "The date to judge the repayments on is required";
 
+    // AI-assisted: Claude suggested this shared payment amount rule.
     // The one place that decides whether an amount can be paid. The Add Payment dialog asks
     // this too, so the screen doesn't carry its own copy of the rule.
     public static boolean isValidAmount(BigDecimal amount) {

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
+// AI-assisted: Helped implement the metadata-only customer document operations.
 /** Coordinates metadata-only document operations for a customer. */
 public final class CustomerDocumentService {
     private final MainframeGateway gateway;

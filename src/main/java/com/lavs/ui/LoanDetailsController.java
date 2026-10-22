@@ -271,6 +271,7 @@ public class LoanDetailsController {
         }
         var selected = loan;
         var service = customerService;
+        // AI-assisted: Moved loan-editor loading off the UI thread with progress feedback.
         BackgroundRequest.run(loanHeading.getScene().getWindow(), "Loading loan…", requestExecutor,
                 () -> service.getLoan(selected.customerId(), selected.loanId()), existing -> {
                     if (loan != selected) {
@@ -304,6 +305,7 @@ public class LoanDetailsController {
                                 existing.getPaymentFrequency(),
                         existing.getRateFrequency(), termFor(existing));
             var service = customerService;
+            // AI-assisted: Implemented background saving and guarded the subsequent UI refresh.
             BackgroundRequest.run(loanHeading.getScene().getWindow(), "Saving loan…",
                     requestExecutor, () -> {
                 service.updateLoan(updated);
@@ -412,6 +414,7 @@ public class LoanDetailsController {
         });
     }
 
+    // AI-assisted: Claude wrote this background payment save-and-reload flow.
     // Runs a payment change on the mainframe off the screen thread, then reloads the loan's
     // records so the table shows exactly what the mainframe now holds (including real IDs).
     private void changePayments(String errorHeader, Runnable change) {
@@ -435,6 +438,7 @@ public class LoanDetailsController {
         });
     }
 
+    // AI-assisted: Claude wrote this payment error dialog.
     private void showPaymentError(String header, RuntimeException failure) {
         Alert alert = new Alert(Alert.AlertType.ERROR,
                 failure.getMessage() == null ? "The mainframe could not save the payment."
@@ -447,7 +451,8 @@ public class LoanDetailsController {
         alert.showAndWait();
     }
 
-    // A long mainframe message is cut off with "..." by default; showing it in a wrapping label
+    // AI-assisted: Claude suggested this fix for error text being cut off in the dialog.
+    // A long mainframe message is cut off by default; showing it in a wrapping label
     // lets the dialog grow tall enough to read all of it.
     private static void wrapAlertText(Alert alert) {
         Label message = new Label(alert.getContentText());

@@ -2,6 +2,7 @@ package mainframe.client.messages.customerDocument;
 import mainframe.client.*;
 import java.io.IOException;
 import java.util.ArrayList;
+// AI-assisted: Helped add the document type and upload date to listed documents.
 public class List implements Message {
     private String _customerName;
     private String _customerNumber;

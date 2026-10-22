@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<!-- AI-assisted: Moved the co-borrower choice dialog layout and styling into FXML. -->
 <VBox xmlns:fx="http://javafx.com/fxml/1" spacing="12" fillWidth="true" minHeight="-Infinity" prefHeight="218" maxHeight="-Infinity" style="-fx-padding: 18 20 12 20;">
     <Button fx:id="chooseExistingCustomer" id="chooseExistingCustomer" maxWidth="Infinity" minHeight="88" prefHeight="88" maxHeight="88" alignment="CENTER_LEFT" style="-fx-background-color: white; -fx-border-color: #dce2ff; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 14; -fx-cursor: hand;">
         <graphic><VBox spacing="3" alignment="CENTER_LEFT">

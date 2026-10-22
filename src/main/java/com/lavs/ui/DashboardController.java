@@ -73,6 +73,7 @@ public class DashboardController {
             return new Insets(padding);
         }, content.widthProperty()));
 
+        // AI-assisted: Debugging and refinement of responsive card sizing to reduce layout flicker.
         homeCards.widthProperty().addListener((obs, oldW, newW) -> {
             double w = newW.doubleValue();
             if (w >= TWO_COL_ON) {

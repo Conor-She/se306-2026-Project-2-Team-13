@@ -183,6 +183,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 message.getNationality());
     }
 
+    // AI-assisted: Helped fix the customer date of birth being returned as null.
     private static LocalDate parseDate(String value) {
         return value == null || value.isBlank() ? null : LocalDate.parse(value);
     }
@@ -480,7 +481,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
         }
     }
 
-    // Read and maintain document metadata stored for a customer.
+    // AI-assisted: Helped implement mapping customer document metadata to and from the mainframe.
     @Override
     public List<CustomerDocument> getDocuments(String customerId) {
         List<CustomerDocument> documents = new ArrayList<>();
@@ -948,6 +949,7 @@ public class MainframeGatewayImpl implements MainframeGateway {
                 payment.getPaymentDate(), payment.getAmountPaid());
     }
 
+    // AI-assisted: Claude wrote this delete-then-add edit that restores the payment on failure.
     // The mainframe has no update message, so an edit deletes the old payment and adds the new
     // version, which gets a new ID. Deleting first means that if the mainframe refuses the
     // delete (for example because the payment is locked) nothing has changed, instead of the

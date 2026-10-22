@@ -450,6 +450,7 @@ class PaymentServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.statusesFor(loanId, null));
     }
 
+    // AI-assisted: Claude suggested this payment amount test.
     @Test
     void anAmountMustBeGreaterThanZeroToBePaid() {
         assertFalse(PaymentService.isValidAmount(null));

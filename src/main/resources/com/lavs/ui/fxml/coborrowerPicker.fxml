@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<!-- AI-assisted: Moved the existing-customer picker layout and styling into FXML. -->
 <VBox xmlns:fx="http://javafx.com/fxml/1" spacing="12" prefWidth="640" prefHeight="305" maxHeight="-Infinity" style="-fx-padding: 18 20 12 20;">
     <TextField fx:id="coborrowerCustomerSearch" id="coborrowerCustomerSearch" promptText="Customer name or ID" style="-fx-background-color: white; -fx-border-color: #b9b7cd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 10 12; -fx-font-size: 13px; -fx-text-fill: #20205e; -fx-prompt-text-fill: #8b8db1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;"/>
     <Label fx:id="coborrowerSearchStatus" id="coborrowerSearchStatus" text="Enter a customer name or ID." wrapText="true" style="-fx-text-fill: #747ba6; -fx-font-size: 12px;"/>

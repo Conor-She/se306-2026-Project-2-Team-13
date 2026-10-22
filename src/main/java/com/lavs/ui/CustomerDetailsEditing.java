@@ -631,6 +631,7 @@ final class CustomerDetailsEditing {
         var service = customerService;
         saving = true;
         boolean[] saved = {false};
+        // AI-assisted: Implemented background saving and refresh feedback without blocking JavaFX.
         BackgroundRequest.run(window(), "Saving customer…", requestExecutor, () -> {
             service.update(requested.customer(), requested.addresses(), requested.phones(),
                     requested.emails(), requested.employers());

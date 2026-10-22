@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.*;
 
+// AI-assisted: Helped write the loan list page tests.
 /** The Loans page against an in-memory mainframe: real loans, their records, and empty and failure states. */
 class LoansControllerTest {
     private FXMLLoader loader;

@@ -28,6 +28,7 @@ final class BackgroundRequest {
         progress.getDialogPane().setContent(new VBox(12, new Label(message), new ProgressIndicator()));
         progress.setOnCloseRequest(event -> event.consume());
         progress.show();
+        // AI-assisted: Implemented UI-thread completion callbacks and corrected progress-dialog closure.
         Consumer<Runnable> finish = action -> {
             Runnable update = () -> {
                 progress.setOnCloseRequest(null);

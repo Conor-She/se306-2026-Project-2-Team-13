@@ -89,6 +89,7 @@ class CustomerRecordValidatorTest {
         assertTrue(check(List.of(field("employer")), Map.of("employer", "Anything Ltd")).isEmpty());
     }
 
+    // AI-assisted: Claude wrote this validator test to fulfill the requirement.
     @Test void contactDetailsAreCheckedAccordingToTheContactType() {
         List<FieldSpec> fields = List.of(field("contactType", "Email", "Phone", "Address"), field("value"));
         assertEquals(Map.of("value", CustomerRecordValidator.EMAIL_MESSAGE),
@@ -97,7 +98,8 @@ class CustomerRecordValidatorTest {
                 check(fields, Map.of("contactType", "Phone", "value", "abc")));
         assertTrue(check(fields, Map.of("contactType", "Email", "value", "a@b.co")).isEmpty());
     }
-
+    
+    // AI-assisted: Claude wrote this validator test to fulfill the requirement.
     @Test void anAddressNeedsAStreetCityAndCountryInsteadOfContactDetails() {
         List<FieldSpec> fields = List.of(field("contactType", "Email", "Phone", "Address"), field("value"));
         Map<String, String> errors = check(fields, Map.of("contactType", "Address", "value", "", "city", "Auckland"));

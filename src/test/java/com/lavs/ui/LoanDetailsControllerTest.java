@@ -276,6 +276,7 @@ class LoanDetailsControllerTest {
         });
     }
 
+    // AI-assisted: Claude suggested this form of edit-payment test.
     @Test void cancellingAddAndEditPreservesPaymentsAndSavingEditReordersRows() throws Exception {
         JavaFxTestSupport.run(() -> {
             node("paymentsTab", Button.class).fire();

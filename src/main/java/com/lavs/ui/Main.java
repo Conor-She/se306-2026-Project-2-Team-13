@@ -15,6 +15,7 @@ import mainframe.client.HttpConnection;
 import java.io.IOException;
 import java.net.URI;
 
+// AI-assisted: Helped implement mainframe connection setup, login and logout handling.
 public class Main extends Application {
     private static final String MAINFRAME_URL_PROPERTY = "lavs.mainframe.url";
     private static final String MAINFRAME_URL_ENV = "LAVS_MAINFRAME_URL";
