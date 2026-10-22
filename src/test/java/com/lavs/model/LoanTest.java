@@ -71,6 +71,7 @@ class LoanTest {
                         Loan.PaymentFrequency.MONTHLY, Loan.RateFrequency.MONTHLY, 0));
     }
 
+    // AI-assisted: Claude suggested this loan type label test.
     @Test
     void loanTypesHaveReadableNamesThatMapBackToTheType() {
         assertEquals("Table Loan", Loan.Type.TABLE_LOAN.displayName());

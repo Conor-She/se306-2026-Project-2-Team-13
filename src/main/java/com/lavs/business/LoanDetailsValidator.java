@@ -27,6 +27,7 @@ public final class LoanDetailsValidator {
         return draft.primaryBorrower == null ? BORROWER_MESSAGE : null;
     }
 
+    // AI-assisted: Claude reminds me of the remaining requirement against gateway for detailsError
     /**
      * The first problem with the loan details, or null when they are all acceptable.
      * The checks run in the order they appear on the form. {@code datesReadable} says whether

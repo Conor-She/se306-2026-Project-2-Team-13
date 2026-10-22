@@ -23,6 +23,7 @@ public class Loan {
             this.displayName = displayName;
         }
 
+        // AI-assisted: Claude added readable loan type labels (displayName and fromDisplayName).
         /** The name shown to users, for example "Reducing Balance". */
         public String displayName() {
             return displayName;

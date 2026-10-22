@@ -80,6 +80,7 @@ class LoanDetailsValidatorTest {
         }
     }
 
+    // AI-assisted: Claude wrote this validator test to fulfill the requirement.
     @Test void datesMustBeReadableChosenAndInOrder() {
         assertEquals(LoanDetailsValidator.DATES_UNREADABLE_MESSAGE, validator.detailsError(draft, false));
         draft.startDate = null;
@@ -90,11 +91,13 @@ class LoanDetailsValidatorTest {
         assertEquals(LoanDetailsValidator.RENEWAL_AFTER_START_MESSAGE, error());
     }
 
+    // AI-assisted: Claude suggested this validator test to fulfill the requirement.
     @Test void theStatusMustBeChosen() {
         draft.details.put("status", "");
         assertEquals(LoanDetailsValidator.STATUS_MESSAGE, error());
     }
 
+    // AI-assisted: Claude suggested this validator test to fulfill the requirement.
     @Test void problemsAreReportedInTheOrderTheyAppearOnTheForm() {
         draft.details.put("loanType", "");
         draft.details.put("principal", "0");
