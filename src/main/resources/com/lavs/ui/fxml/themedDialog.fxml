@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.String?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<DialogPane fx:id="pane" xmlns:fx="http://javafx.com/fxml/1"
+            style="-fx-background-color: white; -fx-font-family: 'System';">
+    <fx:define>
+        <String fx:id="buttonStyle" fx:value="-fx-background-color: white; -fx-border-color: #9693ca; -fx-border-radius: 6; -fx-background-radius: 6; -fx-text-fill: #393a7b; -fx-font-size: 13px; -fx-padding: 9 18; -fx-cursor: hand;"/>
+        <String fx:id="primaryButtonStyle" fx:value="-fx-background-color: #f8f40c; -fx-border-color: #b6b309; -fx-text-fill: #111111; -fx-font-weight: bold;"/>
+        <String fx:id="buttonContainerStyle" fx:value="-fx-background-color: white; -fx-padding: 8 20 18 20;"/>
+        <String fx:id="disabledStyle" fx:value="-fx-opacity: 0.48;"/>
+        <String fx:id="focusedStyle" fx:value="-fx-border-color: #4947a5; -fx-border-width: 1.5;"/>
+        <String fx:id="dateEditorStyle" fx:value="-fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 10 12;"/>
+        <String fx:id="dateArrowStyle" fx:value="-fx-background-color: #f8faff; -fx-border-color: transparent transparent transparent #dce2ff; -fx-background-radius: 0 6 6 0;"/>
+    </fx:define>
+    <header>
+        <HBox style="-fx-background-color: #f8faff; -fx-border-color: transparent transparent #dce2ff transparent; -fx-border-width: 0 0 1 0; -fx-padding: 16 20;">
+            <Label text="${pane.headerText}" wrapText="true" style="-fx-text-fill: #22245f; -fx-font-size: 17px; -fx-font-weight: bold;"/>
+        </HBox>
+    </header>
+</DialogPane>
