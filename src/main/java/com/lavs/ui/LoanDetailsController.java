@@ -18,10 +18,10 @@ import com.lavs.model.Repayment;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
@@ -297,26 +297,45 @@ public class LoanDetailsController {
                 ButtonType.OK.getButtonData());
         Dialog<Payment> dialog = new Dialog<>();
         dialog.setTitle(existingPayment == null ? "Add payment" : "Edit payment");
-        dialog.setHeaderText(existingPayment == null
-                ? "Record a payment for " + loan.loanId()
-                : "Update this payment for " + loan.loanId());
-        dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, saveType);
+        dialog.setHeaderText(existingPayment == null ? "Add payment" : "Edit payment");
+        if (loanHeading.getScene() != null) dialog.initOwner(loanHeading.getScene().getWindow());
+        var pane = dialog.getDialogPane();
+        pane.setId("paymentEditor");
+        pane.setPrefWidth(560);
+        pane.getButtonTypes().setAll(ButtonType.CANCEL, saveType);
+        var stylesheet = getClass().getResource("coborrowerDialogs.css");
+        if (stylesheet != null) pane.getStylesheets().add(stylesheet.toExternalForm());
+        dialog.setResizable(false);
 
         DatePicker paymentDate = new DatePicker(existingPayment == null
                 ? LocalDate.now() : existingPayment.getPaymentDate());
+        paymentDate.setId("paymentDate");
+        paymentDate.setMaxWidth(Double.MAX_VALUE);
         TextField amount = new TextField(existingPayment == null
                 ? "" : Double.toString(existingPayment.getAmountPaid()));
+        amount.setId("paymentAmount");
         amount.setPromptText("e.g. 500");
 
+        Label context = new Label((existingPayment == null
+                ? "Record a payment for " : "Update the payment for ") + loan.loanId());
+        context.setId("paymentContext");
+        context.setWrapText(true);
+        Label dateLabel = new Label("Date");
+        dateLabel.getStyleClass().add("payment-field-label");
+        Label amountLabel = new Label("Amount paid");
+        amountLabel.getStyleClass().add("payment-field-label");
         GridPane form = new GridPane();
-        form.setHgap(12);
-        form.setVgap(12);
-        form.setPadding(new Insets(12, 0, 0, 0));
-        form.addRow(0, new Label("Date"), paymentDate);
-        form.addRow(1, new Label("Amount paid"), amount);
-        dialog.getDialogPane().setContent(form);
+        form.setId("paymentForm");
+        form.setHgap(18);
+        form.setVgap(16);
+        form.add(context, 0, 0, 2, 1);
+        form.addRow(1, dateLabel, paymentDate);
+        form.addRow(2, amountLabel, amount);
+        GridPane.setHgrow(paymentDate, javafx.scene.layout.Priority.ALWAYS);
+        GridPane.setHgrow(amount, javafx.scene.layout.Priority.ALWAYS);
+        pane.setContent(form);
 
-        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveType);
+        Button saveButton = (Button) pane.lookupButton(saveType);
         Runnable validate = () -> saveButton.setDisable(
                 paymentDate.getValue() == null || !isPositiveAmount(amount.getText()));
         paymentDate.valueProperty().addListener((observable, oldValue, newValue) -> validate.run());
@@ -330,6 +349,13 @@ public class LoanDetailsController {
             String paymentId = existingPayment == null ? null : existingPayment.getPaymentId();
             String repaymentId = existingPayment == null ? null : existingPayment.getRepaymentId();
             return new Payment(paymentId, loan.loanId(), repaymentId, paymentDate.getValue(), amountPaid);
+        });
+
+        dialog.setOnShown(event -> {
+            pane.applyCss();
+            ButtonBar buttons = (ButtonBar) pane.lookup(".button-bar");
+            if (buttons != null) buttons.setButtonOrder("C+O");
+            amount.requestFocus();
         });
 
         dialog.showAndWait().ifPresent(updatedPayment -> {
